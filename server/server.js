@@ -15,13 +15,13 @@ app.use(express.json());
 // 2. ตั้งค่าการเชื่อมต่อฐานข้อมูล
 const dbConfig = {
     host: 'localhost',
-    user: 'myuser', // User ที่คุณสร้างใน MySQL
-    password: 'emailkmutnb', // รหัสผ่านของ User นั้น
-    database: 'projectmems' 
+    user: 'myuser', 
+    password: 'emailkmutnb', 
+    database: 'projectmems',
+    port: 3306
 };
 
-// 3. ตั้งค่าคีย์ลับสำหรับ JWT
-// ⚠️ เปลี่ยนเป็นคีย์ลับของคุณ (ห้ามซ้ำกับใคร)
+
 const JWT_SECRET = "MY_SUPER_SECRET_KEY_FOR_JWT_12345";
 
 // --- API Endpoints ---
