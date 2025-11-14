@@ -1,45 +1,73 @@
 import React from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import Sidebar from './Sidebar'; 
-import './DashboardPage.css'; 
-
+import { useNavigate, Link , NavLink} from 'react-router-dom';
+import {FaHome, FaSearch, FaHistory, FaUser} from 'react-icons/fa';
+import './EngineerMainPage.css'; 
 function EngineerMainPage({ user }) {
     const navigate = useNavigate();
-
+    console.log("data in user prop: ", user);
     const handleLogout = () => {
         localStorage.removeItem('authToken');
         navigate('/login');
     };
 
     return (
-        // 2. นี่คือ Layout Container ใหม่
+
         <div className="layout-container">
-            
-            {/* 3. เรียกใช้ Sidebar ที่ถูกต้อง */}
-            <Sidebar /> 
-
-            {/* 4. นี่คือส่วนเนื้อหาหลัก (ด้านขวา) */}
-            <main className="main-content-area">
-                
-                {/* 5. Header ที่อยู่ด้านบนของเนื้อหา */}
-                <header className="main-content-header">
-                    <h2>หน้าหลักวิศวกร</h2>
-                    <div className="user-info">
-                        <span>สวัสดี, {user?.email || 'User'}</span>
-                        <button onClick={handleLogout} className="logout-button-top">
-                            ออกจากระบบ
-                        </button>
-                    </div>
-                </header>
-
-                {/* 6. ส่วน 3 ปุ่ม (เหมือนเดิม) */}
-                <div className="button-container">
-                    <Link to="/withdraw" className="action-button">เบิกอะไหล่</Link>
-                    <Link to="/return" className="action-button">คืนอะไหล่</Link>
-                    <Link to="/borrow" className="action-button">ยืมอะไหล่</Link>
+             <nav className="sidebar-container">
+                <div className="sidebar-header">
+                    <h3>MEMS</h3>
                 </div>
 
-            </main>
+                <ul className="sidebar-nav">
+                    <li>
+                        <NavLink 
+                            to="/dashboard" 
+                            className={({isActive}) => isActive ? "nav-link active" : "nav-link"}>
+                            <FaHome /> <span>หน้าหลัก</span>
+                        </NavLink>
+                    </li>
+                    <li>
+                        <NavLink 
+                            to="/search" 
+                            className={({isActive}) => isActive ? "nav-link active" : "nav-link"}>
+                            <FaSearch /> <span>ค้นหา</span>
+                        </NavLink>
+                    </li>
+                    <li>
+                        <NavLink 
+                            to="/history" 
+                            className={({isActive}) => isActive ? "nav-link active" : "nav-link"}>
+                             <FaHistory /> <span>ประวัติ</span>
+                        </NavLink>
+                    </li>
+                    <li>
+                        <NavLink 
+                            to="/profileENG" 
+                            className={({isActive}) => isActive ? "nav-link active" : "nav-link"}>
+                             <FaUser /> <span>โปรไฟล์</span>
+                        </NavLink>
+                    </li>
+                </ul>
+            </nav>
+
+
+        <main className="main-content-area">
+                <header className="main-content-header">
+                     <h2>หน้าหลักวิศวกร</h2>
+                        <div className="user-info">
+                            <span>สวัสดี, {user?.fullname || 'User'}</span>
+                            <button onClick={handleLogout} className="logout-button-top">
+                                ออกจากระบบ
+                            </button>
+                        </div>
+                </header>
+                    <div className="button-container">
+                        <Link to="/withdraw" className="action-button">เบิกอะไหล่</Link>
+                        <Link to="/return" className="action-button">คืนอะไหล่</Link>
+                        <Link to="/borrow" className="action-button">ยืมอะไหล่</Link>
+                    </div>
+
+        </main>
         </div>
     );
 }
