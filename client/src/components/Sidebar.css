@@ -1,0 +1,56 @@
+.sidebar-container {
+    width: 240px; /* ความกว้างของ Sidebar */
+    height: 100vh; /* สูงเต็มหน้าจอ */
+    position: fixed; /* ยึดตำแหน่งไว้ */
+    left: 0;
+    top: 0;
+    background: #ffffff; /* พื้นหลังสีขาว */
+    border-right: 1px solid #e9ecef; /* เส้นขอบบางๆ ด้านขวา */
+    display: flex;
+    flex-direction: column;
+    z-index: 100; /* ให้อยู่ด้านบน */
+}
+
+.sidebar-header {
+    padding: 20px;
+    text-align: center;
+    border-bottom: 1px solid #e9ecef;
+    font-size: 1.5rem;
+    color: #333;
+    font-weight: 600;
+}
+
+.sidebar-nav {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0;
+}
+
+.sidebar-nav li .nav-link {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    margin: 5px 15px; /* ระยะห่างจากขอบ */
+    text-decoration: none;
+    color: #555; /* สีตัวอักษรปกติ */
+    border-radius: 8px;
+    font-weight: 500;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-nav li .nav-link svg {
+    margin-right: 15px;
+    font-size: 1.1rem;
+    min-width: 20px; /* กัน layout เพี้ยน */
+}
+
+.sidebar-nav li .nav-link:hover {
+    background: #f4f4f4; /* สีพื้นหลังตอน Hover */
+}
+
+/* สไตล์ตอนที่ Link ถูกเลือก (Active) */
+.sidebar-nav li .nav-link.active {
+    background: #e6f2ff; /* สีฟ้าอ่อน (เหมือนในรูปตัวอย่าง) */
+    color: #007bff; /* สีฟ้าเข้ม */
+    font-weight: 600;
+}

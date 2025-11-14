@@ -1,23 +1,34 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-// (Helper function)
-function getRoleFromToken(token) {
+import EngineerMainPage from './EngineerMainPage';
+import AdminMainPage from './AdminMainPage';
+
+
+function getPayloadFromToken(token) {
     try {
         const payload = JSON.parse(atob(token.split('.')[1]));
-        return payload.role;
+        return payload; 
     } catch (e) {
         return null;
     }
 }
 
-// สร้าง Component ของแต่ละ Role
-const AdminDashboard = () => <div>หน้าสำหรับ Admin</div>;
-const ManagerDashboard = () => <div>หน้าสำหรับ Manager</div>;
-const EngineerDashboard = () => <div>หน้าสำหรับ Engineer</div>;
+const ManagerDashboard = ({ user }) => (
+    <div>
+        <h1>หน้าสำหรับ Manager ({user?.email})</h1>
+        <p>เนื้อหาของ Manager...</p>
+        <button onClick={() => {
+            localStorage.removeItem('authToken');
+            window.location.href = '/login'; 
+        }}>Logout</button>
+    </div>
+);
+
 
 function DashboardPage() {
-    const [userRole, setUserRole] = useState(null);
+    const [userPayload, setUserPayload] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -27,38 +38,45 @@ function DashboardPage() {
             return;
         }
 
-        const role = getRoleFromToken(token);
-        if (role) {
-            setUserRole(role);
+        const payload = getPayloadFromToken(token);
+        if (payload) {
+            setUserPayload(payload);
         } else {
+            // Token ไม่ถูกต้อง
             localStorage.removeItem('authToken');
             navigate('/login');
         }
     }, [navigate]);
 
-    const renderDashboard = () => {
-        switch (userRole) {
-            case 'admin':
-                return <AdminDashboard />;
-            case 'manager':
-                return <ManagerDashboard />;
+    // ฟังก์ชันสำหรับ Render หน้าตาม Role
+    const renderDashboardByRole = () => {
+        if (!userPayload) {
+            return <p>กำลังโหลดข้อมูลผู้ใช้...</p>;
+        }
+
+        const { role } = userPayload;
+
+        switch (role) {
             case 'engineer':
-                return <EngineerDashboard />;
+                // ส่งข้อมูล 'user' (payload) ไปให้ Component ของ Engineer
+                return <EngineerMainPage user={userPayload} />;
+            
+            case 'admin':
+                return <AdminMainPage user={userPayload} />;
+            
+            case 'manager':
+                return <ManagerDashboard user={userPayload} />;
+            
             default:
-                return <p>กำลังโหลดข้อมูลผู้ใช้...</p>;
+                // ถ้าเจอ Role แปลกๆ หรือ Role 'unknown'
+                localStorage.removeItem('authToken');
+                navigate('/login');
+                return null;
         }
     };
 
-    return (
-        <div>
-            <h1>ยินดีต้อนรับค่ะ</h1>
-            {renderDashboard()}
-            <button onClick={() => {
-                localStorage.removeItem('authToken');
-                navigate('/login');
-            }}>Logout</button>
-        </div>
-    );
+    // return สิ่งที่ renderDashboardByRole() คืนค่ามา
+    return renderDashboardByRole();
 }
 
 export default DashboardPage;
