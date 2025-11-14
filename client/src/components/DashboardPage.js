@@ -51,7 +51,7 @@ function DashboardPage() {
 
     return (
         <div>
-            <h1>ยินดีต้อนรับ</h1>
+            <h1>ยินดีต้อนรับค่ะ</h1>
             {renderDashboard()}
             <button onClick={() => {
                 localStorage.removeItem('authToken');
