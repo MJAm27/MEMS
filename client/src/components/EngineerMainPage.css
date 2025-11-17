@@ -1,15 +1,31 @@
-/* === ส่วน Sidebar === */
+/* --- Layout container --- */
+.layout-container {
+    display: flex;
+    min-height: 100vh;
+    background-color: #f9fafb; 
+    transition: margin-left 0.3s ease; 
+}
+
+.main-content-area {
+    flex-grow: 1; 
+    padding: 20px;
+    transition: margin-left 0.3s ease;
+}
+
+/* --- Sidebar --- */
 .sidebar-container {
     width: 240px;
     height: 100vh;
     position: fixed;
-    left: 0;
     top: 0;
+    left: 0;
     background: #ffffff;
     border-right: 1px solid #e9ecef;
     display: flex;
     flex-direction: column;
     z-index: 100;
+    transition: width 0.3s ease;
+    overflow-x: hidden; 
 }
 
 .sidebar-header {
@@ -17,8 +33,8 @@
     text-align: center;
     border-bottom: 1px solid #e9ecef;
     font-size: 1.5rem;
-    color: #333;
     font-weight: 600;
+    white-space: nowrap; 
 }
 
 .sidebar-nav {
@@ -37,12 +53,14 @@
     border-radius: 8px;
     font-weight: 500;
     transition: background-color 0.2s ease, color 0.2s ease;
+    white-space: nowrap; 
 }
 
 .sidebar-nav li .nav-link svg {
     margin-right: 15px;
     font-size: 1.1rem;
     min-width: 20px;
+    transition: margin 0.3s ease;
 }
 
 .sidebar-nav li .nav-link:hover {
@@ -55,142 +73,134 @@
     font-weight: 600;
 }
 
-/* === Layout === */
-.main-content-area {
-    margin-left: 240px;
-    width: calc(100% - 240px);
-    padding: 24px;
-    height: 100vh;
-    overflow-y: auto;
-    background-color: #f8f9fa;
+/* --- Sidebar ปิด --- */
+.layout-container.sidebar-closed .sidebar-container {
+    width: 60px;
 }
 
+.layout-container.sidebar-closed .main-content-area {
+    margin-left: 60px;
+}
+
+.layout-container.sidebar-closed .sidebar-header h3 {
+    display: none;
+}
+
+.layout-container.sidebar-closed .sidebar-nav li .nav-link span {
+    display: none;
+}
+
+.layout-container.sidebar-closed .sidebar-nav li .nav-link {
+    justify-content: center;
+}
+
+.layout-container.sidebar-closed .sidebar-nav li .nav-link svg {
+    margin-right: 0;
+    font-size: 1.3rem;
+}
+
+/* --- Sidebar เปิด --- */
+.layout-container.sidebar-open .main-content-area {
+    margin-left: 240px;
+}
+
+/* --- Header ---  background: #ffffff
 .main-content-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 16px;
-    background-color: #ffffff;
+    background: #ffffff;
+    padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    margin-bottom: 24px;
-}
-
-.main-content-header h2 {
-    margin: 0;
-    font-size: 1.8rem;
-    color: #333;
-}
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+}*/
 
 .user-info {
     display: flex;
     align-items: center;
     gap: 15px;
-    font-size: 1rem;
-    color: #444;
 }
 
 .logout-button-top {
-    padding: 8px 16px;
-    background-color: #dc3545;
+    background: #f44336;
     color: white;
     border: none;
-    border-radius: 5px;
+    padding: 8px 12px;
+    border-radius: 4px;
     cursor: pointer;
     font-weight: 500;
     transition: background-color 0.2s ease;
 }
-
-.logout-button-top:hover {
-    background-color: #c82333;
-}
-
-.button-container {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    padding: 20px;
-}
-
-.action-button {
-    padding: 20px 40px;
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: white;
-    background-color: #007bff;
-    text-decoration: none;
-    border-radius: 8px;
-    transition: background-color 0.2s ease, transform 0.2s ease;
-    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
-}
-
-.action-button:hover {
-    background-color: #0056b3;
-    transform: translateY(-2px);
-}
-
-.button-container{
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    padding: 20px;
-    flex-wrap:wrap;
-}
+.logout-button-top:hover { background: #d32f2f; }
 
 .sidebar-toggle-btn {
     background: none;
     border: none;
-    font-size: 1.5rem; /* ขนาดไอคอน */
-    color: #333;
     cursor: pointer;
-    margin-right: 15px; /* เว้นระยะห่างจาก H2 */
-    padding: 5px;
+    font-size: 1.5rem;
+    color: #333;
+    margin-right: 20px;
 }
 
-.sidebar-toggle-btn:hover {
-    background: #f4f4f4;
-    border-radius: 5px;
+/* --- ปุ่มหลัก --- */
+.button-container {
+    display: flex;
+    justify-content: space-between; 
+    flex-wrap: wrap; 
+    gap: 15px; 
+    padding: 20px;
+    margin-top: 20px;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.action-button {
+    flex: 1; 
+    min-width: 150px; 
+    max-width: 200px; 
+    padding: 20px 0; 
+    font-size: 16px;
+    text-decoration: none;
+    color: white;
+    background-color: #007bff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: background-color 0.2s ease;
+}
+.action-button:hover { background-color: #0056b3; }
+
+/* --- Responsive มือถือ --- */
+@media (max-width: 768px) {
+    .sidebar-container {
+        left: -240px;
+        position: fixed;
+        top: 0;
+    }
+    .layout-container.sidebar-open .sidebar-container {
+        left: 0;
+    }
+    .main-content-area {
+        margin-left: 0;
+    }
 }
 
 
-/* === 2. เพิ่ม Transition ให้นุ่มนวล === */
-.sidebar-container, 
-.main-content-area {
-    /* ทำให้การขยับและเปลี่ยนความกว้างดูนุ่มนวล */
-    transition: all 0.3s ease-in-out;
-}
+@media (max-width: 480px) {
 
+    .profile-card {
+        padding: 25px 15px;
+    }
 
-/* === 3. สไตล์ "เมื่อถูกพับ" (.collapsed) === */
+    .action-link {
+        padding: 16px 16px;
+        font-size: 0.95rem;
+    }
 
-/* 3.1 Sidebar (หดความกว้าง) */
-.sidebar-container.collapsed {
-    width: 80px; /* ความกว้างตอนพับ (เหลือที่ให้ไอคอน) */
-}
-
-/* 3.2 เนื้อหาหลัก (ขยับตาม Sidebar) */
-.main-content-area.collapsed {
-    margin-left: 80px; /* ต้องตรงกับความกว้าง .collapsed */
-    width: calc(100% - 80px);
-}
-
-/* 3.3 ซ่อนข้อความ (MEMS) ใน Header */
-.sidebar-container.collapsed .sidebar-header h3 span {
-    display: none;
-}
-
-/* 3.4 ซ่อนข้อความ (หน้าหลัก, ค้นหา) ใน NavLink */
-.sidebar-container.collapsed .sidebar-nav li .nav-link span {
-    display: none;
-}
-
-/* 3.5 จัดไอคอนให้อยู่ตรงกลาง (เมื่อไม่มีข้อความ) */
-.sidebar-container.collapsed .sidebar-nav li .nav-link {
-    justify-content: center;
-    margin: 5px 10px; /* ปรับระยะขอบเล็กน้อย */
-}
-
-/* 3.6 เอาช่องว่างขวาของไอคอนออก */
-.sidebar-container.collapsed .sidebar-nav li .nav-link svg {
-    margin-right: 0;
+    .logout-button-top {
+        padding: 5px 12px;
+        font-size: 0.85rem;
+    }
 }

@@ -1,0 +1,180 @@
+
+:root {
+    --primary-color: #ff69b4; 
+    --secondary-color: #ffe0f0;
+    --text-color: #333;
+    --border-color: #ddd;
+    --input-bg: #fff;
+    --input-readonly-bg: #f0f0f0;
+    --button-hover: #e04b96;
+    --shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.profile-edit-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh; 
+    background-color: var(--secondary-color); 
+    box-sizing: border-box; 
+}
+
+.profile-edit-card {
+    background-color: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: var(--shadow);
+    text-align: center;
+    width: 100%;
+    max-width: 450px; 
+}
+
+/* ส่วนรูปภาพโปรไฟล์ */
+.profile-edit-avatar-section {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 30px auto; 
+    border-radius: 50%;
+    background-color: var(--input-readonly-bg); 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 2px solid var(--primary-color); 
+}
+
+.profile-edit-avatar {
+    font-size: 80px; 
+    color: var(--text-color);
+}
+
+.edit-avatar-button {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background-color: var(--primary-color);
+    color: white;
+    border: 2px solid white;
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.edit-avatar-button:hover {
+    background-color: var(--button-hover);
+}
+
+/* ฟอร์ม */
+.profile-edit-form {
+    text-align: left;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: var(--text-color);
+    font-size: 14px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 16px;
+    box-sizing: border-box; 
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-group input:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(255, 105, 180, 0.2); 
+}
+
+.readonly-input {
+    background-color: var(--input-readonly-bg); 
+    cursor: not-allowed; 
+}
+
+.submit-button {
+    width: 100%;
+    padding: 15px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+    margin-top: 20px;
+}
+
+.submit-button:hover:not(:disabled) {
+    background-color: var(--button-hover);
+}
+
+.submit-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* ข้อความ Loading / Error */
+.profile-edit-loading,
+.profile-edit-error {
+    text-align: center;
+    font-size: 18px;
+    color: var(--text-color);
+    padding: 50px;
+}
+
+.profile-edit-error {
+    color: red;
+}
+
+/* Responsive ปรับสำหรับหน้าจอขนาดเล็ก */
+@media (max-width: 600px) {
+    .profile-edit-card {
+        padding: 20px;
+        margin: 10px; /* มีขอบนิดหน่อย */
+    }
+
+    .profile-edit-avatar-section {
+        width: 100px;
+        height: 100px;
+        margin-bottom: 20px;
+    }
+
+    .profile-edit-avatar {
+        font-size: 70px;
+    }
+
+    .edit-avatar-button {
+        width: 30px;
+        height: 30px;
+        font-size: 14px;
+        bottom: 0px;
+        right: 0px;
+    }
+
+    .form-group input,
+    .submit-button {
+        padding: 10px 12px;
+        font-size: 15px;
+    }
+}
