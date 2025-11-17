@@ -1,0 +1,221 @@
+/* ให้ container ขยายเต็มหน้าจอ */
+.profile-container {
+    width: 100%;
+    max-width: 100%;
+    min-height: 100vh; /* สูงเต็มหน้าจอ */
+    padding: 20px;
+    background-color: #FFF;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* ---------------- TOP HEADER ---------------- */
+.main-content-header {
+    max-width: 600px;
+    margin: 0 auto 20px auto;
+    width: 100%;
+
+    background-color: #FEF6FB;
+    border: 1px solid #FCEFF5;
+    border-radius: 12px;
+
+    padding: 15px 20px;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.sidebar-toggle-btn {
+    background: none;
+    border: none;
+    font-size: 1.6rem;
+    cursor: pointer;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.logout-button-top {
+    background-color: #D9006C;
+    color: #fff;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.logout-button-top:hover {
+    opacity: 0.8;
+}
+
+.content-wrapper {
+    width: 100%;
+    max-width: 600px; 
+    margin: 0 auto; 
+    padding: 20px;
+}
+/* ---------------- PROFILE CARD ---------------- */
+.profile-card {
+    background-color: #FEF6FB;
+    border: 1px solid #FCEFF5;
+    border-radius: 12px;
+    padding: 30px 20px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+
+    width: 100%;
+}
+
+.profile-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background-color: #f0f0f0;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    margin-bottom: 20px;
+    border: 3px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.profile-avatar svg {
+    font-size: 4rem;
+    color: #555;
+}
+
+.profile-info h3 {
+    margin: 0 0 5px 0;
+    color: #333;
+    font-size: 1.4rem;
+}
+
+.profile-info p {
+    margin: 0;
+    color: #555;
+    font-size: 1rem;
+}
+
+/* ---------------- ACTION LINKS ---------------- */
+.profile-actions {
+    margin-top: 10px;
+    width: 100%;
+}
+
+.action-link {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    background-color: #FEF6FB;
+    padding: 18px 20px;
+    margin-bottom: 12px;
+    border-radius: 10px;
+
+    text-decoration: none;
+    color: #D9006C;
+    font-weight: 600;
+
+    transition: background-color 0.2s ease;
+}
+
+.action-link:hover {
+    background-color: #FCEFF5;
+}
+
+.action-link svg {
+    font-size: 1.2rem;
+}
+
+.header-wrapper {
+    width: 100%;
+    max-width: 500px;     
+    margin: 0 auto;      
+}
+
+
+* Sidebar default */
+.sidebar-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 240px;
+    background: #ffffff;
+    border-right: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    z-index: 100;
+}
+
+/* ปิด Sidebar เหลือแค่ไอคอน */
+.sidebar-container.closed {
+    width: 60px;
+}
+
+/* Sidebar header */
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 60px;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+/* nav link ปรับเมื่อ sidebar ปิด */
+.sidebar-container.closed .sidebar-nav {
+    display: none;
+}
+
+/* เนื้อหาหลัก เลื่อนตาม sidebar */
+.content-wrapper {
+    margin-left: 240px;
+    transition: margin-left 0.3s ease;
+}
+
+.sidebar-container.closed ~ .content-wrapper {
+    margin-left: 60px;
+}
+
+
+/* ---------------- RESPONSIVE ---------------- */
+
+/* สำหรับหน้าจอเล็กกว่า 480px (มือถือเล็ก) */
+@media (max-width: 480px) {
+
+    .profile-card {
+        padding: 25px 15px;
+    }
+
+    .action-link {
+        padding: 16px 16px;
+        font-size: 0.95rem;
+    }
+
+    .logout-button-top {
+        padding: 5px 12px;
+        font-size: 0.85rem;
+    }
+}
+
+/* สำหรับแท็บเล็ต */
+@media (min-width: 768px) {
+    .profile-container {
+        max-width: 700px;
+        margin: 0 auto; /* จัดกึ่งกลางหน้าจอเดสก์ท็อป/แท็บเล็ต */
+    }
+}

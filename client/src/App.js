@@ -4,7 +4,9 @@ import LoginPage from './components/LoginPage';
 import VerifyPage from './components/VerifyPage';
 import Setup2FAPage from './components/Setup2FAPage';
 import DashboardPage from './components/DashboardPage';
-import RegisterPage from './components/RegisterPage'; // 1. Import หน้านี้
+import RegisterPage from './components/RegisterPage';
+import ProfileENG from './components/ProfileENG';
+import ProfileEditENG from './components/ProfileEditENG';
 
 function App() {
     return (
@@ -15,7 +17,9 @@ function App() {
                 <Route path="/register" element={<RegisterPage />} /> 
                 <Route path="/verify" element={<VerifyPage />} />
                 <Route path="/setup-2fa" element={<Setup2FAPage />} />
-                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/dashboard/*" element={<DashboardPage />} />
+                <Route path="/profileENG" element={<ProfileENG />} />
+                <Route path="/profileENG/profile-edit" element={<ProfileEditENG />} />
             </Routes>
         </BrowserRouter>
     );
