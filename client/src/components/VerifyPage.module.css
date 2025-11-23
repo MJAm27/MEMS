@@ -1,0 +1,126 @@
+/* ----------------------------------
+ * พื้นหลัง (Background) 
+ * ---------------------------------- */
+.background {
+    background: #ffe6f0; /* โทนชมพูอ่อน */
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+/* ----------------------------------
+ * กรอบยืนยัน (Card)
+ * ---------------------------------- */
+.card {
+    background-color: #ffffff;
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 450px; 
+    text-align: center;
+    border: 5px solid #ffb3d9; /* ขอบชมพู */
+}
+
+.header {
+    font-size: 24px;
+    color: #333333;
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+
+.instruction {
+    font-size: 16px;
+    color: #555555;
+    margin-bottom: 30px;
+}
+
+/* ----------------------------------
+ * Input OTP 6 หลัก
+ * ---------------------------------- */
+.formContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.otpInputGroup {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 30px;
+}
+
+.otpInputField {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    text-align: center;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.otpInputField:focus {
+    border-color: #ff66b2;
+    box-shadow: 0 0 0 3px rgba(255, 102, 178, 0.2);
+}
+
+/* ----------------------------------
+ * ปุ่มยืนยัน (Primary Button)
+ * ---------------------------------- */
+.primaryButton {
+    padding: 15px;
+    border: none;
+    border-radius: 30px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #ffffff;
+    cursor: pointer;
+    background: linear-gradient(to right, #ff99cc, #ff66b2); /* สีชมพูไล่เฉด */
+    box-shadow: 0 4px 10px rgba(255, 102, 178, 0.4);
+    transition: all 0.3s ease;
+    width: 80%;
+    margin-bottom: 20px;
+}
+
+.primaryButton:hover:not(:disabled) {
+    background: linear-gradient(to right, #ff66b2, #ff99cc);
+    box-shadow: 6px 15px rgba(255, 102, 178, 0.6);
+}
+
+.primaryButton:disabled {
+    background: #cccccc;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* ----------------------------------
+ * ปุ่มกลับ (Secondary Button)
+ * ---------------------------------- */
+.secondaryButton {
+    background: none;
+    border: none;
+    color: #ff66b2;
+    font-size: 14px;
+    cursor: pointer;
+    text-decoration: underline;
+    transition: color 0.3s;
+    margin-top: 10px;
+}
+
+.secondaryButton:hover:not(:disabled) {
+    color: #cc0066;
+}
+
+/* ----------------------------------
+ * ข้อความผิดพลาด (Error Message)
+ * ---------------------------------- */
+.errorMessage {
+    color: #e74c3c;
+    margin-top: 20px;
+    font-size: 14px;
+}

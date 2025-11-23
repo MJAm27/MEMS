@@ -7,6 +7,8 @@ import DashboardPage from './components/DashboardPage';
 import RegisterPage from './components/RegisterPage';
 import ProfileENG from './components/ProfileENG';
 import ProfileEditENG from './components/ProfileEditENG';
+import EngineerMainPage from './components/EngineerMainPage';
+
 
 function App() {
     return (
@@ -19,7 +21,9 @@ function App() {
                 <Route path="/setup-2fa" element={<Setup2FAPage />} />
                 <Route path="/dashboard/*" element={<DashboardPage />} />
                 <Route path="/profileENG" element={<ProfileENG />} />
+                <Route path="/profileENG/edit" element={<ProfileEditENG />} />
                 <Route path="/profileENG/profile-edit" element={<ProfileEditENG />} />
+                <Route path="/engineer/*" element={<EngineerMainPage />} />
             </Routes>
         </BrowserRouter>
     );
