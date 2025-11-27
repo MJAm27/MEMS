@@ -6,6 +6,8 @@ const speakeasy = require("speakeasy");
 const qrcode = require("qrcode");
 const cors = require("cors");
 
+require('dotenv').config()
+
 const app = express();
 
 // 1. ตั้งค่า Middlewares
@@ -14,11 +16,11 @@ app.use(express.json());
 
 // 2. ตั้งค่าการเชื่อมต่อฐานข้อมูล (เปลี่ยนเป็น Pool)
 const dbConfig = {
-    host: 'localhost',
-    user: 'myuser',
-    password: 'emailkmutnb',
-    database: 'projectmems',
-    port: 3306,
+    host: process.env.DATABASE_HOST,
+    user: process.env.DATABASE_USER,
+    password: process.env.DATABASE_PASSWORD,
+    database: process.env.DATABASE_NAME,
+    port: process.env.DATABASE_PORT,
     waitForConnections: true,
     connectionLimit: 10, // สามารถปรับจำนวนได้ตามความเหมาะสม
     queueLimit: 0
