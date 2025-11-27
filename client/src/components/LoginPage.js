@@ -92,7 +92,11 @@ function LoginPage() {
                 
                 {/* แสดงข้อผิดพลาด */}
                 {error && <p className="errorMessage">{error}</p>}
-                
+                <div className="register">
+                    <Link to="/register" className="registerLink">
+                        ลงทะเบียนสมาชิกใหม่
+                    </Link>
+                </div>
             </div>
         </div>
     );
