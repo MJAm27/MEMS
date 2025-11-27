@@ -1,126 +1,90 @@
-/* ----------------------------------
- * พื้นหลัง (Background) 
- * ---------------------------------- */
-.background {
-    background: #ffe6f0; /* โทนชมพูอ่อน */
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(to bottom right, #ffdde1, #ffc3cd); /* Light pink gradient */
     min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 20px;
 }
 
-/* ----------------------------------
- * กรอบยืนยัน (Card)
- * ---------------------------------- */
-.card {
+.verify-container {
     background-color: #ffffff;
-    border-radius: 20px;
-    padding: 40px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    max-width: 450px; 
+    padding: 40px 50px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     text-align: center;
-    border: 5px solid #ffb3d9; /* ขอบชมพู */
+    width: 100%;
+    max-width: 400px;
 }
 
-.header {
-    font-size: 24px;
+.verify-container h2 {
     color: #333333;
-    margin-bottom: 15px;
+    font-size: 28px;
+    margin-bottom: 10px;
     font-weight: bold;
 }
 
-.instruction {
+.verify-container p {
+    color: #666666;
     font-size: 16px;
-    color: #555555;
     margin-bottom: 30px;
 }
 
-/* ----------------------------------
- * Input OTP 6 หลัก
- * ---------------------------------- */
-.formContainer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.otpInputGroup {
+.token-input-group {
     display: flex;
     justify-content: center;
-    gap: 10px;
+    gap: 10px; /* Space between input boxes */
     margin-bottom: 30px;
 }
 
-.otpInputField {
-    width: 40px;
-    height: 40px;
-    font-size: 20px;
+.token-input-group input {
+    width: 40px; /* Width for each individual box */
+    height: 50px;
+    font-size: 24px;
     text-align: center;
-    border: 1px solid #ccc;
+    border: 1px solid #e0e0e0;
     border-radius: 8px;
     outline: none;
-    transition: border-color 0.3s, box-shadow 0.3s;
+    transition: border-color 0.3s;
 }
 
-.otpInputField:focus {
-    border-color: #ff66b2;
-    box-shadow: 0 0 0 3px rgba(255, 102, 178, 0.2);
+.token-input-group input:focus {
+    border-color: #ff69b4; /* Hot pink on focus */
 }
 
-/* ----------------------------------
- * ปุ่มยืนยัน (Primary Button)
- * ---------------------------------- */
-.primaryButton {
-    padding: 15px;
+.verify-container button {
+    background-color: #ff69b4; /* Hot pink button */
+    color: white;
+    padding: 15px 30px;
     border: none;
-    border-radius: 30px;
+    border-radius: 10px;
     font-size: 18px;
     font-weight: bold;
-    color: #ffffff;
     cursor: pointer;
-    background: linear-gradient(to right, #ff99cc, #ff66b2); /* สีชมพูไล่เฉด */
-    box-shadow: 0 4px 10px rgba(255, 102, 178, 0.4);
-    transition: all 0.3s ease;
-    width: 80%;
+    transition: background-color 0.3s ease;
+    width: 100%;
     margin-bottom: 20px;
 }
 
-.primaryButton:hover:not(:disabled) {
-    background: linear-gradient(to right, #ff66b2, #ff99cc);
-    box-shadow: 6px 15px rgba(255, 102, 178, 0.6);
+.verify-container button:hover {
+    background-color: #e05c9f; /* Slightly darker pink on hover */
 }
 
-.primaryButton:disabled {
-    background: #cccccc;
-    cursor: not-allowed;
-    box-shadow: none;
-}
-
-/* ----------------------------------
- * ปุ่มกลับ (Secondary Button)
- * ---------------------------------- */
-.secondaryButton {
-    background: none;
-    border: none;
-    color: #ff66b2;
+.verify-container .error-message {
+    color: #ff0000;
+    margin-top: 15px;
     font-size: 14px;
-    cursor: pointer;
+}
+
+.verify-container .back-to-login {
+    color: #ff69b4;
+    text-decoration: none;
+    font-size: 15px;
+    transition: color 0.3s ease;
+}
+
+.verify-container .back-to-login:hover {
+    color: #e05c9f;
     text-decoration: underline;
-    transition: color 0.3s;
-    margin-top: 10px;
-}
-
-.secondaryButton:hover:not(:disabled) {
-    color: #cc0066;
-}
-
-/* ----------------------------------
- * ข้อความผิดพลาด (Error Message)
- * ---------------------------------- */
-.errorMessage {
-    color: #e74c3c;
-    margin-top: 20px;
-    font-size: 14px;
 }

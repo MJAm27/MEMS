@@ -1,129 +1,92 @@
-.background {
-    background: #ffe6f0;
-    min-height: 100vh;
+/* ==================== Variables (Consistent with EngineerMainPage.css) ==================== */
+:root {
+    --primary-color: #e83e8c; 
+    --primary-light: #ffe6f2;
+    --bg-body: #f4f6f9;
+    --bg-white: #ffffff;
+    --text-dark: #343a40;
+    --text-muted: #6c757d;
+    --radius: 12px;
+    --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.05);
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Container ที่ใช้จัดกึ่งกลางหน้าจอ */
+.setupContainer {
     display: flex;
     justify-content: center;
     align-items: center;
+    min-height: 100vh;
+    background-color: var(--bg-body);
     padding: 20px;
+    font-family: 'Kanit', sans-serif;
 }
 
-.card {
-    background-color: #ffffff;
-    border-radius: 20px;
+/* Card หลักสำหรับเนื้อหา (คล้าย content-card) */
+.authCard {
+    background: var(--bg-white);
     padding: 40px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+    max-width: 500px;
     width: 100%;
-    max-width: 500px; /* กว้างกว่าหน้าแรกเล็กน้อย */
     text-align: center;
 }
 
-.header {
-    font-size: 24px;
-    color: #333333;
-    margin-bottom: 25px;
-    font-weight: bold;
-}
-
-.qrCodeContainer {
-    margin: 30px auto;
-    padding: 10px;
-    border: 1px solid #eee;
-    display: inline-block; /* ทำให้ QR Code อยู่ตรงกลาง */
-    background-color: #fff;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-}
-
-.secretKey {
-    font-size: 14px;
-    color: #555;
-    margin-top: 20px;
-    word-break: break-all; /* เพื่อให้ข้อความยาวๆ ไม่ล้น */
-}
-
-.secretValue {
-    font-weight: bold;
-    color: #333;
-}
-
-.instruction {
-    font-size: 14px;
-    color: #777;
-    margin-top: 10px;
-    margin-bottom: 30px;
-}
-
-.otpInputGroup {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 30px;
-}
-
-.otpInputField {
-    width: 40px;
-    height: 40px;
-    font-size: 20px;
-    text-align: center;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    outline: none;
-    transition: border-color 0.3s, box-shadow 0.3s;
-}
-
-.otpInputField:focus {
-    border-color: #ff66b2;
-    box-shadow: 0 0 0 3px rgba(255, 102, 178, 0.2);
-}
-
-.primaryButton {
-    padding: 15px;
-    border: none;
-    border-radius: 30px;
-    font-size: 18px;
-    font-weight: bold;
-    color: #ffffff;
-    cursor: pointer;
-    background: linear-gradient(to right, #ff99cc, #ff66b2);
-    box-shadow: 0 4px 10px rgba(255, 102, 178, 0.4);
-    transition: all 0.3s ease;
-    width: 80%;
+.authCard h2 {
+    color: var(--primary-color);
+    margin-top: 0;
+    font-size: 1.8rem;
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 10px;
     margin-bottom: 20px;
 }
 
-.primaryButton:hover:not(:disabled) {
-    background: linear-gradient(to right, #ff66b2, #ff99cc);
-    box-shadow: 0 6px 15px rgba(255, 102, 178, 0.6);
+.authCard p {
+    color: var(--text-muted);
+    margin-bottom: 25px;
 }
 
-.primaryButton:disabled {
-    background: #cccccc;
-    cursor: not-allowed;
-    box-shadow: none;
+.qrCodeContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
 }
 
-.secondaryButton {
-    background: none;
+.qrCodeContainer img {
+    border: 5px solid var(--bg-body);
+    border-radius: var(--radius);
+    max-width: 200px;
+    height: auto;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* ปุ่ม "ถัดไป" (Primary button style) */
+.nextButton {
+    background-color: var(--primary-color);
+    color: white;
     border: none;
-    color: #ff66b2;
-    font-size: 14px;
+    padding: 12px 25px;
+    border-radius: 8px;
     cursor: pointer;
-    text-decoration: underline;
-    transition: color 0.3s;
-    margin-top: 10px;
-}
-
-.secondaryButton:hover:not(:disabled) {
-    color: #cc0066;
-}
-
-.errorMessage {
-    color: #e74c3c;
+    font-size: 1rem;
+    font-weight: 600;
     margin-top: 20px;
-    font-size: 14px;
+    transition: var(--transition);
+    width: 100%;
+    max-width: 250px;
+    font-family: inherit;
 }
 
-.successMessage {
-    color: #28a745;
-    margin-top: 20px;
-    font-size: 14px;
+.nextButton:hover {
+    background-color: #d1307b; /* Darker pink */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(232, 62, 140, 0.3);
+}
+
+.errorText {
+    color: #dc3545; /* Red color for errors */
+    margin-top: 15px;
+    font-weight: 500;
 }
