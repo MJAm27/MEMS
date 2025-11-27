@@ -134,7 +134,7 @@ app.post("/api/verify-2fa", async (req, res) => {
 
     try {
         const [users] = await pool.execute(
-            "SELECT U.*, R.role_name FROM users U JOIN Role R ON U.role_id = R.role_id WHERE U.user_id = ?", 
+            "SELECT U.*, R.role_name FROM users U JOIN role R ON U.role_id = R.role_id WHERE U.user_id = ?", 
             [userId]
         );
         
