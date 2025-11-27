@@ -57,8 +57,7 @@ function VerifyPage() {
         }
 
         try {
-            // ใช้ token ที่รวมแล้ว
-            const response = await axios.post('http://localhost:3001/api/verify-2fa', { userId, token });
+            const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/verify-2fa`, { userId, token });
             
             const loginToken = response.data.token;
             localStorage.setItem('authToken', loginToken);

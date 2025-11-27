@@ -36,7 +36,7 @@ function RegisterPage() {
         }
 
         try {
-            const response = await axios.post('http://localhost:3001/api/register', formData);
+            const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/register`, formData);
             setSuccess(response.data.message);
 
             setTimeout(() => {

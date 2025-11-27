@@ -56,7 +56,18 @@
 }
 
 
-
+/* --- 3. สไตล์ 3 ปุ่ม (เหมือนเดิม แต่ปรับปรุงเล็กน้อย) --- */
+.button-container {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    padding: 20px;
+    margin-top: 20px;
+    gap: 15px;
+    background: #ffffff; /* ใส่พื้นหลังสีขาวให้ปุ่ม */
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
 
 .action-button {
     padding: 20px 30px;
