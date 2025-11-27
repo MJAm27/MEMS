@@ -6,8 +6,6 @@ const speakeasy = require("speakeasy");
 const qrcode = require("qrcode");
 const cors = require("cors");
 
-require('dotenv').config()
-
 const app = express();
 
 // 1. ตั้งค่า Middlewares
@@ -16,11 +14,11 @@ app.use(express.json());
 
 // 2. ตั้งค่าการเชื่อมต่อฐานข้อมูล (เปลี่ยนเป็น Pool)
 const dbConfig = {
-    host: process.env.DATABASE_HOST,
-    user: process.env.DATABASE_USER,
-    password: process.env.DATABASE_PASSWORD,
-    database: process.env.DATABASE_NAME,
-    port: process.env.DATABASE_PORT,
+    host: 'localhost',
+    user: 'myuser',
+    password: 'emailkmutnb',
+    database: 'projectmems',
+    port: 3306,
     waitForConnections: true,
     connectionLimit: 10, // สามารถปรับจำนวนได้ตามความเหมาะสม
     queueLimit: 0
@@ -66,7 +64,7 @@ app.post("/api/login", async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        const [users] = await pool.execute("SELECT * FROM users WHERE email = ?", [email]);
+        const [users] = await pool.execute("SELECT * FROM Users WHERE email = ?", [email]);
 
         if (users.length === 0) {
             return res.status(401).json({ message: "Email หรือ Password ไม่ถูกต้อง" });
@@ -108,7 +106,7 @@ app.post("/api/setup-2fa", async (req, res) => {
             name: `MEMS Project (${userId})`,
         });
 
-        await pool.execute("UPDATE users SET totp_secret = ? WHERE user_id = ?", [
+        await pool.execute("UPDATE Users SET totp_secret = ? WHERE user_id = ?", [
             secret.base32,
             userId
         ]);
@@ -134,7 +132,7 @@ app.post("/api/verify-2fa", async (req, res) => {
 
     try {
         const [users] = await pool.execute(
-            "SELECT U.*, R.role_name FROM users U JOIN role R ON U.role_id = R.role_id WHERE U.user_id = ?", 
+            "SELECT U.*, R.role_name FROM Users U JOIN Role R ON U.role_id = R.role_id WHERE U.user_id = ?", 
             [userId]
         );
         
@@ -189,7 +187,7 @@ app.get("/api/auth/me", authenticateToken, async (req, res) => {
 
     try {
         // ใช้ userId จาก Token ไปค้นหาข้อมูลทั้งหมดใน DB
-        const [users] = await pool.execute("SELECT * FROM users WHERE user_id = ?", [userIdFromToken]);
+        const [users] = await pool.execute("SELECT * FROM Users WHERE user_id = ?", [userIdFromToken]);
         
         if (users.length === 0) {
             return res.status(404).json({ message: "User not found in database" });
@@ -234,7 +232,7 @@ app.put("/api/profile-edit", authenticateToken, async (req, res) => {
     try {
         // 4. อัปเดตข้อมูลในฐานข้อมูล
         await pool.execute(
-            "UPDATE users SET fullname = ?, email = ?, phone_number = ?, position = ? WHERE user_id = ?",
+            "UPDATE Users SET fullname = ?, email = ?, phone_number = ?, position = ? WHERE user_id = ?",
             [fullname, email, phone_number, position, userIdFromToken]
         );
 
@@ -264,7 +262,7 @@ app.post("/api/register", async (req, res) => {
     }
 
     try {
-        const [existingUsers] = await pool.execute("SELECT user_id FROM users WHERE email = ?", [email]);
+        const [existingUsers] = await pool.execute("SELECT user_id FROM Users WHERE email = ?", [email]);
         if (existingUsers.length > 0) {
             return res.status(409).json({ message: "Email นี้ถูกใช้งานแล้ว" });
         }
@@ -274,7 +272,7 @@ app.post("/api/register", async (req, res) => {
         const newUserId = `U-${Date.now().toString().slice(-10)}`;
 
         await pool.execute(
-            "INSERT INTO users (user_id, email, password_hash, fullname, position, phone_number, role_id, totp_secret) VALUES (?, ?, ?, ?, ?, ?, ?, NULL)",
+            "INSERT INTO Users (user_id, email, password_hash, fullname, position, phone_number, role_id, totp_secret) VALUES (?, ?, ?, ?, ?, ?, ?, NULL)",
             [newUserId, email, passwordHash, fullname, position, phone_number, role_id]
         );
         
@@ -291,5 +289,3 @@ const PORT = 3001;
 app.listen(PORT, () => {
     console.log(`✅ Server is running on http://localhost:${PORT}`);
 });
-
-// Hello world from me!

@@ -1,221 +1,186 @@
-/* ให้ container ขยายเต็มหน้าจอ */
-.profile-container {
-    width: 100%;
-    max-width: 100%;
-    min-height: 100vh; /* สูงเต็มหน้าจอ */
-    padding: 20px;
-    background-color: #FFF;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+/* ==================== Theme Variables & Reset ==================== */
+:root {
+    --primary-color: #e83e8c; /* สีชมพูหลัก */
+    --primary-light: #ffe6f2;
+    --bg-body: #f4f6f9;
+    --bg-white: #ffffff;
+    --text-dark: #343a40;
+    --text-muted: #6c757d;
+    --sidebar-width: 260px;
+    --header-height: 70px;
+    --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.05);
+    --radius: 12px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ---------------- TOP HEADER ---------------- */
-.main-content-header {
-    max-width: 600px;
-    margin: 0 auto 20px auto;
-    width: 100%;
+* { box-sizing: border-box; }
+body { margin: 0; font-family: 'Kanit', 'Segoe UI', sans-serif; background-color: var(--bg-body); color: var(--text-dark); }
 
-    background-color: #FEF6FB;
-    border: 1px solid #FCEFF5;
-    border-radius: 12px;
+.layout-wrapper { display: flex; min-height: 100vh; position: relative; overflow-x: hidden; }
 
-    padding: 15px 20px;
-
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-}
-
-.sidebar-toggle-btn {
-    background: none;
-    border: none;
-    font-size: 1.6rem;
-    cursor: pointer;
-}
-
-.user-info {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.logout-button-top {
-    background-color: #D9006C;
-    color: #fff;
-    border: none;
-    padding: 6px 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.9rem;
-}
-
-.logout-button-top:hover {
-    opacity: 0.8;
-}
-
-.content-wrapper {
-    width: 100%;
-    max-width: 600px; 
-    margin: 0 auto; 
-    padding: 20px;
-}
-/* ---------------- PROFILE CARD ---------------- */
-.profile-card {
-    background-color: #FEF6FB;
-    border: 1px solid #FCEFF5;
-    border-radius: 12px;
-    padding: 30px 20px;
-
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-
-    width: 100%;
-}
-
-.profile-avatar {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    background-color: #f0f0f0;
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    margin-bottom: 20px;
-    border: 3px solid white;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.profile-avatar svg {
-    font-size: 4rem;
-    color: #555;
-}
-
-.profile-info h3 {
-    margin: 0 0 5px 0;
-    color: #333;
-    font-size: 1.4rem;
-}
-
-.profile-info p {
-    margin: 0;
-    color: #555;
-    font-size: 1rem;
-}
-
-/* ---------------- ACTION LINKS ---------------- */
-.profile-actions {
-    margin-top: 10px;
-    width: 100%;
-}
-
-.action-link {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    background-color: #FEF6FB;
-    padding: 18px 20px;
-    margin-bottom: 12px;
-    border-radius: 10px;
-
-    text-decoration: none;
-    color: #D9006C;
-    font-weight: 600;
-
-    transition: background-color 0.2s ease;
-}
-
-.action-link:hover {
-    background-color: #FCEFF5;
-}
-
-.action-link svg {
-    font-size: 1.2rem;
-}
-
-.header-wrapper {
-    width: 100%;
-    max-width: 500px;     
-    margin: 0 auto;      
-}
-
-
-* Sidebar default */
+/* ==================== Sidebar (Copy from Main Page) ==================== */
 .sidebar-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100vh;
-    width: 240px;
-    background: #ffffff;
-    border-right: 1px solid #e9ecef;
-    transition: all 0.3s ease;
-    overflow: hidden;
-    z-index: 100;
+    width: var(--sidebar-width);
+    background: var(--bg-white);
+    border-right: 1px solid rgba(0,0,0,0.05);
+    display: flex; flex-direction: column;
+    position: fixed; top: 0; bottom: 0; left: 0;
+    z-index: 1000; transition: var(--transition);
+    box-shadow: 2px 0 10px rgba(0,0,0,0.02);
 }
 
-/* ปิด Sidebar เหลือแค่ไอคอน */
-.sidebar-container.closed {
-    width: 60px;
-}
-
-/* Sidebar header */
 .sidebar-header {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 60px;
-    font-size: 1.2rem;
-    font-weight: bold;
+    height: var(--header-height);
+    display: flex; align-items: center; justify-content: center;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+.brand { display: flex; align-items: center; gap: 10px; color: var(--primary-color); }
+.brand h3 { margin: 0; font-weight: 700; font-size: 1.5rem; }
+.brand-icon { font-size: 1.8rem; }
+
+.sidebar-nav { list-style: none; padding: 20px 15px; margin: 0; flex-grow: 1; }
+.nav-link {
+    display: flex; align-items: center; padding: 12px 20px;
+    color: var(--text-muted); text-decoration: none;
+    border-radius: 8px; margin-bottom: 5px; transition: var(--transition);
+    font-weight: 500;
+}
+.nav-link svg { margin-right: 15px; font-size: 1.2rem; }
+.nav-link:hover { background-color: var(--bg-body); color: var(--primary-color); transform: translateX(5px); }
+.nav-link.active { background-color: var(--primary-light); color: var(--primary-color); font-weight: 600; }
+.nav-divider { height: 1px; background: #eee; margin: 15px 0; }
+
+/* ==================== Main Content & Header ==================== */
+.main-content-wrapper {
+    flex-grow: 1; margin-left: var(--sidebar-width);
+    transition: var(--transition); display: flex; flex-direction: column; width: 100%;
 }
 
-/* nav link ปรับเมื่อ sidebar ปิด */
-.sidebar-container.closed .sidebar-nav {
-    display: none;
+.top-navbar {
+    height: var(--header-height);
+    background: var(--bg-white);
+    padding: 0 30px;
+    display: flex; justify-content: space-between; align-items: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+    position: sticky; top: 0; z-index: 900;
+}
+.nav-left { display: flex; align-items: center; gap: 15px; }
+.sidebar-toggle-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-dark); }
+.page-title-mobile { display: none; margin: 0; font-size: 1.1rem; color: var(--primary-color); }
+
+.nav-right { display: flex; align-items: center; gap: 20px; }
+.user-profile-display { display: flex; align-items: center; gap: 15px; padding-right: 20px; border-right: 1px solid #eee; }
+.user-text { text-align: right; display: flex; flex-direction: column; }
+.user-text .name { font-weight: 600; font-size: 0.9rem; }
+.user-text .role { font-size: 0.8rem; color: var(--text-muted); }
+.avatar-circle {
+    width: 40px; height: 40px; background: var(--primary-color); color: white;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;
 }
 
-/* เนื้อหาหลัก เลื่อนตาม sidebar */
-.content-wrapper {
-    margin-left: 240px;
-    transition: margin-left 0.3s ease;
+.logout-btn-top {
+    background-color: #ffe6e6; color: #dc3545; border: 1px solid #ffcccc;
+    padding: 8px 15px; border-radius: 20px; cursor: pointer;
+    display: flex; align-items: center; gap: 8px; font-weight: 600; transition: var(--transition);
+}
+.logout-btn-top:hover { background-color: #dc3545; color: white; transform: translateY(-2px); }
+
+/* ==================== Profile Content Specific ==================== */
+.content-body { padding: 30px; max-width: 1200px; margin: 0 auto; width: 100%; }
+
+.profile-center-container {
+    display: flex; justify-content: center; width: 100%; margin-top: 20px;
 }
 
-.sidebar-container.closed ~ .content-wrapper {
-    margin-left: 60px;
+.profile-card-detailed {
+    background: var(--bg-white);
+    width: 100%; max-width: 500px;
+    border-radius: 20px;
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+    position: relative;
+    text-align: center;
 }
 
+.profile-header-bg {
+    height: 120px;
+    background: linear-gradient(135deg, var(--primary-color), #ff8fab);
+}
 
-/* ---------------- RESPONSIVE ---------------- */
+.profile-avatar-large {
+    width: 120px; height: 120px;
+    background: white;
+    border-radius: 50%;
+    margin: -60px auto 15px; /* ดันขึ้นไปทับ bg */
+    display: flex; align-items: center; justify-content: center;
+    font-size: 5rem; color: #ddd;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    border: 4px solid white;
+}
 
-/* สำหรับหน้าจอเล็กกว่า 480px (มือถือเล็ก) */
-@media (max-width: 480px) {
+.profile-details h2 { margin: 0; font-size: 1.5rem; color: var(--text-dark); }
+.detail-badge {
+    display: inline-block; background: var(--primary-light); color: var(--primary-color);
+    padding: 4px 12px; border-radius: 15px; font-size: 0.85rem; font-weight: 600; margin: 5px 0 15px;
+}
+.detail-text { color: var(--text-muted); margin: 0 0 30px; }
 
-    .profile-card {
-        padding: 25px 15px;
+.profile-actions-list { padding: 0 30px 40px; text-align: left; }
+
+.action-item {
+    display: flex; align-items: center;
+    background: #f8f9fa; padding: 15px;
+    border-radius: 12px; margin-bottom: 15px;
+    text-decoration: none; color: var(--text-dark);
+    transition: var(--transition);
+    border: 1px solid transparent;
+}
+.action-item:hover {
+    background: white; border-color: var(--primary-color);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05); transform: translateX(5px);
+}
+
+.action-icon-box {
+    width: 45px; height: 45px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; margin-right: 15px;
+}
+.action-icon-box.pink { background: #ffe6f2; color: var(--primary-color); }
+.action-icon-box.purple { background: #f2e6ff; color: #6f42c1; }
+
+.action-text { flex-grow: 1; display: flex; flex-direction: column; }
+.action-text span { font-weight: 600; font-size: 1rem; }
+.action-text small { font-size: 0.8rem; color: var(--text-muted); }
+.arrow-icon { color: #ccc; }
+
+/* ==================== Loading & Animations ==================== */
+.loading-container {
+    height: 100vh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; color: var(--primary-color);
+}
+.spinner {
+    width: 50px; height: 50px; border: 5px solid #ddd; border-top: 5px solid var(--primary-color);
+    border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px;
+}
+@keyframes spin { 100% { transform: rotate(360deg); } }
+.fade-in { animation: fadeIn 0.5s ease-in; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ==================== Responsive ==================== */
+@media (max-width: 768px) {
+    .sidebar-container { left: -100%; box-shadow: none; }
+    .layout-wrapper.sidebar-open .sidebar-container { left: 0; box-shadow: 5px 0 15px rgba(0,0,0,0.1); }
+    .main-content-wrapper { margin-left: 0; }
+    .page-title-mobile { display: block; }
+    .user-text, .logout-btn-top span { display: none; }
+    .logout-btn-top { width: 35px; height: 35px; padding: 0; justify-content: center; border-radius: 50%; }
+    .content-body { padding: 20px; }
+    .mobile-overlay {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.5); z-index: 950; 
     }
-
-    .action-link {
-        padding: 16px 16px;
-        font-size: 0.95rem;
-    }
-
-    .logout-button-top {
-        padding: 5px 12px;
-        font-size: 0.85rem;
-    }
 }
-
-/* สำหรับแท็บเล็ต */
-@media (min-width: 768px) {
-    .profile-container {
-        max-width: 700px;
-        margin: 0 auto; /* จัดกึ่งกลางหน้าจอเดสก์ท็อป/แท็บเล็ต */
-    }
+@media (min-width: 769px) {
+    .layout-wrapper.sidebar-closed .sidebar-container { left: calc(var(--sidebar-width) * -1); }
+    .layout-wrapper.sidebar-closed .main-content-wrapper { margin-left: 0; }
 }

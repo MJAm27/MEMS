@@ -1,0 +1,90 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(to bottom right, #ffdde1, #ffc3cd); /* Light pink gradient */
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.verify-container {
+    background-color: #ffffff;
+    padding: 40px 50px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 100%;
+    max-width: 400px;
+}
+
+.verify-container h2 {
+    color: #333333;
+    font-size: 28px;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.verify-container p {
+    color: #666666;
+    font-size: 16px;
+    margin-bottom: 30px;
+}
+
+.token-input-group {
+    display: flex;
+    justify-content: center;
+    gap: 10px; /* Space between input boxes */
+    margin-bottom: 30px;
+}
+
+.token-input-group input {
+    width: 40px; /* Width for each individual box */
+    height: 50px;
+    font-size: 24px;
+    text-align: center;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.token-input-group input:focus {
+    border-color: #ff69b4; /* Hot pink on focus */
+}
+
+.verify-container button {
+    background-color: #ff69b4; /* Hot pink button */
+    color: white;
+    padding: 15px 30px;
+    border: none;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.verify-container button:hover {
+    background-color: #e05c9f; /* Slightly darker pink on hover */
+}
+
+.verify-container .error-message {
+    color: #ff0000;
+    margin-top: 15px;
+    font-size: 14px;
+}
+
+.verify-container .back-to-login {
+    color: #ff69b4;
+    text-decoration: none;
+    font-size: 15px;
+    transition: color 0.3s ease;
+}
+
+.verify-container .back-to-login:hover {
+    color: #e05c9f;
+    text-decoration: underline;
+}

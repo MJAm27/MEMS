@@ -1,0 +1,123 @@
+/* ----------------------------------
+ * พื้นหลัง (Background) 
+ * ---------------------------------- */
+.background {
+    background: #ffe6f0; 
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+/* ----------------------------------
+ * กรอบล็อกอิน (Login Card)
+ * ---------------------------------- */
+.loginCard {
+    background-color: #ffffff;
+    border-radius: 20px; 
+    padding: 40px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); 
+    width: 100%;
+    max-width: 400px; 
+    text-align: center;
+    border: 5px solid #ffb3d9; 
+}
+
+/* ----------------------------------
+ * โลโก้ (Logo)
+ * ---------------------------------- */
+.logo {
+    width: 100px; 
+    height: 100px;
+    margin-bottom: 20px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* ----------------------------------
+ * หัวข้อ "เข้าสู่ระบบ" (Header)
+ * ---------------------------------- */
+.header {
+    font-size: 24px;
+    color: #333333;
+    margin-bottom: 30px;
+    font-weight: bold;
+}
+
+/* ----------------------------------
+ * ฟอร์มและช่องกรอก (Form & Inputs)
+ * ---------------------------------- */
+.formContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 15px; 
+}
+
+.inputField {
+    padding: 12px 15px;
+    border: 1px solid #ccc;
+    border-radius: 25px; 
+    font-size: 16px;
+    text-align: center; 
+    transition: border-color 0.3s;
+}
+
+.inputField:focus {
+    border-color: #ff66b2;
+    outline: none;
+}
+
+/* ----------------------------------
+ * ลืมรหัสผ่าน (Forgot Password)
+ * ---------------------------------- */
+.forgotPasswordContainer {
+    text-align: right;
+    margin-top: -5px; 
+    margin-bottom: 10px;
+}
+
+.forgotPasswordLink {
+    color: #ff66b2; 
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.3s;
+}
+
+.forgotPasswordLink:hover {
+    color: #cc0066;
+    text-decoration: underline;
+}
+
+/* ----------------------------------
+ * ปุ่มล็อกอิน (Login Button)
+ * ---------------------------------- */
+.loginButton {
+    padding: 15px;
+    border: none;
+    border-radius: 30px; 
+    font-size: 18px;
+    font-weight: bold;
+    color: #ffffff;
+    cursor: pointer;
+    background: linear-gradient(to right, #ff99cc, #ff66b2); 
+    box-shadow: 0 4px 10px rgba(255, 102, 178, 0.4); 
+    transition: all 0.3s ease;
+    margin-top: 15px; 
+}
+
+.loginButton:hover {
+    background: linear-gradient(to right, #ff66b2, #ff99cc);
+    box-shadow: 0 6px 15px rgba(255, 102, 178, 0.6);
+}
+
+/* ----------------------------------
+ * ข้อความผิดพลาด (Error Message)
+ * ---------------------------------- */
+.errorMessage {
+    color: #e74c3c;
+    margin-top: 15px;
+    font-size: 14px;
+}
