@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 
-import './LoginPage.module.css'; 
+// 1. แก้ไขเส้นทาง CSS: ใช้ './' หากไฟล์อยู่ในโฟลเดอร์เดียวกัน
+import './LoginPage.css'; 
 
 // 2. แก้ไขเส้นทางโลโก้: ใช้ './' หากโฟลเดอร์ logo อยู่ใน src/components/ เหมือนกัน
 import logo from './logo/download.jpg'; 
@@ -40,20 +41,20 @@ function LoginPage() {
     };
 
     return (
-        <div className={styles.background}>
-            <div className={styles.loginCard}>
+        <div className="background">
+            <div className="loginCard">
                 
                 {/* โลโก้ */}
                 <img 
                     src={logo} 
                     alt="Rajavithi Hospital Logo" 
-                    className={styles.logo} 
+                    className="logo" 
                 />
                 
                 {/* หัวข้อ */}
-                <h2 className={styles.header}>เข้าสู่ระบบ</h2>
+                <h2 className="header">เข้าสู่ระบบ</h2>
                 
-                <form onSubmit={handleSubmit} className={styles.formContainer}>
+                <form onSubmit={handleSubmit} className="formContainer">
                     
                     {/* ช่องกรอกอีเมล */}
                     <input 
@@ -61,7 +62,7 @@ function LoginPage() {
                         value={email} 
                         onChange={(e) => setEmail(e.target.value)} 
                         placeholder="อีเมล" 
-                        className={styles.inputField} 
+                        className="inputField"
                         required 
                     />
                     
@@ -71,26 +72,26 @@ function LoginPage() {
                         value={password} 
                         onChange={(e) => setPassword(e.target.value)} 
                         placeholder="รหัสผ่าน" 
-                        className={styles.inputField} 
+                        className="inputField"
                         required 
                     />
 
                     {/* ลิงก์ "ลืมรหัสผ่าน" */}
-                    <div className={styles.forgotPasswordContainer}>
-                        <Link to="/forgot-password" className={styles.forgotPasswordLink}>
+                    <div className="forgotPasswordContainer">
+                        <Link to="/forgot-password" className="forgotPasswordLink">
                             ลืมรหัสผ่าน
                         </Link>
                     </div>
 
                     {/* ปุ่ม "เข้าสู่ระบบ" */}
-                    <button type="submit" className={styles.loginButton}>
+                    <button type="submit" className="loginButton">
                         เข้าสู่ระบบ
                     </button>
                     
                 </form>
                 
                 {/* แสดงข้อผิดพลาด */}
-                {error && <p className={styles.errorMessage}>{error}</p>}
+                {error && <p className="errorMessage">{error}</p>}
                 
             </div>
         </div>
