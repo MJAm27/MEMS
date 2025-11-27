@@ -17,7 +17,7 @@ function Setup2FAPage() {
 
         const fetchQRCode = async () => {
             try {
-                const response = await axios.post('http://localhost:3001/api/setup-2fa', { userId });
+                const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/setup-2fa`, { userId });
                 setQrCodeUrl(response.data.qrCodeUrl);
             } catch (err) {
                 setError('ไม่สามารถสร้าง QR Code ได้');
