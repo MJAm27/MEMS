@@ -18,7 +18,7 @@ function LoginPage() {
         e.preventDefault();
         setError('');
         try {
-            const response = await axios.post('http://localhost:3001/api/login', { email, password });
+            const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/login`, { email, password });
             const { status, userId } = response.data;
 
             // ตรวจสอบเงื่อนไขการนำทางตามสถานะจาก Server

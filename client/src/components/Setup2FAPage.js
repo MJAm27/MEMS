@@ -32,7 +32,7 @@ function Setup2FA() {
             setLoading(true);
             try {
                 // เปลี่ยน endpoint ตาม API ของคุณ
-                const response = await axios.post('http://localhost:3001/api/generate-2fa-setup', { userId });
+                const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/generate-2fa-setup`, { userId });
                 setQrCodeData(response.data.qrCodeUrl);
                 setSecret(response.data.secret);
             } catch (err) {
@@ -73,8 +73,8 @@ function Setup2FA() {
         }
 
         try {
-            // เปลี่ยน endpoint ตาม API ของคุณ
-            const response = await axios.post('http://localhost:3001/api/verify-2fa-setup', { userId, token: code });
+            // เปลี่ยน endpoint ตาม API ของคุณ 
+            const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/verify-2fa-setup`, { userId, token: code });
             setMessage(response.data.message || 'ตั้งค่า 2FA สำเร็จแล้ว');
             
             // นำทางไปยังหน้าหลักหลังจากยืนยันสำเร็จ
