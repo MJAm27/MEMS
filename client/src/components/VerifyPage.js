@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { useLocation, useNavigate } from 'react-router-dom';
-import styles from './VerifyPage.css'; // นำเข้า CSS Modules
+import styles from './VerifyPage.css'; 
 
 function VerifyPage() {
     const location = useLocation();
@@ -61,7 +61,7 @@ function VerifyPage() {
             const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/verify-2fa`, { userId, token });
             
             const loginToken = response.data.token;
-            localStorage.setItem('authToken', loginToken);
+            localStorage.setItem('token', loginToken);
 
             navigate('/dashboard');
 
