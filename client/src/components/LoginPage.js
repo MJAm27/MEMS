@@ -20,22 +20,15 @@ function LoginPage() {
         try {
             const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/login`, { email, password });
             const { status, userId } = response.data;
-
-            // ตรวจสอบเงื่อนไขการนำทางตามสถานะจาก Server
             if (status === '2fa_required') {
-                // 3. ไปหน้า Verify 2FA
                 navigate('/verify', { state: { userId: userId } });
             } else if (status === '2fa_setup_required') {
-                // 4. ไปหน้าตั้งค่า 2FA
                 navigate('/setup-2fa', { state: { userId: userId } });
             } else {
-                // 5. กรณีล็อกอินสำเร็จสมบูรณ์ (ไม่มี 2FA หรือผ่าน 2FA แล้ว) 
-                //    => นำทางไปยังหน้าหลักของระบบ
                 navigate('/dashboard'); 
             }
 
         } catch (err) {
-            // 6. กรณีเกิดข้อผิดพลาดในการล็อกอิน เช่น รหัสผ่านผิด
             setError(err.response?.data?.message || 'เกิดข้อผิดพลาดในการล็อกอิน');
         }
     };
