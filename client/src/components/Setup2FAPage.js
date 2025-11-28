@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import './Setup2FA.css';
 import { QRCodeSVG } from 'qrcode.react';
-
+//**** */
 function Setup2FA() {
     const navigate = useNavigate();
     const location = useLocation();
@@ -29,7 +29,7 @@ function Setup2FA() {
             setLoading(true);
             try {
                 const response = await axios.post(
-                    `${process.env.REACT_APP_API_URL}/api/generate-2fa-setup`,
+                    `${process.env.REACT_APP_API_URL}/api/generate-2fa`,
                     { userId }
                 );
                 setQrCodeData(response.data.qrCodeUrl);
