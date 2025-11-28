@@ -104,7 +104,7 @@ app.post("/api/login", async (req, res) => {
 /**
  * Endpoint 2: สร้าง QR Code สำหรับผู้ใช้ครั้งแรก
  */
-app.post("/api/setup-2fa", async (req, res) => {
+aapp.post("/api/setup-2fa", async (req, res) => {
     const { userId } = req.body;
 
     try {
@@ -112,16 +112,15 @@ app.post("/api/setup-2fa", async (req, res) => {
             name: `MEMS Project (${userId})`,
         });
 
-        await pool.execute("UPDATE users SET totp_secret = ? WHERE user_id = ?", [
-            secret.base32,
-            userId
-        ]);
+        await pool.execute(
+            "UPDATE users SET totp_secret = ? WHERE user_id = ?",
+            [secret.base32, userId]
+        );
 
-        qrcode.toDataURL(secret.otpauth_url, (err, data_url) => {
-            if (err) {
-                return res.status(500).json({ message: "ไม่สามารถสร้าง QR Code" });
-            }
-            res.json({ qrCodeUrl: data_url });
+        // ส่งเฉพาะ secret + otpauth_url
+        res.json({
+            secret: secret.base32,
+            otpauth_url: secret.otpauth_url
         });
 
     } catch (error) {
@@ -129,6 +128,7 @@ app.post("/api/setup-2fa", async (req, res) => {
         res.status(500).json({ message: "Server Error", error: error.message });
     }
 });
+
 
 /**
  * Endpoint 3: ตรวจสอบรหัส 6 หลัก (Verify)
