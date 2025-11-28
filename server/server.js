@@ -28,6 +28,11 @@ const dbConfig = {
 // สร้าง Connection Pool เพื่อจัดการการเชื่อมต่ออย่างมีประสิทธิภาพ
 const pool = mysql.createPool(dbConfig);
 
+pool.query("SELECT 1")
+  .then(() => console.log("✅ Database connected successfully!"))
+  .catch(err => console.error("❌ Database connection failed:", err.message));
+
+
 const JWT_SECRET = "MY_SUPER_SECRET_KEY_FOR_JWT_12345";
 
 // +++++++++++++++++++++++ Middleware ตรวจสอบ Token +++++++++++++++++++++++
@@ -272,6 +277,9 @@ app.post("/api/register", async (req, res) => {
         const passwordHash = await bcrypt.hash(password, saltRounds);
         const newUserId = `U-${Date.now().toString().slice(-10)}`;
 
+        // console.log("password_input = [" + password + "]");
+        // console.log("password_from_db =", user.password_hash);
+
         await pool.execute(
             "INSERT INTO users (user_id, email, password_hash, fullname, position, phone_number, role_id, totp_secret) VALUES (?, ?, ?, ?, ?, ?, ?, NULL)",
             [newUserId, email, passwordHash, fullname, position, phone_number, role_id]
@@ -284,6 +292,28 @@ app.post("/api/register", async (req, res) => {
         res.status(500).json({ message: "Server Error", error: error.message });
     }
 });
+
+app.get("/api/inventoryBalanceReportChart", async (req, res) => {
+    try {
+        const sql = `
+            SELECT 
+                et.Equipment_name AS name, 
+                COALESCE(SUM(l.current_quantity), 0) as quantity
+            FROM equipment_type et
+            LEFT JOIN equipment e ON et.equipment_type_id = e.equipment_type_id
+            LEFT JOIN lot l ON e.equipment_id = l.equipment_id
+            GROUP BY et.equipment_type_id, et.Equipment_name
+        `;
+
+        const [rows] = await pool.query(sql);
+        res.json(rows);
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err });
+    }
+});
+
 
 // 4. สั่งให้ Server รัน
 const PORT = 3001;

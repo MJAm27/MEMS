@@ -8,7 +8,7 @@ import RegisterPage from './components/RegisterPage';
 import ProfileENG from './components/ProfileENG';
 import ProfileEditENG from './components/ProfileEditENG';
 import EngineerMainPage from './components/EngineerMainPage';
-
+import InventoryBalanceReportChart from './components/InventoryBalanceReportChart'
 
 function App() {
     return (
@@ -24,6 +24,7 @@ function App() {
                 <Route path="/profileENG/edit" element={<ProfileEditENG />} />
                 <Route path="/profileENG/profile-edit" element={<ProfileEditENG />} />
                 <Route path="/engineer/*" element={<EngineerMainPage />} />
+                <Route path='/inventoryBalanceReportChart' element={<InventoryBalanceReportChart />}/>
             </Routes>
         </BrowserRouter>
     );
