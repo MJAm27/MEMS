@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'; // เพิ่ม useRef
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import styles from './Setup2FA.module.css'; 
+import styles from './Setup2FA.css'; 
 
-// **********************************************
-// **** แก้ไข: เปลี่ยนการ Import เป็น Named Export (QRCodeSVG) ****
-// **********************************************
 import { QRCodeSVG } from 'qrcode.react'; 
 
 
@@ -126,9 +123,6 @@ function Setup2FA() {
                 {qrCodeData && ( // แสดงเมื่อมีข้อมูล QR Code
                     <>
                         <div className={styles.qrCodeContainer}>
-                            {/* ********************************************** */}
-                            {/* **** ใช้ QRCodeSVG ที่ import มา **** */}
-                            {/* ********************************************** */}
                             <QRCodeSVG 
                                 value={qrCodeData} 
                                 size={200} 
