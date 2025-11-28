@@ -9,8 +9,9 @@ import AdminMainPage from './AdminMainPage';
 
 function getPayloadFromToken(token) {
     try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        return payload; 
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g,'+').replace(/-/g,'/');
+        return JSON.parse(decodeURIComponent(escape(window.atob(base64))));
     } catch (e) {
         return null;
     }
@@ -21,7 +22,7 @@ const ManagerDashboard = ({ user }) => (
         <h1>หน้าสำหรับ Manager ({user?.email})</h1>
         <p>เนื้อหาของ Manager...</p>
         <button onClick={() => {
-            localStorage.removeItem('authToken');
+            localStorage.removeItem('token');
             window.location.href = '/login'; 
         }}>Logout</button>
     </div>
@@ -33,7 +34,7 @@ function DashboardPage() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        const token = localStorage.getItem('authToken');
+        const token = localStorage.getItem('token');
         if (!token) {
             navigate('/login'); 
             return;
@@ -44,7 +45,7 @@ function DashboardPage() {
             setUserPayload(payload);
         } else {
             // Token ไม่ถูกต้อง
-            localStorage.removeItem('authToken');
+            localStorage.removeItem('token');
             navigate('/login');
         }
     }, [navigate]);
@@ -58,25 +59,26 @@ function DashboardPage() {
         const { role } = userPayload;
 
         switch (role) {
+
             case 'engineer':
-                // ส่งข้อมูล 'user' (payload) ไปให้ Component ของ Engineer
+
                 return <EngineerMainPage user={userPayload} />;
-            
+
             case 'admin':
                 return <AdminMainPage user={userPayload} />;
-            
+
             case 'manager':
                 return <ManagerDashboard user={userPayload} />;
+
             
             default:
-                // ถ้าเจอ Role แปลกๆ หรือ Role 'unknown'
+
                 localStorage.removeItem('authToken');
                 navigate('/login');
                 return null;
         }
     };
-
-    // return สิ่งที่ renderDashboardByRole() คืนค่ามา
+    
     return renderDashboardByRole();
 }
 
