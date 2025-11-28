@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'; // เพิ่ม useRef
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
+//
 //import './Setup2FA.css'; 
 
 import { QRCodeSVG } from 'qrcode.react'; 
