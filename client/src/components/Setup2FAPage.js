@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'; // เพิ่ม useRef
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-//
-//import './Setup2FA.css'; 
+import './Setup2FA.css'; 
 
 import { QRCodeSVG } from 'qrcode.react'; 
 
@@ -72,7 +71,7 @@ function Setup2FA() {
 
         try {
             // เปลี่ยน endpoint ตาม API ของคุณ 
-            const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/verify-2fa`, { userId, token: code });
+            const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/verify-2fa-setup`, { userId, token: code });
             setMessage(response.data.message || 'ตั้งค่า 2FA สำเร็จแล้ว');
             
             // นำทางไปยังหน้าหลักหลังจากยืนยันสำเร็จ
