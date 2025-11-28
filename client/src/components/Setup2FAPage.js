@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'; // เพิ่ม useRef
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import styles from './Setup2FA.css'; 
+import './Setup2FA.css'; 
 
 import { QRCodeSVG } from 'qrcode.react'; 
 
@@ -91,8 +91,8 @@ function Setup2FA() {
 
     if (loading && !qrCodeData && !error) {
         return (
-            <div className={styles.background}>
-                <div className={styles.card}>
+            <div className="background">
+                <div className="card">
                     <p>กำลังโหลด QR Code...</p>
                 </div>
             </div>
@@ -102,11 +102,11 @@ function Setup2FA() {
     // หากมี error เกิดขึ้นก่อนโหลด QR Code
     if (error && !qrCodeData) {
         return (
-            <div className={styles.background}>
-                <div className={styles.card}>
-                    <p className={styles.errorMessage}>{error}</p>
+            <div className="background">
+                <div className="card">
+                    <p className="errorMessage">{error}</p>
                     <button 
-                        className={styles.secondaryButton} 
+                        className="secondaryButton" 
                         onClick={handleGoBack}
                     >
                         กลับไปหน้าเข้าสู่ระบบ
@@ -117,12 +117,12 @@ function Setup2FA() {
     }
 
     return (
-        <div className={styles.background}>
-            <div className={styles.card}>
-                <h2 className={styles.header}>ตั้งค่า QR Code สำหรับเชื่อมต่อ Microsoft Authenticator</h2>
+        <div className="background">
+            <div className="card">
+                <h2 className="header">ตั้งค่า QR Code สำหรับเชื่อมต่อ Microsoft Authenticator</h2>
                 {qrCodeData && ( // แสดงเมื่อมีข้อมูล QR Code
                     <>
-                        <div className={styles.qrCodeContainer}>
+                        <div className="qrCodeContainer">
                             <QRCodeSVG 
                                 value={qrCodeData} 
                                 size={200} 
@@ -131,10 +131,10 @@ function Setup2FA() {
                                 style={{ display: 'block' }} 
                             />
                         </div>
-                        <p className={styles.secretKey}>Secret Key: <span className={styles.secretValue}>{secret}</span></p>
-                        <p className={styles.instruction}>สแกน QR Code ด้วย Microsoft Authenticator App หรือป้อน Secret Key ด้านบน</p>
+                        <p className="secretKey">Secret Key: <span className="secretValue">{secret}</span></p>
+                        <p className="instruction">สแกน QR Code ด้วย Microsoft Authenticator App หรือป้อน Secret Key ด้านบน</p>
                         
-                        <div className={styles.otpInputGroup}>
+                        <div className="otpInputGroup">
                             {otpCode.map((digit, index) => (
                                 <input
                                     key={index}
@@ -143,7 +143,7 @@ function Setup2FA() {
                                     value={digit}
                                     onChange={(e) => handleChange(e, index)}
                                     onFocus={(e) => e.target.select()}
-                                    className={styles.otpInputField}
+                                    className="otpInputField"
                                     ref={(el) => (inputRefs.current[index] = el)}
                                     inputMode="numeric"
                                 />
@@ -151,7 +151,7 @@ function Setup2FA() {
                         </div>
                         {/* ปุ่ม "ยืนยัน" */}
                         <button 
-                            className={styles.primaryButton} 
+                            className="primaryButton"
                             onClick={handleVerify2FA} 
                             disabled={loading || otpCode.join('').length !== 6}
                         >
@@ -162,14 +162,14 @@ function Setup2FA() {
                 
                 {/* ปุ่ม "กลับไปหน้าเข้าสู่ระบบ" */}
                 <button 
-                    className={styles.secondaryButton} 
+                    className="secondaryButton"
                     onClick={handleGoBack}
                     disabled={loading}
                 >
                     กลับไปหน้าเข้าสู่ระบบ
                 </button>
-                {error && <p className={styles.errorMessage}>{error}</p>}
-                {message && <p className={styles.successMessage}>{message}</p>}
+                {error && <p className='errorMessage'>{error}</p>}
+                {message && <p className="successMessage">{message}</p>}
             </div>
         </div>
     );
