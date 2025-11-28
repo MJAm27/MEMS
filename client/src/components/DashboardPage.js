@@ -36,14 +36,17 @@ function DashboardPage() {
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (!token) {
+            console.log('No token')
             navigate('/login'); 
             return;
         }
 
         const payload = getPayloadFromToken(token);
         if (payload) {
+            console.log('Payload:', payload);
             setUserPayload(payload);
         } else {
+            console.log('Invalid token');
             // Token ไม่ถูกต้อง
             localStorage.removeItem('token');
             navigate('/login');
@@ -57,6 +60,7 @@ function DashboardPage() {
         }
 
         const { role } = userPayload;
+        console.log('User role:', role);
 
         switch (role) {
 
