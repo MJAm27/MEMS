@@ -34,7 +34,7 @@ function DashboardPage() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        const token = localStorage.getItem('authToken');
+        const token = localStorage.getItem('token');
         if (!token) {
             console.log('No token')
             navigate('/login'); 
@@ -48,7 +48,7 @@ function DashboardPage() {
         } else {
             console.log('Invalid token');
             // Token ไม่ถูกต้อง
-            localStorage.removeItem('authToken');
+            localStorage.removeItem('token');
             navigate('/login');
         }
     }, [navigate]);
@@ -77,12 +77,12 @@ function DashboardPage() {
             
             default:
 
-                localStorage.removeItem('authToken');
+                localStorage.removeItem('token');
                 navigate('/login');
                 return null;
         }
     };
-    
+
     return renderDashboardByRole();
 }
 
