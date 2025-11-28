@@ -34,7 +34,7 @@ function DashboardPage() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('authToken');
         if (!token) {
             console.log('No token')
             navigate('/login'); 
@@ -48,7 +48,7 @@ function DashboardPage() {
         } else {
             console.log('Invalid token');
             // Token ไม่ถูกต้อง
-            localStorage.removeItem('token');
+            localStorage.removeItem('authToken');
             navigate('/login');
         }
     }, [navigate]);
