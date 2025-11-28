@@ -18,17 +18,38 @@ function LoginPage() {
         e.preventDefault();
         setError('');
         try {
+            // ส่งข้อมูลล็อกอินไปยัง Backend
             const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/login`, { email, password });
-            const { status, userId } = response.data;
+            
+            // ************************************************************
+            // ✅ แก้ไข: ต้องดึง 'token' ออกมาจาก response.data ด้วย
+            // ************************************************************
+            const { status, userId, token } = response.data;
+
+            // ตรวจสอบเงื่อนไขการนำทางตามสถานะจาก Server
             if (status === '2fa_required') {
+                // ต้องยืนยัน 2FA
                 navigate('/verify', { state: { userId: userId } });
             } else if (status === '2fa_setup_required') {
+                // ต้องตั้งค่า 2FA ก่อน
                 navigate('/setup-2fa', { state: { userId: userId } });
             } else {
+                // กรณีล็อกอินสำเร็จสมบูรณ์ (ไม่มี 2FA หรือผ่าน 2FA แล้ว)
+                
+                // ************************************************************
+                // ✅ แก้ไขที่สำคัญที่สุด: จัดเก็บ Token ก่อนนำทางไปยัง Dashboard
+                // ************************************************************
+                if (token) {
+                    localStorage.setItem('token', token);
+                } else {
+                    console.warn("Login successful but no token received. Check server response.");
+                }
+
                 navigate('/dashboard'); 
             }
 
         } catch (err) {
+            // จัดการข้อผิดพลาดในการล็อกอิน
             setError(err.response?.data?.message || 'เกิดข้อผิดพลาดในการล็อกอิน');
         }
     };
