@@ -104,7 +104,7 @@ app.post("/api/login", async (req, res) => {
 /**
  * Endpoint 2: สร้าง QR Code สำหรับผู้ใช้ครั้งแรก
  */
-aapp.post("/api/setup-2fa", async (req, res) => {
+app.post("/api/setup-2fa", async (req, res) => {
     const { userId } = req.body;
 
     try {
