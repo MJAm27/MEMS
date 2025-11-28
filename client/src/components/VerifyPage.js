@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { useLocation, useNavigate } from 'react-router-dom';
-import styles from './VerifyPage.module.css'; // นำเข้า CSS Modules
+import styles from './VerifyPage.css'; // นำเข้า CSS Modules
 
 function VerifyPage() {
     const location = useLocation();
@@ -15,9 +15,10 @@ function VerifyPage() {
     const inputRefs = useRef([]); // สำหรับอ้างอิง input แต่ละตัว
 
     useEffect(() => {
-        // หากไม่มี userId ให้กลับไปหน้า Login ทันที
-        if (!userId) {
-            navigate('/login');
+        if (userId === undefined) return;
+
+        if (!userId){
+            navigate('/login',{replace:true});
         }
     }, [userId, navigate]);
 
