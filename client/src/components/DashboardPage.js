@@ -1,12 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+// import axios from 'axios'; // ถ้ามีการใช้ axios ใน DashboardPage ให้ import เข้ามาด้วย
 
 import EngineerMainPage from './EngineerMainPage';
 import AdminMainPage from './AdminMainPage';
 
-// ************************************************************
-// ✅ 1. แก้ไข: ปรับปรุงการถอดรหัส Base64 URL-safe เพื่อความเสถียร
-// ************************************************************
 function getPayloadFromToken(token) {
     try {
         const base64Url = token.split('.')[1];
@@ -29,15 +27,11 @@ function getPayloadFromToken(token) {
     }
 }
 
-const ManagerDashboard = ({ user }) => (
+const ManagerDashboard = ({ user, handleLogout }) => (
     <div>
         <h1>หน้าสำหรับ Manager ({user?.email})</h1>
         <p>เนื้อหาของ Manager...</p>
-        <button onClick={() => {
-            localStorage.removeItem('token');
-            // แนะนำให้ใช้ navigate('/login') แทน window.location.href 
-            window.location.href = '/login'; 
-        }}>Logout</button>
+        <button onClick={handleLogout}>Logout</button>
     </div>
 );
 
@@ -46,11 +40,16 @@ function DashboardPage() {
     const [userPayload, setUserPayload] = useState(null);
     const navigate = useNavigate();
 
+    const handleLogout = useCallback(() => {
+        localStorage.removeItem('token');
+        navigate('/login', { replace: true }); 
+    }, [navigate]); 
+
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (!token) {
-            console.log('No token')
-            navigate('/login'); 
+            console.log('No token');
+            handleLogout(); 
             return;
         }
 
@@ -61,9 +60,18 @@ function DashboardPage() {
         } else {
             console.log('Invalid token');
             localStorage.removeItem('token');
-            navigate('/login');
+            handleLogout(); 
         }
-    }, [navigate]); 
+    }, [handleLogout]); 
+
+    useEffect(() => {
+        if (userPayload && !['R-ENG', 'R-ADM', 'R-MGR'].includes(userPayload.role)) {
+            console.warn(`Unknown role detected: ${userPayload.role}. Logging out.`);
+            handleLogout(); 
+        }
+    }, [userPayload, handleLogout]);
+
+
     const renderDashboardByRole = () => {
         if (!userPayload) {
             return <p>กำลังโหลดข้อมูลผู้ใช้...</p>;
@@ -73,16 +81,14 @@ function DashboardPage() {
 
         switch (role) {
             case 'R-ENG': 
-                return <EngineerMainPage user={userPayload} />;
+                return <EngineerMainPage user={userPayload} handleLogout={handleLogout} />;
             case 'R-ADM':
-                return <AdminMainPage user={userPayload} />;
+                return <AdminMainPage user={userPayload} handleLogout={handleLogout} />;
             case 'R-MGR':
-                return <ManagerDashboard user={userPayload} />;
+                return <ManagerDashboard user={userPayload} handleLogout={handleLogout} />;
 
             default:
-                localStorage.removeItem('token');
-                navigate('/login');
-                return null;
+                return <p style={{color: 'red'}}>Error: ไม่พบ Role ที่ถูกต้อง ({role})</p>;
         }
     };
 
