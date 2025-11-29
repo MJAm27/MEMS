@@ -1,5 +1,4 @@
 /* ==================== Variables (ควรอยู่ในไฟล์หลัก เช่น index.css หรือ loginpage.css) ==================== */
-/* หากคุณต้องการใช้ตัวแปรเหล่านี้ในไฟล์นี้โดยตรง คุณต้องคัดลอกส่วน :root มาไว้ที่นี่ด้วย */
 :root {
     --primary-color: #e83e8c; /* Hot Pink */
     --primary-light: #ffe6f2;
@@ -52,6 +51,7 @@
 
 .otpInputGroup {
     display: flex;
+    flex-direction: row; /* ✅ FIX: บังคับให้เรียงเป็นแนวนอนอย่างชัดเจน */
     justify-content: center;
     gap: 10px;
     margin-bottom: 30px;
