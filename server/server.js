@@ -116,7 +116,7 @@ app.post("/api/setup-2fa", async (req, res) => {
             "UPDATE users SET totp_secret = ? WHERE user_id = ?",
             [secret.base32, userId]
         );
-
+        const data_url = await qrcode.toDataURL(secret.otpauth_url);
         qrcode.toDataURL(secret.otpauth_url,(err,data_url)=>{
             if(err){
                 console.error("QR code generation error: ",err);
