@@ -117,7 +117,7 @@ function Setup2FA() {
                         </div>
 
                         {/* OTP Boxes */}
-                        <div style={{ display: "flex", justifyContent: "center", gap: "10px", marginTop: "20px" }}>
+                        <div className="otpInputContainer">
                             {otpCode.map((digit, index) => (
                                 <input
                                     key={index}
