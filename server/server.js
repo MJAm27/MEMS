@@ -117,10 +117,12 @@ app.post("/api/setup-2fa", async (req, res) => {
             [secret.base32, userId]
         );
 
-        // ส่งเฉพาะ secret + otpauth_url
-        res.json({
-            secret: secret.base32,
-            otpauth_url: secret.otpauth_url
+        qrcode.toDataURL(secret.otpauth_url,(err,data_url)=>{
+            if(err){
+                console.error("QR code generation error: ",err);
+                return res.status(500).json({message: "Error generating QR code"});
+            }
+            res.json({qrCode: data_url});
         });
 
     } catch (error) {
