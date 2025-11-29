@@ -12,7 +12,7 @@ function Setup2FA() {
     const [qrCodeData, setQrCodeData] = useState('');
     
     // แก้ไข ESLint Warning: เปลี่ยน secret เป็น _ (Underscore) เนื่องจากไม่ได้ถูกใช้ในการแสดงผล
-    const [_, setSecret] = useState(''); 
+    const [ setSecret] = useState(''); 
     
     const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
     const [loading, setLoading] = useState(false);
@@ -45,6 +45,7 @@ function Setup2FA() {
         };
 
         fetch2FA();
+        // eslint-disable-next-line react-hooks/exhaustive-deps 
     }, [userId]);
 
     /* ==================== OTP Input Logic ==================== */
