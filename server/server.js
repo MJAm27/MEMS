@@ -122,7 +122,11 @@ app.post("/api/setup-2fa", async (req, res) => {
                 console.error("QR code generation error: ",err);
                 return res.status(500).json({message: "Error generating QR code"});
             }
-            res.json({qrCode: data_url});
+            res.json({
+                qrCodeDataUrl: data_url,
+                otpauth_url: secret.otpauth_url,
+                secret: secret.base32    
+            });
         });
 
     } catch (error) {
