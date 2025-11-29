@@ -3,14 +3,17 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import './Setup2FA.css';
 import { QRCodeSVG } from 'qrcode.react';
-//**** */
+
 function Setup2FA() {
     const navigate = useNavigate();
     const location = useLocation();
     const { userId } = location.state || {};
 
     const [qrCodeData, setQrCodeData] = useState('');
-    const [secret, setSecret] = useState('');
+    
+    // แก้ไข ESLint Warning: เปลี่ยน secret เป็น _ (Underscore) เนื่องจากไม่ได้ถูกใช้ในการแสดงผล
+    const [_, setSecret] = useState(''); 
+    
     const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -53,7 +56,8 @@ function Setup2FA() {
             setOtpCode(newOtp);
 
             if (value && index < 5) inputRefs.current[index + 1].focus();
-            if (!value && index > 0) inputRefs.current[index - 1].focus();
+            // การลบตัวเลข: เลื่อน focus กลับไป input ก่อนหน้า
+            else if (!value && index > 0) inputRefs.current[index - 1].focus();
         }
     };
 
@@ -76,12 +80,19 @@ function Setup2FA() {
                 { userId, token: code }
             );
 
+            // 💡 โค้ดที่แก้ไข: บันทึก Token และตั้งค่า Header
+            const loginToken = response.data.token;
+            if (loginToken) {
+                localStorage.setItem('token', loginToken); 
+                axios.defaults.headers.common['Authorization'] = `Bearer ${loginToken}`;
+            } 
+            
             setMessage(response.data.message || 'ตั้งค่า 2FA สำเร็จแล้ว');
-            navigate('/dashboard');
+            navigate('/dashboard'); // ✅ Redirect สำเร็จ
         } catch (err) {
             setError(err.response?.data?.message || 'รหัสไม่ถูกต้อง');
             setOtpCode(['', '', '', '', '', '']);
-            inputRefs.current[0].focus();
+            if(inputRefs.current[0]) inputRefs.current[0].focus();
         } finally {
             setLoading(false);
         }
@@ -101,8 +112,8 @@ function Setup2FA() {
                 {error && !qrCodeData && (
                     <>
                         <p className="errorText">{error}</p>
-                        <button className="nextButton" onClick={() => navigate(-1)}>
-                            กลับไปหน้าเข้าสู่ระบบ
+                        <button className="nextButton" onClick={() => navigate('/login')}>
+                             กลับไปหน้าเข้าสู่ระบบ
                         </button>
                     </>
                 )}
@@ -129,6 +140,7 @@ function Setup2FA() {
                                     ref={(el) => (inputRefs.current[index] = el)}
                                     inputMode="numeric"
                                     className="otpInputField"
+                                    required
                                 />
                             ))}
                         </div>
@@ -145,8 +157,8 @@ function Setup2FA() {
                 )}
 
                 {/* Back Button */}
-                <button className="nextButton" style={{ marginTop: "10px" }} onClick={() => navigate(-1)}>
-                    กลับ
+                <button className="nextButton" style={{ marginTop: "10px" }} onClick={() => navigate('/login')}>
+                    กลับไปหน้าเข้าสู่ระบบ
                 </button>
 
                 {/* Error / Success Messages */}

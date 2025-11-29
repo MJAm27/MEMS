@@ -1,23 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { useLocation, useNavigate } from 'react-router-dom';
-import styles from './VerifyPage.css'; 
+// import styles from './VerifyPage.css'; // ตรวจสอบให้แน่ใจว่า import ถูกต้องตามชื่อไฟล์ CSS ของคุณ
 
 function VerifyPage() {
     const location = useLocation();
     const navigate = useNavigate();
     const userId = location.state?.userId;
 
-    // เปลี่ยน token เป็น array สำหรับ input 6 ช่อง
     const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']); 
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const inputRefs = useRef([]); // สำหรับอ้างอิง input แต่ละตัว
+    const inputRefs = useRef([]); 
 
     useEffect(() => {
-        if (userId === undefined) return;
-
-        if (!userId){
+        // ตรวจสอบ userId ก่อนเริ่ม
+        if (userId === undefined || userId === null){
             navigate('/login',{replace:true});
         }
     }, [userId, navigate]);
@@ -29,7 +27,7 @@ function VerifyPage() {
             newOtpCode[index] = value;
             setOtpCode(newOtpCode);
 
-            // เลื่อน focus ไปยัง input ถัดไป
+            // เลื่อน focus
             if (value && index < otpCode.length - 1) {
                 inputRefs.current[index + 1].focus();
             } else if (!value && index > 0) {
@@ -45,7 +43,6 @@ function VerifyPage() {
         setLoading(true);
 
         if (!userId) {
-             // ไม่จำเป็นต้องเรียก navigate อีก เพราะอยู่ใน useEffect แล้ว
              setLoading(false);
              return; 
         }
@@ -60,15 +57,19 @@ function VerifyPage() {
         try {
             const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/verify-2fa`, { userId, token });
             
+            // 💡 โค้ดที่แก้ไข: บันทึก Token และตั้งค่า Header
             const loginToken = response.data.token;
-            localStorage.setItem('token', loginToken);
-            axios.defaults.headers.common['Authorization'] = `Bearer ${loginToken}`;
-            navigate('/dashboard');
+            if (loginToken) {
+                localStorage.setItem('token', loginToken);
+                axios.defaults.headers.common['Authorization'] = `Bearer ${loginToken}`;
+            }
+
+            navigate('/dashboard'); // ✅ Redirect สำเร็จ
 
         } catch (err) {
             setError(err.response?.data?.message || 'รหัสไม่ถูกต้อง');
-            setOtpCode(['', '', '', '', '', '']); // ล้างรหัสเพื่อให้กรอกใหม่
-            if(inputRefs.current[0]) inputRefs.current[0].focus(); // ย้าย focus กลับไปที่ช่องแรก
+            setOtpCode(['', '', '', '', '', '']); 
+            if(inputRefs.current[0]) inputRefs.current[0].focus(); 
         } finally {
             setLoading(false);
         }
@@ -80,13 +81,13 @@ function VerifyPage() {
     };
 
     return (
-        <div className={styles.background}>
-            <div className={styles.card}>
-                <h2 className={styles.header}>ยืนยันตัวตน (2FA)</h2>
-                <p className={styles.instruction}>กรุณาป้อนรหัส 6 หลักจาก Authenticator App ของคุณ</p>
+        <div className="background"> {/* ใช้ className ตามไฟล์ CSS ของคุณ */}
+            <div className="card">
+                <h2>ยืนยันตัวตน (2FA)</h2>
+                <p>กรุณาป้อนรหัส 6 หลักจาก Authenticator App ของคุณ</p>
                 
-                <form onSubmit={handleSubmit} className={styles.formContainer}>
-                    <div className={styles.otpInputGroup}>
+                <form onSubmit={handleSubmit} className="formContainer">
+                    <div className="otpInputGroup">
                         {otpCode.map((digit, index) => (
                             <input
                                 key={index}
@@ -95,7 +96,7 @@ function VerifyPage() {
                                 value={digit}
                                 onChange={(e) => handleChange(e, index)}
                                 onFocus={(e) => e.target.select()}
-                                className={styles.otpInputField}
+                                className="otpInputField"
                                 ref={(el) => (inputRefs.current[index] = el)}
                                 inputMode="numeric"
                                 required
@@ -105,23 +106,23 @@ function VerifyPage() {
                     
                     <button 
                         type="submit" 
-                        className={styles.primaryButton}
-                        disabled={loading || otpCode.join('').length !== 6} // ปิดปุ่มจนกว่าจะกรอกครบ
+                        className="primaryButton"
+                        disabled={loading || otpCode.join('').length !== 6} 
                     >
                         {loading ? 'กำลังยืนยัน...' : 'ยืนยัน'}
                     </button>
                 </form>
 
                 {/* ปุ่มกลับไปหน้าเข้าสู่ระบบ */}
-                 <button 
-                    className={styles.secondaryButton} 
-                    onClick={handleGoBack}
-                    disabled={loading}
-                >
-                    กลับไปหน้าเข้าสู่ระบบ
-                </button>
+                   <button 
+                        className="secondaryButton" 
+                        onClick={handleGoBack}
+                        disabled={loading}
+                    >
+                        กลับไปหน้าเข้าสู่ระบบ
+                    </button>
 
-                {error && <p className={styles.errorMessage}>{error}</p>}
+                {error && <p className="errorMessage">{error}</p>}
             </div>
         </div>
     );
