@@ -32,7 +32,7 @@ function Setup2FA() {
                     `${process.env.REACT_APP_API_URL}/api/setup-2fa`,
                     { userId }
                 );
-                setQrCodeData(response.data.otpauth_url);
+                setQrCodeData(response.data.otpauth_url); 
                 setSecret(response.data.secret);
             } catch (err) {
                 setError(err.response?.data?.message || 'ไม่สามารถโหลด QR Code ได้');
