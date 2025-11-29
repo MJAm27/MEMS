@@ -1,20 +1,20 @@
 /* ==================== Variables ==================== */
 :root {
-    --primary-color: #e83e8c;
-    --primary-light: #ffe6f2;
-    --bg-body: #f4f6f9;
+    --primary-color: #e83e8c; /* Hot Pink */
+    --primary-light: #ffe6f2; /* Light Pink for focus/hover */
+    --bg-body: #f4f6f9; /* Light Grey Background */
     --bg-white: #ffffff;
-    --text-dark: #343a40;
-    --text-muted: #6c757d;
+    --text-dark: #343a40; /* Dark Text */
+    --text-muted: #6c757d; /* Muted/Grey Text */
+    --error-color: #dc3545; /* Red for errors */
     --radius: 12px;
-    --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.05);
+    --shadow-card: 0 8px 25px rgba(0, 0, 0, 0.1);
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --sidebar-width: 250px;
 }
 
-/* ==================== 2FA Setup Layout ==================== */
+/* ==================== 1. Login Page Layout ==================== */
 
-.setupContainer {
+.background {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -22,145 +22,122 @@
     background-color: var(--bg-body);
     padding: 20px;
     font-family: 'Kanit', sans-serif;
+    line-height: 1.5;
 }
 
-.authCard {
+.loginCard {
     background: var(--bg-white);
     padding: 40px;
     border-radius: var(--radius);
     box-shadow: var(--shadow-card);
-    max-width: 500px;
+    max-width: 400px;
     width: 100%;
     text-align: center;
 }
 
-.authCard h2 {
+/* ==================== 2. Header & Logo ==================== */
+
+.logo {
+    width: 80px; /* กำหนดขนาดโลโก้ */
+    height: auto;
+    margin-bottom: 20px;
+    border-radius: 50%; /* ทำให้โลโก้เป็นวงกลมถ้าเป็นรูปทรงสี่เหลี่ยม */
+}
+
+.header {
     color: var(--primary-color);
     margin-top: 0;
-    font-size: 1.8rem;
-    border-bottom: 2px solid var(--primary-color);
-    padding-bottom: 10px;
-    margin-bottom: 20px;
-}
-
-.authCard p {
-    color: var(--text-muted);
     margin-bottom: 25px;
+    font-size: 2rem;
+    font-weight: 700;
 }
 
-/* QR Code Display */
-.qrCodeContainer {
+/* ==================== 3. Form Elements ==================== */
+
+.formContainer {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 20px;
+    gap: 15px; /* ช่องว่างระหว่าง Input Fields */
 }
 
-/* Note: QRCodeSVG renders as an SVG, not <img>, but this style targets the parent container */
-.qrCodeContainer svg { 
-    border: 5px solid var(--bg-body);
-    border-radius: var(--radius);
-    max-width: 200px;
-    height: auto;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
-
-/* OTP Input Container (ใช้ร่วมกับ class ใน React Component) */
-.otpInputContainer {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 20px;
-    margin-bottom: 20px;
-}
-
-/* OTP Input Field (Responsive Square Box) */
-.otpInputField {
-    width: 14%; 
-    height: 0;
-    padding-bottom: 14%; 
-    
-    font-size: 1.5rem;
-    text-align: center;
-    border: 2px solid var(--text-muted);
+.inputField {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ced4da;
     border-radius: 8px;
+    font-size: 1rem;
+    color: var(--text-dark);
     transition: var(--transition);
-    box-sizing: border-box; 
-    
-    /* จัดการข้อความให้อยู่ตรงกลาง */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 0;
+    box-sizing: border-box; /* สำคัญเพื่อให้ padding ไม่ขยายความกว้าง */
 }
 
-.otpInputField:focus {
+.inputField::placeholder {
+    color: var(--text-muted);
+}
+
+.inputField:focus {
     border-color: var(--primary-color);
-    outline: none;
     box-shadow: 0 0 0 3px var(--primary-light);
+    outline: none;
 }
 
+/* ==================== 4. Links & Messages ==================== */
 
-/* ==================== General Button & Messages ==================== */
+.forgotPasswordContainer {
+    text-align: right;
+    margin-top: -5px;
+    margin-bottom: 5px;
+}
 
-.nextButton {
+.forgotPasswordLink,
+.registerLink {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: color 0.2s;
+}
+
+.forgotPasswordLink:hover,
+.registerLink:hover {
+    color: #d1307b;
+    text-decoration: underline;
+}
+
+.errorMessage {
+    color: var(--error-color);
+    margin-top: 20px;
+    font-weight: 500;
+}
+
+.register {
+    margin-top: 20px;
+    border-top: 1px solid #e9ecef;
+    padding-top: 20px;
+}
+
+/* ==================== 5. Button ==================== */
+
+.loginButton {
     background-color: var(--primary-color);
-    color: white;
+    color: var(--bg-white);
     border: none;
     padding: 12px 25px;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 1.1rem;
     font-weight: 600;
-    margin-top: 20px;
+    margin-top: 15px;
     transition: var(--transition);
     width: 100%;
-    max-width: 250px;
     font-family: inherit;
 }
 
-.nextButton:hover {
+.loginButton:hover {
     background-color: #d1307b;
-    transform: translateY(-2px);
+    transform: translateY(-1px);
     box-shadow: 0 4px 10px rgba(232, 62, 140, 0.3);
 }
 
-.errorText {
-    color: #dc3545;
-    margin-top: 15px;
-    font-weight: 500;
-}
-
-
-/* ==================== Responsive Layout (Mobile <= 768px) ==================== */
-@media (max-width: 768px) {
-    
-    .sidebar-container { left: -100%; box-shadow: none; }
-    .layout-wrapper.sidebar-open .sidebar-container { left: 0; box-shadow: 5px 0 15px rgba(0,0,0,0.1); }
-    
-    .main-content-wrapper { margin-left: 0; }
-    
-    .page-title-mobile { display: block; }
-    
-    /* Mobile Header Adjustments */
-    .user-profile-display { padding-right: 10px; border-right: none; }
-    .user-text { display: none; } /* ซ่อนชื่อในมือถือ */
-    
-    .logout-btn-top span { display: none; } /* ซ่อนคำว่า "ออก" */
-    .logout-btn-top { width: 35px; height: 35px; padding: 0; justify-content: center; border-radius: 50%; }
-
-    .dashboard-welcome-card { flex-direction: column; text-align: center; gap: 15px; }
-    .content-body { padding: 20px; }
-    
-    .mobile-overlay {
-        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.5); z-index: 950;
-    }
-}
-
-/* ==================== Responsive Layout (Desktop >= 769px) ==================== */
-@media (min-width: 769px) {
-    /* Desktop Sidebar Logic */
-    .layout-wrapper.sidebar-closed .sidebar-container { left: calc(var(--sidebar-width) * -1); }
-    .layout-wrapper.sidebar-closed .main-content-wrapper { margin-left: 0; }
+.loginButton:active {
+    transform: translateY(0);
 }
