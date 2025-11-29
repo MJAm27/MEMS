@@ -62,7 +62,7 @@ function VerifyPage() {
             
             const loginToken = response.data.token;
             localStorage.setItem('token', loginToken);
-
+            axios.defaults.headers.common['Authorization'] = `Bearer ${loginToken}`;
             navigate('/dashboard');
 
         } catch (err) {
