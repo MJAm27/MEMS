@@ -113,11 +113,7 @@ function Setup2FA() {
                         <div className="qrCodeContainer">
                             <QRCodeSVG value={qrCodeData} size={200} level="H" />
 
-                            <p>
-                                Secret Key: <b>{secret}</b>
-                            </p>
-
-                            <p>สแกน QR ด้วย Microsoft Authenticator หรือกรอก Secret Key</p>
+                            <p>สแกน QR ด้วย Microsoft Authenticator และกรอก TOTP 6 หลัก</p>
                         </div>
 
                         {/* OTP Boxes */}

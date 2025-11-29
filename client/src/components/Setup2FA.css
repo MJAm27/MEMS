@@ -90,3 +90,36 @@
     margin-top: 15px;
     font-weight: 500;
 }
+
+/* ==================== OTP Specific Styles (New/Enhanced) ==================== */
+
+/* สไตล์สำหรับกล่อง OTP */
+.otpInputField {
+    width: 14%; 
+    height: 0;
+    padding-bottom: 14%; 
+    font-size: 1.5rem;
+    text-align: center;
+    border: 2px solid var(--text-muted);
+    border-radius: 8px;
+    transition: var(--transition);
+    box-sizing: border-box; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0; 
+}
+
+.otpInputField:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.otpInputContainer {
+    display: flex;
+    justify-content: center;
+    gap: 10px; 
+    margin-top: 20px;
+    margin-bottom: 20px; 
+}

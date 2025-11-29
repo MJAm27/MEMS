@@ -1,143 +1,166 @@
-/* ----------------------------------
- * พื้นหลัง (Background) 
- * ---------------------------------- */
-.background {
-    background: #ffb3d9; 
-    min-height: 100vh;
+/* ==================== Variables ==================== */
+:root {
+    --primary-color: #e83e8c;
+    --primary-light: #ffe6f2;
+    --bg-body: #f4f6f9;
+    --bg-white: #ffffff;
+    --text-dark: #343a40;
+    --text-muted: #6c757d;
+    --radius: 12px;
+    --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.05);
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --sidebar-width: 250px;
+}
+
+/* ==================== 2FA Setup Layout ==================== */
+
+.setupContainer {
     display: flex;
     justify-content: center;
     align-items: center;
+    min-height: 100vh;
+    background-color: var(--bg-body);
     padding: 20px;
-    box-sizing: border-box;
+    font-family: 'Kanit', sans-serif;
 }
 
-/* ----------------------------------
- * กรอบล็อกอิน (Login Card)
- * ---------------------------------- */
-.loginCard {
-    background-color: #ffffff;
-    border-radius: 20px; 
+.authCard {
+    background: var(--bg-white);
     padding: 40px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); 
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+    max-width: 500px;
     width: 100%;
-    max-width: 400px; 
     text-align: center;
-    border: 5px solid #ffb3d9; 
 }
 
-/* ----------------------------------
- * โลโก้ (Logo)
- * ---------------------------------- */
-.logo {
-    width: 100px; 
-    height: 100px;
+.authCard h2 {
+    color: var(--primary-color);
+    margin-top: 0;
+    font-size: 1.8rem;
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 10px;
     margin-bottom: 20px;
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
 }
 
-/* ----------------------------------
- * หัวข้อ "เข้าสู่ระบบ" (Header)
- * ---------------------------------- */
-.header {
-    font-size: 24px;
-    color: #333333;
-    margin-bottom: 30px;
-    font-weight: bold;
+.authCard p {
+    color: var(--text-muted);
+    margin-bottom: 25px;
 }
 
-/* ----------------------------------
- * ฟอร์มและช่องกรอก (Form & Inputs)
- * ---------------------------------- */
-.formContainer {
+/* QR Code Display */
+.qrCodeContainer {
     display: flex;
     flex-direction: column;
-    gap: 15px; 
+    align-items: center;
+    gap: 20px;
 }
 
-.inputField {
-    padding: 12px 15px;
-    border: 1px solid #ccc;
-    border-radius: 25px; 
-    font-size: 16px;
-    text-align: center; 
-    transition: border-color 0.3s;
+/* Note: QRCodeSVG renders as an SVG, not <img>, but this style targets the parent container */
+.qrCodeContainer svg { 
+    border: 5px solid var(--bg-body);
+    border-radius: var(--radius);
+    max-width: 200px;
+    height: auto;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
-.inputField:focus {
-    border-color: #ff66b2;
-    outline: none;
-}
-
-/* ----------------------------------
- * ลืมรหัสผ่าน (Forgot Password)
- * ---------------------------------- */
-.forgotPasswordContainer {
-    text-align: right;
-    margin-top: -5px; 
-    margin-bottom: 10px;
-}
-
-.forgotPasswordLink {
-    color: #ff66b2; 
-    text-decoration: none;
-    font-size: 14px;
-    transition: color 0.3s;
-}
-
-.forgotPasswordLink:hover {
-    color: #cc0066;
-    text-decoration: underline;
-}
-
-/* ----------------------------------
- * ปุ่มล็อกอิน (Login Button)
- * ---------------------------------- */
-.loginButton {
-    padding: 15px;
-    border: none;
-    border-radius: 30px; 
-    font-size: 18px;
-    font-weight: bold;
-    color: #ffffff;
-    cursor: pointer;
-    background: linear-gradient(to right, #ff99cc, #ff66b2); 
-    box-shadow: 0 4px 10px rgba(255, 102, 178, 0.4); 
-    transition: all 0.3s ease;
-    margin-top: 15px; 
-}
-
-.loginButton:hover {
-    background: linear-gradient(to right, #ff66b2, #ff99cc);
-    box-shadow: 0 6px 15px rgba(255, 102, 178, 0.6);
-}
-
-/* ----------------------------------
- * ข้อความผิดพลาด (Error Message)
- * ---------------------------------- */
-.errorMessage {
-    color: #e74c3c;
-    margin-top: 15px;
-    font-size: 14px;
-}
-
-.register{
-    text-align: center;
+/* OTP Input Container (ใช้ร่วมกับ class ใน React Component) */
+.otpInputContainer {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
     margin-top: 20px;
-    font-size: 14px;
-    color: #555;
-
+    margin-bottom: 20px;
 }
 
-.registerLink{
-    color: #ff66b2;
-    text-decoration: none;
-    font-weight: bold;
-    transition: color 0.3s;
+/* OTP Input Field (Responsive Square Box) */
+.otpInputField {
+    width: 14%; 
+    height: 0;
+    padding-bottom: 14%; 
+    
+    font-size: 1.5rem;
+    text-align: center;
+    border: 2px solid var(--text-muted);
+    border-radius: 8px;
+    transition: var(--transition);
+    box-sizing: border-box; 
+    
+    /* จัดการข้อความให้อยู่ตรงกลาง */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
 }
 
-.registerLink:hover {
-    color: #cc0066;
-    text-decoration: underline;
+.otpInputField:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+
+/* ==================== General Button & Messages ==================== */
+
+.nextButton {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 20px;
+    transition: var(--transition);
+    width: 100%;
+    max-width: 250px;
+    font-family: inherit;
+}
+
+.nextButton:hover {
+    background-color: #d1307b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(232, 62, 140, 0.3);
+}
+
+.errorText {
+    color: #dc3545;
+    margin-top: 15px;
+    font-weight: 500;
+}
+
+
+/* ==================== Responsive Layout (Mobile <= 768px) ==================== */
+@media (max-width: 768px) {
+    
+    .sidebar-container { left: -100%; box-shadow: none; }
+    .layout-wrapper.sidebar-open .sidebar-container { left: 0; box-shadow: 5px 0 15px rgba(0,0,0,0.1); }
+    
+    .main-content-wrapper { margin-left: 0; }
+    
+    .page-title-mobile { display: block; }
+    
+    /* Mobile Header Adjustments */
+    .user-profile-display { padding-right: 10px; border-right: none; }
+    .user-text { display: none; } /* ซ่อนชื่อในมือถือ */
+    
+    .logout-btn-top span { display: none; } /* ซ่อนคำว่า "ออก" */
+    .logout-btn-top { width: 35px; height: 35px; padding: 0; justify-content: center; border-radius: 50%; }
+
+    .dashboard-welcome-card { flex-direction: column; text-align: center; gap: 15px; }
+    .content-body { padding: 20px; }
+    
+    .mobile-overlay {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.5); z-index: 950;
+    }
+}
+
+/* ==================== Responsive Layout (Desktop >= 769px) ==================== */
+@media (min-width: 769px) {
+    /* Desktop Sidebar Logic */
+    .layout-wrapper.sidebar-closed .sidebar-container { left: calc(var(--sidebar-width) * -1); }
+    .layout-wrapper.sidebar-closed .main-content-wrapper { margin-left: 0; }
 }
