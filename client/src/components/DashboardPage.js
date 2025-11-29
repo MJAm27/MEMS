@@ -79,16 +79,15 @@ function DashboardPage() {
         const { role } = userPayload; 
         console.log('User role ID:', role);
 
-        switch (role) {
-            case 'R-ENG': 
+        switch (userPayload.role) { 
+            case 'engineer': 
                 return <EngineerMainPage user={userPayload} handleLogout={handleLogout} />;
-            case 'R-ADM':
+            case 'admin':
                 return <AdminMainPage user={userPayload} handleLogout={handleLogout} />;
-            case 'R-MGR':
+            case 'manager':
                 return <ManagerDashboard user={userPayload} handleLogout={handleLogout} />;
-
             default:
-                return <p style={{color: 'red'}}>Error: ไม่พบ Role ที่ถูกต้อง ({role})</p>;
+                return <p style={{color: 'red'}}>Error: ไม่พบ Role ที่ถูกต้อง ({userPayload.role})</p>;
         }
     };
 

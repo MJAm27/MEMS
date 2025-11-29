@@ -167,7 +167,7 @@ app.post("/api/verify-2fa", async (req, res) => {
                 { 
                     userId: user.user_id, 
                     email: user.email,
-                    role: role_name,
+                    role: role_id,
                     fullname: user.fullname
                 },
                 JWT_SECRET,
