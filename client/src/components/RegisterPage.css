@@ -1,0 +1,134 @@
+/* นำเข้าตัวแปร CSS จาก :root เพื่อให้สไตล์สอดคล้องกัน */
+/* ในการใช้งานจริง ควร import ตัวแปรเหล่านี้จากไฟล์หลัก หรือรวมไว้ในไฟล์เดียว */
+
+/* ==================== Register Page Layout (ใช้ร่วมกับ LoginPage.css) ==================== */
+
+.registerBackground {
+    /* ใช้สไตล์เดียวกับ LoginPage.css */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: var(--bg-body);
+    padding: 20px;
+    font-family: 'Kanit', sans-serif;
+    line-height: 1.5;
+}
+
+.registerCard {
+    /* ใช้สไตล์เดียวกับ loginCard */
+    background: var(--bg-white);
+    padding: 40px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+    max-width: 450px; /* ขยายความกว้างเล็กน้อยเพื่อให้ Form ยาวขึ้น */
+    width: 100%;
+    text-align: center;
+}
+
+/* ==================== Header ==================== */
+
+.registerHeader {
+    color: var(--primary-color);
+    margin-top: 0;
+    margin-bottom: 30px;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+/* ==================== Form Elements ==================== */
+
+.registerForm {
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* ช่องว่างระหว่าง Input Fields และ Select */
+}
+
+/* สไตล์สำหรับ Input และ Select Field */
+.registerInput,
+.registerSelect {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    font-size: 1rem;
+    color: var(--text-dark);
+    transition: var(--transition);
+    box-sizing: border-box;
+    appearance: none; /* ลบสไตล์เดิมของ select */
+    background-color: var(--bg-white);
+    cursor: pointer;
+}
+
+.registerInput::placeholder {
+    color: var(--text-muted);
+}
+
+.registerInput:focus,
+.registerSelect:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px var(--primary-light);
+    outline: none;
+}
+
+/* สไตล์สำหรับ Option ที่เป็น Placeholder (สีเทา) */
+.registerSelect option[value=""] {
+    color: var(--text-muted);
+}
+
+/* ==================== Button ==================== */
+
+.registerButton {
+    /* ใช้สไตล์เดียวกับ loginButton */
+    background-color: var(--primary-color);
+    color: var(--bg-white);
+    border: none;
+    padding: 12px 25px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-top: 20px;
+    margin-bottom: 5px;
+    transition: var(--transition);
+    width: 100%;
+    font-family: inherit;
+}
+
+.registerButton:hover {
+    background-color: #d1307b;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(232, 62, 140, 0.3);
+}
+
+/* ==================== Messages & Links ==================== */
+
+.registerError {
+    color: var(--error-color);
+    margin-top: 15px;
+    font-weight: 500;
+}
+
+.registerSuccess {
+    color: green;
+    margin-top: 15px;
+    font-weight: 500;
+}
+
+.loginLinkContainer {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #e9ecef;
+}
+
+.loginLink {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: color 0.2s;
+}
+
+.loginLink:hover {
+    color: #d1307b;
+    text-decoration: underline;
+}
