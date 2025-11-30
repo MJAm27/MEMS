@@ -102,6 +102,43 @@ app.post("/api/login", async (req, res) => {
 });
 
 /**
+ * Endpoint 4: Register (สร้างผู้ใช้งานใหม่)
+ */
+app.post("/api/register", async (req, res) => {
+    const { email, password, fullname, position, phone_number, role_id } = req.body;
+    
+    if (!email || !password || !fullname || !role_id) {
+        return res.status(400).json({ message: "กรุณากรอก Email, Password, Fullname และ Role ID" });
+    }
+
+    try {
+        const [existingUsers] = await pool.execute("SELECT user_id FROM users WHERE email = ?", [email]);
+        if (existingUsers.length > 0) {
+            return res.status(409).json({ message: "Email นี้ถูกใช้งานแล้ว" });
+        }
+
+        const saltRounds = 10;
+        const passwordHash = await bcrypt.hash(password, saltRounds);
+        const newUserId = `U-${Date.now().toString().slice(-10)}`;
+
+        // console.log("password_input = [" + password + "]");
+        // console.log("password_from_db =", user.password_hash);
+
+        await pool.execute(
+            "INSERT INTO users (user_id, email, password_hash, fullname, position, phone_number, role_id, totp_secret) VALUES (?, ?, ?, ?, ?, ?, ?, NULL)",
+            [newUserId, email, passwordHash, fullname, position, phone_number, role_id]
+        );
+        
+        res.status(201).json({ message: "ลงทะเบียนสำเร็จ กรุณาเข้าสู่ระบบ" });
+
+    } catch (error) {
+        console.error("Register Error:", error);
+        res.status(500).json({ message: "Server Error", error: error.message });
+    }
+});
+
+
+/**
  * Endpoint 2: สร้าง QR Code สำหรับผู้ใช้ครั้งแรก
  */
 app.post("/api/setup-2fa", async (req, res) => {
@@ -264,41 +301,6 @@ app.put("/api/profile-edit", authenticateToken, async (req, res) => {
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-/**
- * Endpoint 4: Register (สร้างผู้ใช้งานใหม่)
- */
-app.post("/api/register", async (req, res) => {
-    const { email, password, fullname, position, phone_number, role_id } = req.body;
-    
-    if (!email || !password || !fullname || !role_id) {
-        return res.status(400).json({ message: "กรุณากรอก Email, Password, Fullname และ Role ID" });
-    }
-
-    try {
-        const [existingUsers] = await pool.execute("SELECT user_id FROM users WHERE email = ?", [email]);
-        if (existingUsers.length > 0) {
-            return res.status(409).json({ message: "Email นี้ถูกใช้งานแล้ว" });
-        }
-
-        const saltRounds = 10;
-        const passwordHash = await bcrypt.hash(password, saltRounds);
-        const newUserId = `U-${Date.now().toString().slice(-10)}`;
-
-        // console.log("password_input = [" + password + "]");
-        // console.log("password_from_db =", user.password_hash);
-
-        await pool.execute(
-            "INSERT INTO users (user_id, email, password_hash, fullname, position, phone_number, role_id, totp_secret) VALUES (?, ?, ?, ?, ?, ?, ?, NULL)",
-            [newUserId, email, passwordHash, fullname, position, phone_number, role_id]
-        );
-        
-        res.status(201).json({ message: "ลงทะเบียนสำเร็จ กรุณาเข้าสู่ระบบ" });
-
-    } catch (error) {
-        console.error("Register Error:", error);
-        res.status(500).json({ message: "Server Error", error: error.message });
-    }
-});
 
 app.get("/api/inventoryBalanceReportChart", async (req, res) => {
     try {
