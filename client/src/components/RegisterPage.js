@@ -95,7 +95,7 @@ function RegisterPage() {
                         className="registerSelect" // ใช้ class จาก CSS
                         required // บังคับเลือก
                     >
-                        <option value="">-- กรุณาเลือกบทบาท --</option>
+                        <option value="">-- กรุณาเลือกตำแหน่ง --</option>
                         <option value="R-ENG">Engineer</option>
                         <option value="R-ADM">Admin</option>
                         <option value="R-MGR">Manager</option>
