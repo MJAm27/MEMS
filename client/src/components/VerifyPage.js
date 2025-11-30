@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { useLocation, useNavigate } from 'react-router-dom';
-// import styles from './VerifyPage.css'; // ตรวจสอบให้แน่ใจว่า import ถูกต้องตามชื่อไฟล์ CSS ของคุณ
+import './VerifyPage.css'; 
 
 function VerifyPage() {
     const location = useLocation();
@@ -26,12 +26,9 @@ function VerifyPage() {
             const newOtpCode = [...otpCode];
             newOtpCode[index] = value;
             setOtpCode(newOtpCode);
-
-            // เลื่อน focus
             if (value && index < otpCode.length - 1) {
                 inputRefs.current[index + 1].focus();
             } else if (!value && index > 0) {
-                // ถ้าลบตัวเลข ให้ย้อนกลับไป input ก่อนหน้า
                 inputRefs.current[index - 1].focus();
             }
         }
@@ -56,15 +53,22 @@ function VerifyPage() {
 
         try {
             const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/verify-2fa`, { userId, token });
-            
-            // 💡 โค้ดที่แก้ไข: บันทึก Token และตั้งค่า Header
-            const loginToken = response.data.token;
+            const {token: loginToken, role} = response.data;
             if (loginToken) {
                 localStorage.setItem('token', loginToken);
                 axios.defaults.headers.common['Authorization'] = `Bearer ${loginToken}`;
+            }else{
+                console.warn("Verify successful but no token received.");
             }
-
-            navigate('/dashboard'); // ✅ Redirect สำเร็จ
+            if(role === 'Admin'){
+                navigate('/AdminMainPage');
+            }else if(role === 'Engineer'){
+                navigate('/EngineerMainPage');
+            }else if(role === 'Manager'){
+                navigate('/ManagerMainPage');
+            }else{
+                navigate('/dashboard');
+            }
 
         } catch (err) {
             setError(err.response?.data?.message || 'รหัสไม่ถูกต้อง');

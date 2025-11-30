@@ -144,7 +144,7 @@ app.post("/api/verify-2fa", async (req, res) => {
 
     try {
         const [users] = await pool.execute(
-            "SELECT U.*, R.role_name FROM users U JOIN role R ON U.role_id = R.role_id WHERE U.user_id = ?", 
+            "SELECT U.*, R.role_name, R.role_id FROM users U JOIN role R ON U.role_id = R.role_id WHERE U.user_id = ?", 
             [userId]
         );
         
@@ -153,7 +153,7 @@ app.post("/api/verify-2fa", async (req, res) => {
         }
         
         const user = users[0];
-        const { totp_secret, role_name } = user;
+        const { totp_secret, role_name, role_id } = user;
 
         const verified = speakeasy.totp.verify({
             secret: totp_secret,
@@ -167,7 +167,7 @@ app.post("/api/verify-2fa", async (req, res) => {
                 { 
                     userId: user.user_id, 
                     email: user.email,
-                    role: role_id,
+                    role: role_name,
                     fullname: user.fullname
                 },
                 JWT_SECRET,
@@ -176,7 +176,8 @@ app.post("/api/verify-2fa", async (req, res) => {
             
             res.json({ 
                 message: "ล็อกอินสำเร็จ", 
-                token: loginToken 
+                token: loginToken,
+                role: user.role_name
             });
         } else {
             res.status(401).json({ message: "รหัส 6 หลักไม่ถูกต้อง" });
