@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import EngineerMainPage from './EngineerMainPage';
 import AdminMainPage from './AdminMainPage';
+
 function getPayloadFromToken(token) {
     try {
         const base64Url = token.split('.')[1];
@@ -15,7 +16,7 @@ function getPayloadFromToken(token) {
     }
 }
 
-const ManagerDashboard = ({ user, handleLogout }) => (
+const ManagerDashboard = ({ user, handleLogout, refreshUser }) => (
     <div className="p-4 bg-white shadow-lg rounded-lg">
         <h1 className="text-2xl font-bold text-blue-700">หน้าสำหรับ Manager ({user?.email})</h1>
         <p className="text-gray-600 mt-2">เนื้อหาของ Manager...</p>
@@ -56,6 +57,7 @@ function DashboardPage() {
             
             const newUserPayload = { 
                 ...freshData, 
+                // ดึง role จาก token payload ก่อน ถ้าไม่มี ให้ใช้ role จาก freshData
                 role: getPayloadFromToken(token)?.role || freshData.role 
             };
             
@@ -88,12 +90,26 @@ function DashboardPage() {
         fetchAndSetUser(token); 
 
     }, [handleLogout, fetchAndSetUser]); 
+
+    // --- Logic การ Normalize Role ถูกต้อง ---
+    // ตรวจสอบ userPayload ก่อนเข้าถึง property
+    const userRole = userPayload?.role;
+    const normalizedRole = userRole ? userRole.toUpperCase() : null;
+
+    // กำหนด Role ที่จะใช้ในการ Render/Switch Case
+    const renderRole = normalizedRole === 'ENGINEER' ? 'R-ENG' : (
+                       normalizedRole === 'ADMIN' ? 'R-ADM' : (
+                       normalizedRole === 'MANAGER' ? 'R-MGR' : userRole)); 
+    // ----------------------------------------
+    
+    // ตรวจสอบความถูกต้องของ Role หลังโหลดข้อมูล
     useEffect(() => {
-        if (userPayload && !['R-ENG', 'R-ADM', 'R-MGR'].includes(userPayload.role)) {
+        // ใช้ normalizedRole ในการตรวจสอบเพื่อรองรับทั้ง 'R-ENG' และ 'ENGINEER'
+        if (userPayload && normalizedRole && !['R-ENG', 'R-ADM', 'R-MGR', 'ENGINEER', 'ADMIN', 'MANAGER'].includes(normalizedRole)) {
             console.warn(`Unknown role detected: ${userPayload.role}. Logging out.`);
             handleLogout(); 
         }
-    }, [userPayload, handleLogout]);
+    }, [userPayload, normalizedRole, handleLogout]);
 
 
     const renderDashboardByRole = () => {
@@ -105,10 +121,10 @@ function DashboardPage() {
             );
         }
 
-        const { role } = userPayload; 
-        console.log('Rendering dashboard for role:', role);
+        // ใช้ renderRole ที่ถูก Normalize แล้ว
+        console.log('Rendering dashboard for role:', renderRole);
 
-        switch (role) { 
+        switch (renderRole) { 
             case 'R-ENG': 
                 return <EngineerMainPage user={userPayload} handleLogout={handleLogout} refreshUser={refreshUser} />; 
             case 'R-ADM':
@@ -118,7 +134,8 @@ function DashboardPage() {
             default:
                 return (
                     <div className="p-4 bg-red-100 border-l-4 border-red-500 text-red-700">
-                        <p>Error: ไม่พบ Role ที่ถูกต้อง ({role}) โปรดติดต่อผู้ดูแลระบบ</p>
+                        {/* แสดง role ดั้งเดิมในข้อความ Error */}
+                        <p>Error: ไม่พบ Role ที่ถูกต้อง ({userRole}) โปรดติดต่อผู้ดูแลระบบ</p>
                         <button onClick={handleLogout} className="mt-2 text-sm underline">ออกจากระบบ</button>
                     </div>
                 );
