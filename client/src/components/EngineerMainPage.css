@@ -69,6 +69,7 @@ body {
     flex-grow: 1;
 }
 
+/* ⭐️ แก้ไขปุ่ม Nav Link: ลบ Border และตั้งค่าพื้นหลังเป็น None */
 .nav-link {
     display: flex;
     align-items: center;
@@ -79,6 +80,13 @@ body {
     margin-bottom: 5px;
     transition: var(--transition);
     font-weight: 500;
+    
+    /* ⭐️ แก้ไขสำหรับลบกรอบ */
+    border: none; 
+    background: none; 
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
 }
 
 .nav-link svg { margin-right: 15px; font-size: 1.2rem; }
@@ -100,7 +108,61 @@ body {
     background: #eee;
     margin: 15px 0;
 }
+/* ==================== Main Actions Container (Home Page Buttons) ==================== */
+.content-body{
+    padding: 20px;
+}
 
+.main-actions-contaier{
+    display: flex;
+    justify-content: center;
+    gap: 350px;
+    margin-top: 100px;
+    flex-wrap: wrap;
+}
+
+.action-button{
+    padding: 15px 30px;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    min-width: 180px;
+    text-align: center;
+    transition: all 0.3S ease;
+    box-shadow: 0 4PX 15px rgba(0, 0, 0, 0.1);
+}
+
+/* สไตล์สำหรับปุ่มหลัก/ปุ่มเด่น (เบิกอะไหล่) */
+.primary-action{
+    background-color: #ff93c0;
+    color: white;
+    border: 2px solid #007bff;
+}
+.primary-action:hover{
+    background-color: #0056b3;
+    transform: translate(-3px);
+    box-shadow: 0 6px 20px rgba(0, 123, 255, 0.3);
+}
+
+/* สไตล์สำหรับปุ่มรอง (คืน/ยืมอะไหล่) */
+.secondary-action{
+    background-color: white;
+    color: #343a40;
+    border: 2px solid #ced4da;
+}
+.secondary-action:hover{
+    background-color: #f8f9fa;
+    border-color: #007bff;
+    transform: translate(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+.page-title {
+    color: #343a40;
+    margin-top: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
 /* ==================== Main Content ==================== */
 .main-content-wrapper {
     flex-grow: 1;
@@ -189,90 +251,8 @@ body {
 .section-header { margin: 30px 0 20px; font-size: 1.2rem; color: var(--text-muted); border-left: 4px solid var(--primary-color); padding-left: 15px; }
 
 /* ==================== Cards & Dashboard ==================== */
-.dashboard-welcome-card {
-    background: linear-gradient(135deg, var(--primary-color), #ff8fab);
-    color: white;
-    padding: 30px 40px;
-    border-radius: var(--radius);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 10px 20px rgba(232, 62, 140, 0.2);
-    margin-bottom: 30px;
-}
+/* ... (ส่วนของ Cards & Dashboard อื่นๆ ที่คุณไม่ได้ให้มาในคำถามนี้) ... */
 
-.welcome-text h1 { margin: 0 0 10px; font-size: 1.8rem; }
-.welcome-text p { margin: 0; opacity: 0.9; }
-
-.btn-edit-profile {
-    background: rgba(255,255,255,0.2);
-    color: white;
-    padding: 10px 20px;
-    border-radius: 20px;
-    text-decoration: none;
-
-    transition: var(--transition);
-    border: 1px solid rgba(255,255,255,0.4);
-}
-.btn-edit-profile:hover { background: white; color: var(--primary-color); }
-
-/* Action Grid */
-.action-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 25px;
-}
-
-.action-card {
-    background: var(--bg-white);
-    padding: 30px;
-    border-radius: var(--radius);
-    text-align: center;
-    text-decoration: none;
-    color: var(--text-dark);
-    box-shadow: var(--shadow-card);
-    transition: var(--transition);
-    border: 1px solid transparent;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 200px;
-}
-
-.action-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 30px rgba(0,0,0,0.1);
-}
-
-.icon-wrapper {
-    width: 80px; height: 80px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 2.5rem;
-    margin-bottom: 15px;
-    transition: var(--transition);
-}
-
-.card-pink .icon-wrapper { background: #ffe6f2; color: #e83e8c; }
-.card-pink:hover { border-color: #e83e8c; }
-
-.card-blue .icon-wrapper { background: #e6f2ff; color: #0d6efd; }
-.card-blue:hover { border-color: #0d6efd; }
-
-.card-purple .icon-wrapper { background: #f2e6ff; color: #6f42c1; }
-.card-purple:hover { border-color: #6f42c1; }
-
-.action-card h3 { margin: 0 0 5px; font-size: 1.2rem; }
-.action-card p { color: var(--text-muted); font-size: 0.9rem; margin: 0; }
-
-/* Other Components */
-.content-card {
-    background: white;
-    padding: 30px;
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-card);
-}
 
 /* Loading */
 .loading-container {
@@ -323,7 +303,19 @@ body {
 }
 
 @media (min-width: 769px) {
-    /* Desktop Sidebar Logic */
-    .layout-wrapper.sidebar-closed .sidebar-container { left: calc(var(--sidebar-width) * -1); }
-    .layout-wrapper.sidebar-closed .main-content-wrapper { margin-left: 0; }
+    
+    .layout-wrapper.sidebar-closed .sidebar-container { 
+        left: calc(var(--sidebar-width) * -1); 
+    }
+    
+    .layout-wrapper.sidebar-closed .main-content-wrapper { 
+        margin-left: 0; 
+    }
+    
+    .sidebar-container {
+        left: 0; 
+    }
+    .main-content-wrapper {
+        margin-left: var(--sidebar-width); 
+    }
 }

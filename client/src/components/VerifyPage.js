@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './VerifyPage.css'; 
 
+const API_BASE_URL = "http://localhost:3001"; 
 function VerifyPage() {
     const location = useLocation();
     const navigate = useNavigate();
@@ -44,7 +45,7 @@ function VerifyPage() {
              return; 
         }
 
-        const token = otpCode.join(''); // รวมรหัส OTP 6 หลัก
+        const token = otpCode.join(''); 
         if (token.length !== 6) {
             setError('กรุณากรอกรหัส 6 หลักให้ครบถ้วน');
             setLoading(false);
@@ -52,23 +53,18 @@ function VerifyPage() {
         }
 
         try {
-            const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/verify-2fa`, { userId, token });
-            const {token: loginToken, role} = response.data;
+            const response = await axios.post(`${API_BASE_URL}/api/verify-2fa`, { userId, token });
+            
+            const {token: loginToken} = response.data;
             if (loginToken) {
                 localStorage.setItem('token', loginToken);
                 axios.defaults.headers.common['Authorization'] = `Bearer ${loginToken}`;
             }else{
                 console.warn("Verify successful but no token received.");
             }
-            if(role === 'Admin'){
-                navigate('/AdminMainPage');
-            }else if(role === 'Engineer'){
-                navigate('/EngineerMainPage');
-            }else if(role === 'Manager'){
-                navigate('/ManagerMainPage');
-            }else{
-                navigate('/dashboard');
-            }
+            
+
+            navigate('/dashboard', { replace: true });
 
         } catch (err) {
             setError(err.response?.data?.message || 'รหัสไม่ถูกต้อง');
@@ -78,14 +74,13 @@ function VerifyPage() {
             setLoading(false);
         }
     };
-    
-    // สำหรับปุ่มกลับ
+
     const handleGoBack = () => {
         navigate('/login');
     };
 
     return (
-        <div className="background"> {/* ใช้ className ตามไฟล์ CSS ของคุณ */}
+        <div className="background"> 
             <div className="card">
                 <h2>ยืนยันตัวตน (2FA)</h2>
                 <p>กรุณาป้อนรหัส 6 หลักจาก Authenticator App ของคุณ</p>
@@ -117,7 +112,6 @@ function VerifyPage() {
                     </button>
                 </form>
 
-                {/* ปุ่มกลับไปหน้าเข้าสู่ระบบ */}
                    <button 
                         className="secondaryButton" 
                         onClick={handleGoBack}

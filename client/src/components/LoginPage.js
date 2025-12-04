@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import './LoginPage.css'; 
 import logo from './logo/download.jpg'; 
-
+const API_BASE_URL = "http://localhost:3001";
 function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -15,7 +15,7 @@ function LoginPage() {
         setError('');
         try {
 
-            const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/login`, { email, password });
+            const response = await axios.post(`${API_BASE_URL}/api/login`, { email, password });
             const { status, userId, token } = response.data;
             if (status === '2fa_required') {
                 navigate('/verify', { state: { userId: userId } });

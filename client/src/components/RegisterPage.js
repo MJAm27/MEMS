@@ -1,9 +1,11 @@
-// ที่ไฟล์ MEMS/client/src/components/RegisterPage.js
-
 import React, { useState } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
-import './RegisterPage.css'; // 👈 นำเข้าไฟล์ CSS
+import './RegisterPage.css';
+
+// *** แก้ไข: Hardcode Base URL ของ Backend ที่รันอยู่พอร์ต 3001 ***
+const API_BASE_URL = "http://localhost:3001";
+// ******************************************************************
 
 function RegisterPage() {
     const [formData, setFormData] = useState({
@@ -12,7 +14,7 @@ function RegisterPage() {
         password: '',
         position: '', 
         phone_number: '',
-        role_id: '' // ค่าเริ่มต้นเป็น '' คือ placeholder
+        role_id: ''
     });
     
     const [error, setError] = useState('');
@@ -38,7 +40,8 @@ function RegisterPage() {
         }
 
         try {
-            const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/register`, formData);
+            // *** แก้ไข: ใช้ API_BASE_URL ที่ถูกกำหนดแล้ว ***
+            const response = await axios.post(`${API_BASE_URL}/api/register`, formData);
             setSuccess(response.data.message);
 
             // หน่วงเวลา 2 วินาที ก่อนนำทางไปหน้า Login
@@ -110,8 +113,8 @@ function RegisterPage() {
                         className="registerInput" // ใช้ class จาก CSS
                     />
                     
-                    {/* Position (ถูกลบออกตามโค้ดเดิมที่เหลือเพียง phone_number) 
-                    หากต้องการใช้ Position ให้เพิ่ม <input type="text" name="position" .../> ที่นี่ */}
+                    {/* Position (ถูกลบออกตามโค้ดเดิมที่เหลือเพียง phone_number) */}
+                    {/* หากต้องการใช้ Position ให้เพิ่ม <input type="text" name="position" .../> ที่นี่ */}
                     
                     <button type="submit" className="registerButton">ลงทะเบียน</button> {/* ใช้ class จาก CSS */}
                 </form>

@@ -70,6 +70,7 @@ app.post("/api/login", async (req, res) => {
     const { email, password } = req.body;
 
     try {
+        // ใช้ pool.execute แทนการสร้าง connection ใหม่
         const [users] = await pool.execute("SELECT * FROM users WHERE email = ?", [email]);
 
         if (users.length === 0) {
@@ -82,13 +83,16 @@ app.post("/api/login", async (req, res) => {
         if (!isPasswordMatch) {
             return res.status(401).json({ message: "Email หรือ Password ไม่ถูกต้อง" });
         }
-
+        
+        // ✅ เปิดใช้การตรวจสอบ 2FA/Setup 2FA
         if (user.totp_secret) {
+            // ต้องยืนยัน 2FA
             res.json({ 
                 status: "2fa_required", 
                 userId: user.user_id 
             });
         } else {
+            // ถ้ายังไม่มี 2FA ให้แจ้งว่าต้องตั้งค่าก่อน
             res.json({ 
                 status: "2fa_setup_required", 
                 userId: user.user_id 
@@ -102,7 +106,7 @@ app.post("/api/login", async (req, res) => {
 });
 
 /**
- * Endpoint 4: Register (สร้างผู้ใช้งานใหม่)
+ * Endpoint 2: Register (สร้างผู้ใช้งานใหม่)
  */
 app.post("/api/register", async (req, res) => {
     const { email, password, fullname, position, phone_number, role_id } = req.body;
@@ -112,18 +116,18 @@ app.post("/api/register", async (req, res) => {
     }
 
     try {
+        // 1. ตรวจสอบ Email ซ้ำ
         const [existingUsers] = await pool.execute("SELECT user_id FROM users WHERE email = ?", [email]);
         if (existingUsers.length > 0) {
             return res.status(409).json({ message: "Email นี้ถูกใช้งานแล้ว" });
         }
 
+        // 2. Hashing รหัสผ่าน
         const saltRounds = 10;
         const passwordHash = await bcrypt.hash(password, saltRounds);
         const newUserId = `U-${Date.now().toString().slice(-10)}`;
 
-        // console.log("password_input = [" + password + "]");
-        // console.log("password_from_db =", user.password_hash);
-
+        // 3. บันทึกผู้ใช้ใหม่
         await pool.execute(
             "INSERT INTO users (user_id, email, password_hash, fullname, position, phone_number, role_id, totp_secret) VALUES (?, ?, ?, ?, ?, ?, ?, NULL)",
             [newUserId, email, passwordHash, fullname, position, phone_number, role_id]
@@ -139,30 +143,33 @@ app.post("/api/register", async (req, res) => {
 
 
 /**
- * Endpoint 2: สร้าง QR Code สำหรับผู้ใช้ครั้งแรก
+ * Endpoint 3: สร้าง QR Code สำหรับผู้ใช้ครั้งแรก
  */
 app.post("/api/setup-2fa", async (req, res) => {
     const { userId } = req.body;
 
     try {
+        // 1. สร้าง Secret
         const secret = speakeasy.generateSecret({
             name: `MEMS Project (${userId})`,
         });
 
+        // 2. บันทึก Secret ลง DB
         await pool.execute(
             "UPDATE users SET totp_secret = ? WHERE user_id = ?",
             [secret.base32, userId]
         );
-        const data_url = await qrcode.toDataURL(secret.otpauth_url);
-        qrcode.toDataURL(secret.otpauth_url,(err,data_url)=>{
-            if(err){
-                console.error("QR code generation error: ",err);
-                return res.status(500).json({message: "Error generating QR code"});
+        
+        // 3. สร้าง QR Code Data URL
+        qrcode.toDataURL(secret.otpauth_url, (err, data_url) => {
+            if (err) {
+                console.error("QR code generation error: ", err);
+                return res.status(500).json({ message: "Error generating QR code" });
             }
             res.json({
                 qrCodeDataUrl: data_url,
                 otpauth_url: secret.otpauth_url,
-                secret: secret.base32    
+                secret: secret.base32    
             });
         });
 
@@ -173,15 +180,17 @@ app.post("/api/setup-2fa", async (req, res) => {
 });
 
 
+
 /**
- * Endpoint 3: ตรวจสอบรหัส 6 หลัก (Verify)
+ * Endpoint 4: ตรวจสอบรหัส 6 หลัก (Verify)
  */
 app.post("/api/verify-2fa", async (req, res) => {
     const { userId, token } = req.body;
 
     try {
+        // 1. ดึง Secret และ Role name
         const [users] = await pool.execute(
-            "SELECT U.*, R.role_name, R.role_id FROM users U JOIN role R ON U.role_id = R.role_id WHERE U.user_id = ?", 
+            "SELECT U.*, R.role_name FROM users U JOIN role R ON U.role_id = R.role_id WHERE U.user_id = ?", 
             [userId]
         );
         
@@ -190,21 +199,23 @@ app.post("/api/verify-2fa", async (req, res) => {
         }
         
         const user = users[0];
-        const { totp_secret, role_name, role_id } = user;
+        const { totp_secret, role_name } = user;
 
+        // 2. ตรวจสอบรหัส 6 หลัก
         const verified = speakeasy.totp.verify({
             secret: totp_secret,
             encoding: 'base32',
             token: token,
-            window: 1 
+            window: 1 // อนุญาตให้รหัสถูกหรือผิดไป 1 ช่วงเวลา (30 วินาที)
         });
 
         if (verified) {
+            // 3. สร้าง JWT (Token ล็อกอิน)
             const loginToken = jwt.sign(
                 { 
                     userId: user.user_id, 
                     email: user.email,
-                    role: role_name,
+                    role: user.role_id,
                     fullname: user.fullname
                 },
                 JWT_SECRET,
@@ -225,6 +236,7 @@ app.post("/api/verify-2fa", async (req, res) => {
         res.status(500).json({ message: "Server Error", error: error.message });
     }
 });
+
 
 
 /**

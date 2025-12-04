@@ -1,69 +1,93 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-// import axios from 'axios'; // ถ้ามีการใช้ axios ใน DashboardPage ให้ import เข้ามาด้วย
-
 import EngineerMainPage from './EngineerMainPage';
 import AdminMainPage from './AdminMainPage';
-
 function getPayloadFromToken(token) {
     try {
         const base64Url = token.split('.')[1];
-        let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        
-        while (base64.length % 4) {
-            base64 += '=';
-        }
-        
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
         const jsonPayload = window.atob(base64);
-        
-        const decodedString = decodeURIComponent(jsonPayload.split('').map(function(c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-
-        return JSON.parse(decodedString);
+        return JSON.parse(jsonPayload); 
     } catch (e) {
         console.error('Error decoding token payload:', e);
+        console.warn('Failed to decode token. Token structure might be incorrect or expired or JSON is invalid.');
         return null;
     }
 }
 
 const ManagerDashboard = ({ user, handleLogout }) => (
-    <div>
-        <h1>หน้าสำหรับ Manager ({user?.email})</h1>
-        <p>เนื้อหาของ Manager...</p>
-        <button onClick={handleLogout}>Logout</button>
+    <div className="p-4 bg-white shadow-lg rounded-lg">
+        <h1 className="text-2xl font-bold text-blue-700">หน้าสำหรับ Manager ({user?.email})</h1>
+        <p className="text-gray-600 mt-2">เนื้อหาของ Manager...</p>
+        <button 
+            onClick={handleLogout}
+            className="mt-4 px-4 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition duration-200"
+        >
+            Logout
+        </button>
     </div>
 );
 
 
 function DashboardPage() {
-    const [userPayload, setUserPayload] = useState(null);
+    const [userPayload, setUserPayload] = useState(null); 
     const navigate = useNavigate();
 
     const handleLogout = useCallback(() => {
         localStorage.removeItem('token');
+        setUserPayload(null); 
         navigate('/login', { replace: true }); 
     }, [navigate]); 
+
+    const fetchAndSetUser = useCallback(async (token) => {
+        if (!token) {
+            handleLogout();
+            return;
+        }
+
+        try {
+            const response = await fetch("http://localhost:3001/api/auth/me", {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (!response.ok) throw new Error("Token expired or invalid.");
+            
+            const freshData = await response.json();
+            
+            const newUserPayload = { 
+                ...freshData, 
+                role: getPayloadFromToken(token)?.role || freshData.role 
+            };
+            
+            setUserPayload(newUserPayload); 
+            
+        } catch (error) {
+            console.error("Failed to fetch fresh user data:", error);
+            handleLogout(); 
+        }
+    }, [handleLogout]);
+
+
+    const refreshUser = useCallback(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            fetchAndSetUser(token);
+        } else {
+            handleLogout();
+        }
+    }, [fetchAndSetUser, handleLogout]);
+
 
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (!token) {
-            console.log('No token');
             handleLogout(); 
             return;
         }
+        
+        fetchAndSetUser(token); 
 
-        const payload = getPayloadFromToken(token);
-        if (payload) {
-            console.log('Payload:', payload);
-            setUserPayload(payload);
-        } else {
-            console.log('Invalid token');
-            localStorage.removeItem('token');
-            handleLogout(); 
-        }
-    }, [handleLogout]); 
-
+    }, [handleLogout, fetchAndSetUser]); 
     useEffect(() => {
         if (userPayload && !['R-ENG', 'R-ADM', 'R-MGR'].includes(userPayload.role)) {
             console.warn(`Unknown role detected: ${userPayload.role}. Logging out.`);
@@ -74,20 +98,30 @@ function DashboardPage() {
 
     const renderDashboardByRole = () => {
         if (!userPayload) {
-            return <p>กำลังโหลดข้อมูลผู้ใช้...</p>;
+            return (
+                <div className="flex items-center justify-center h-screen bg-gray-50">
+                    <p className="text-xl text-gray-600">กำลังโหลดข้อมูลผู้ใช้...</p>
+                </div>
+            );
         }
-        const { role } = userPayload; 
-        console.log('User role ID:', role);
 
-        switch (userPayload.role) { 
-            case 'Engineer': 
-                return <EngineerMainPage user={userPayload} handleLogout={handleLogout} />;
-            case 'Admin':
-                return <AdminMainPage user={userPayload} handleLogout={handleLogout} />;
-            case 'Manager':
-                return <ManagerDashboard user={userPayload} handleLogout={handleLogout} />;
+        const { role } = userPayload; 
+        console.log('Rendering dashboard for role:', role);
+
+        switch (role) { 
+            case 'R-ENG': 
+                return <EngineerMainPage user={userPayload} handleLogout={handleLogout} refreshUser={refreshUser} />; 
+            case 'R-ADM':
+                return <AdminMainPage user={userPayload} handleLogout={handleLogout} refreshUser={refreshUser} />;
+            case 'R-MGR':
+                return <ManagerDashboard user={userPayload} handleLogout={handleLogout} refreshUser={refreshUser} />;
             default:
-                return <p style={{color: 'red'}}>Error: ไม่พบ Role ที่ถูกต้อง ({userPayload.role})</p>;
+                return (
+                    <div className="p-4 bg-red-100 border-l-4 border-red-500 text-red-700">
+                        <p>Error: ไม่พบ Role ที่ถูกต้อง ({role}) โปรดติดต่อผู้ดูแลระบบ</p>
+                        <button onClick={handleLogout} className="mt-2 text-sm underline">ออกจากระบบ</button>
+                    </div>
+                );
         }
     };
 

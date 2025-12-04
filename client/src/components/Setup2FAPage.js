@@ -4,16 +4,14 @@ import axios from 'axios';
 import './Setup2FA.css';
 import { QRCodeSVG } from 'qrcode.react';
 
+const API_BASE_URL = "http://localhost:3001";
+
 function Setup2FA() {
     const navigate = useNavigate();
     const location = useLocation();
     const { userId } = location.state || {};
-
     const [qrCodeData, setQrCodeData] = useState('');
-    
-    // แก้ไข ESLint Warning: เปลี่ยน secret เป็น _ (Underscore) เนื่องจากไม่ได้ถูกใช้ในการแสดงผล
     const [ setSecret] = useState(''); 
-    
     const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -21,7 +19,6 @@ function Setup2FA() {
 
     const inputRefs = useRef([]);
 
-    /* ==================== Fetch QR Code ==================== */
     useEffect(() => {
         if (!userId) {
             setError('User ID ไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่');
@@ -32,7 +29,7 @@ function Setup2FA() {
             setLoading(true);
             try {
                 const response = await axios.post(
-                    `${process.env.REACT_APP_API_URL}/api/setup-2fa`,
+                    `${API_BASE_URL}/api/setup-2fa`,
                     { userId }
                 );
                 setQrCodeData(response.data.otpauth_url); 
@@ -48,7 +45,6 @@ function Setup2FA() {
         // eslint-disable-next-line react-hooks/exhaustive-deps 
     }, [userId]);
 
-    /* ==================== OTP Input Logic ==================== */
     const handleChange = (e, index) => {
         const value = e.target.value;
         if (/^\d*$/.test(value) && value.length <= 1) {
@@ -57,12 +53,10 @@ function Setup2FA() {
             setOtpCode(newOtp);
 
             if (value && index < 5) inputRefs.current[index + 1].focus();
-            // การลบตัวเลข: เลื่อน focus กลับไป input ก่อนหน้า
             else if (!value && index > 0) inputRefs.current[index - 1].focus();
         }
     };
 
-    /* ==================== Verify OTP ==================== */
     const handleVerify = async () => {
         const code = otpCode.join('');
 
@@ -77,11 +71,10 @@ function Setup2FA() {
 
         try {
             const response = await axios.post(
-                `${process.env.REACT_APP_API_URL}/api/verify-2fa`,
+                `${API_BASE_URL}/api/verify-2fa`,
                 { userId, token: code }
             );
 
-            // 💡 โค้ดที่แก้ไข: บันทึก Token และตั้งค่า Header
             const loginToken = response.data.token;
             if (loginToken) {
                 localStorage.setItem('token', loginToken); 
@@ -89,7 +82,7 @@ function Setup2FA() {
             } 
             
             setMessage(response.data.message || 'ตั้งค่า 2FA สำเร็จแล้ว');
-            navigate('/dashboard'); // ✅ Redirect สำเร็จ
+            navigate('/dashboard'); 
         } catch (err) {
             setError(err.response?.data?.message || 'รหัสไม่ถูกต้อง');
             setOtpCode(['', '', '', '', '', '']);
@@ -104,22 +97,19 @@ function Setup2FA() {
             <div className="authCard">
                 <h2>ตั้งค่า Two-Factor Authentication (2FA)</h2>
 
-                {/* Loading */}
                 {loading && !qrCodeData && (
                     <p>กำลังโหลด QR Code ...</p>
                 )}
 
-                {/* Error Before QR */}
                 {error && !qrCodeData && (
                     <>
                         <p className="errorText">{error}</p>
                         <button className="nextButton" onClick={() => navigate('/login')}>
-                             กลับไปหน้าเข้าสู่ระบบ
+                            กลับไปหน้าเข้าสู่ระบบ
                         </button>
                     </>
                 )}
 
-                {/* QR CODE AREA */}
                 {qrCodeData && (
                     <>
                         <div className="qrCodeContainer">
@@ -128,7 +118,6 @@ function Setup2FA() {
                             <p>สแกน QR ด้วย Microsoft Authenticator และกรอก TOTP 6 หลัก</p>
                         </div>
 
-                        {/* OTP Boxes */}
                         <div className="otpInputContainer">
                             {otpCode.map((digit, index) => (
                                 <input
@@ -146,7 +135,6 @@ function Setup2FA() {
                             ))}
                         </div>
 
-                        {/* Verify Button */}
                         <button
                             className="nextButton"
                             disabled={loading || otpCode.join('').length !== 6}
@@ -157,12 +145,10 @@ function Setup2FA() {
                     </>
                 )}
 
-                {/* Back Button */}
                 <button className="nextButton" style={{ marginTop: "10px" }} onClick={() => navigate('/login')}>
                     กลับไปหน้าเข้าสู่ระบบ
                 </button>
 
-                {/* Error / Success Messages */}
                 {error && <p className="errorText">{error}</p>}
                 {message && <p style={{ color: "green", marginTop: "15px" }}>{message}</p>}
             </div>
