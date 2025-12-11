@@ -335,6 +335,43 @@ app.get("/api/inventoryBalanceReportChart", async (req, res) => {
     }
 });
 
+// Simple REST endpoint to get current low-stock items
+app.get('/api/lowStockAlert', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT id, sku, name, quantity, limit_quantity FROM products WHERE quantity < limit_quantity ORDER BY quantity ASC`);
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'db error' });
+  }
+});
+
+// When a client connects, send the current low-stock count
+io.on('connection', socket => {
+  console.log('client connected', socket.id);
+
+  const sendLowStock = async () => {
+    try {
+      const [rows] = await pool.query(
+        `SELECT id, sku, name, quantity, limit_quantity FROM products WHERE quantity < limit_quantity`);
+      socket.emit('low_stock', { count: rows.length, items: rows });
+    } catch (err) {
+      console.error('sendLowStock err', err);
+    }
+  };
+
+  // send immediately on connection
+  sendLowStock();
+
+  // set interval to check every 15 seconds (adjust as needed)
+  const interval = setInterval(sendLowStock, 15000);
+
+  socket.on('disconnect', () => {
+    clearInterval(interval);
+    console.log('client disconnected', socket.id);
+  });
+});
 
 // 4. สั่งให้ Server รัน
 const PORT = 3001;
