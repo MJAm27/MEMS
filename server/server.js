@@ -22,7 +22,8 @@ const dbConfig = {
     port: process.env.DATABASE_PORT,
     waitForConnections: true,
     connectionLimit: 10, // สามารถปรับจำนวนได้ตามความเหมาะสม
-    queueLimit: 0
+    queueLimit: 0,
+    connectTimeout:20000
 };
 
 // สร้าง Connection Pool เพื่อจัดการการเชื่อมต่ออย่างมีประสิทธิภาพ
