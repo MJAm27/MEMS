@@ -30,8 +30,8 @@ function InventoryBalanceReportChart() {
     plugins: {
       title: {
         display: true,
-        text: "Inventory Balance",
-        font: { size: 18 }
+        text: "รายงานปริมาณคงเหลือ",
+        font: { size: 20 }
       },
     },
     scales: {
