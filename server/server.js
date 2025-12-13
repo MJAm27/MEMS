@@ -1,12 +1,15 @@
-const express = require("express");
-const mysql = require("mysql2/promise");
+
+const express = require('express');
+const mysql = require("mysql2/promise"); // โค้ดเดิมใช้ mysql2/promise
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const speakeasy = require("speakeasy");
 const qrcode = require("qrcode");
-const cors = require("cors");
+const cors = require('cors');
+const axios = require('axios'); // สำหรับเชื่อมต่อ ESP8266
 
 const app = express();
+const PORT = 3001; // Port สำหรับ Backend
 
 // 1. ตั้งค่า Middlewares
 app.use(cors());
@@ -14,6 +17,7 @@ app.use(express.json());
 
 require('dotenv').config()
 
+// --- โค้ดส่วน Database Configuration เดิม ---
 const dbConfig = {
     host: process.env.DATABASE_HOST,
     user: process.env.DATABASE_USER,
@@ -21,48 +25,122 @@ const dbConfig = {
     database: process.env.DATABASE_NAME,
     port: process.env.DATABASE_PORT,
     waitForConnections: true,
-    connectionLimit: 10, // สามารถปรับจำนวนได้ตามความเหมาะสม
+    connectionLimit: 10,
     queueLimit: 0,
-    connectTimeout:20000
+    connectTimeout: 20000, 
 };
-
-// สร้าง Connection Pool เพื่อจัดการการเชื่อมต่ออย่างมีประสิทธิภาพ
 const pool = mysql.createPool(dbConfig);
+// เปลี่ยน 'db' ที่ใช้ในส่วน ESP เป็น 'pool' เพื่อให้สอดคล้องกับโค้ดด้านบน
+const db = pool; 
+// ------------------------------------------
+
 
 pool.query("SELECT 1")
-  .then(() => console.log("✅ Database connected successfully!"))
-  .catch(err => console.error("❌ Database connection failed:", err.message));
+    .then(() => console.log("✅ Database connected successfully!"))
+    .catch(err => console.error("❌ Database connection failed:", err.message));
 
 
 const JWT_SECRET = "MY_SUPER_SECRET_KEY_FOR_JWT_12345";
 
+// +++++++++++++++++++++++ ค่าคงที่สำหรับ ESP8266 +++++++++++++++++++++++
+// ‼️ (สำคัญ) ใส่ IP ของ ESP8266 ที่ได้จาก Serial Monitor
+const ESP_IP = 'http://192.168.1.139'; 
+// (ชั่วคราว) User ID ที่จะใช้บันทึก Log (จากตาราง user)
+const HARDCODED_USER_ID = 123464;
+// -------------------------------------------------------------------
+
+
 // +++++++++++++++++++++++ Middleware ตรวจสอบ Token +++++++++++++++++++++++
-/**
- * Middleware สำหรับตรวจสอบ JWT (Token)
- */
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // แยก "Bearer <TOKEN>"
+    const token = authHeader && authHeader.split(' ')[1];
 
     if (token == null) {
-        return res.sendStatus(401); // 401 Unauthorized (ไม่มี Token)
+        return res.sendStatus(401); 
     }
 
     jwt.verify(token, JWT_SECRET, (err, userPayload) => {
         if (err) {
             console.error("JWT Verification Error:", err.message);
-            return res.sendStatus(403); // 403 Forbidden (Token ไม่ถูกต้อง หรือหมดอายุ)
+            return res.sendStatus(403); 
         }
         
-        // Token ถูกต้อง, เก็บข้อมูล user ที่ถอดรหัสได้ไว้ใน req
         req.user = userPayload; 
-        next(); // ไปยัง Endpoint ถัดไป
+        next(); 
     });
 }
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-// --- API Endpoints ---
+// --- Helper Functions สำหรับ ESP และ Log ---
+
+/**
+ * ฟังก์ชัน Helper สำหรับบันทึก Log ลง Database
+ */
+async function logActionToDB(userId, actionTypeId) {
+    const sql = `
+        INSERT INTO accesslogs (user_id, action_type_id, access_date, access_time) 
+        VALUES (?, ?, CURDATE(), CURTIME())
+    `;
+    try {
+        await db.query(sql, [userId, actionTypeId]);
+        console.log(`[Database] Logged action: User ${userId}, ActionType ${actionTypeId}`);
+    } catch (dbError) {
+        console.error('[Database] Error logging action:', dbError.message);
+        throw new Error('Failed to log action to database');
+    }
+}
+
+/**
+ * ฟังก์ชัน Helper สำหรับสั่งงาน ESP8266
+ */
+async function commandServo(action) { // action คือ 'open' หรือ 'close'
+    const url = `${ESP_IP}/${action}`;
+    try {
+        const response = await axios.get(url, { timeout: 3000 }); 
+        console.log(`[ESP8266] Commanded '${action}'. Response: ${response.data}`);
+        return response.data;
+    } catch (espError) {
+        console.error(`[ESP8266] Error commanding '${action}' at ${url}:`, espError.message);
+        throw new Error('Failed to command ESP8266 (Check if ESP is online)');
+    }
+}
+
+// --- API Endpoints สำหรับ ESP8266 (ส่วนใหม่) ---
+
+// 📌 API: สำหรับ "เปิด" Servo
+app.get('/api/open', async (req, res) => {
+    // ‼️ ควรใช้ req.user.userId แทน HARDCODED_USER_ID ใน Production
+    const userId = HARDCODED_USER_ID; 
+    const ACTION_TYPE_ID = 1; // ID 1 คือ 'Servo Open' 
+    
+    try {
+        await commandServo('open');
+        await logActionToDB(userId, ACTION_TYPE_ID);
+        res.status(200).send({ message: 'Servo Opened and action logged.' });
+
+    } catch (error) {
+        res.status(500).send({ error: error.message });
+    }
+});
+
+// 📌 API: สำหรับ "ปิด" Servo
+app.get('/api/close', async (req, res) => {
+    // ‼️ ควรใช้ req.user.userId แทน HARDCODED_USER_ID ใน Production
+    const userId = HARDCODED_USER_ID; 
+    const ACTION_TYPE_ID = 2; // ID 2 คือ 'Servo Close'
+
+    try {
+        await commandServo('close');
+        await logActionToDB(userId, ACTION_TYPE_ID);
+        res.status(200).send({ message: 'Servo Closed and action logged.' });
+
+    } catch (error) {
+        res.status(500).send({ error: error.message });
+    }
+});
+
+// --- API Endpoints เดิม (Login, Register, 2FA, Profile) ---
 
 /**
  * Endpoint 1: Login (ตรวจสอบ Email + Password)
@@ -71,7 +149,6 @@ app.post("/api/login", async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        // ใช้ pool.execute แทนการสร้าง connection ใหม่
         const [users] = await pool.execute("SELECT * FROM users WHERE email = ?", [email]);
 
         if (users.length === 0) {
@@ -85,15 +162,12 @@ app.post("/api/login", async (req, res) => {
             return res.status(401).json({ message: "Email หรือ Password ไม่ถูกต้อง" });
         }
         
-        // ✅ เปิดใช้การตรวจสอบ 2FA/Setup 2FA
         if (user.totp_secret) {
-            // ต้องยืนยัน 2FA
             res.json({ 
                 status: "2fa_required", 
                 userId: user.user_id 
             });
         } else {
-            // ถ้ายังไม่มี 2FA ให้แจ้งว่าต้องตั้งค่าก่อน
             res.json({ 
                 status: "2fa_setup_required", 
                 userId: user.user_id 
@@ -117,18 +191,15 @@ app.post("/api/register", async (req, res) => {
     }
 
     try {
-        // 1. ตรวจสอบ Email ซ้ำ
         const [existingUsers] = await pool.execute("SELECT user_id FROM users WHERE email = ?", [email]);
         if (existingUsers.length > 0) {
             return res.status(409).json({ message: "Email นี้ถูกใช้งานแล้ว" });
         }
 
-        // 2. Hashing รหัสผ่าน
         const saltRounds = 10;
         const passwordHash = await bcrypt.hash(password, saltRounds);
         const newUserId = `U-${Date.now().toString().slice(-10)}`;
 
-        // 3. บันทึกผู้ใช้ใหม่
         await pool.execute(
             "INSERT INTO users (user_id, email, password_hash, fullname, position, phone_number, role_id, totp_secret) VALUES (?, ?, ?, ?, ?, ?, ?, NULL)",
             [newUserId, email, passwordHash, fullname, position, phone_number, role_id]
@@ -150,18 +221,15 @@ app.post("/api/setup-2fa", async (req, res) => {
     const { userId } = req.body;
 
     try {
-        // 1. สร้าง Secret
         const secret = speakeasy.generateSecret({
             name: `MEMS Project (${userId})`,
         });
 
-        // 2. บันทึก Secret ลง DB
         await pool.execute(
             "UPDATE users SET totp_secret = ? WHERE user_id = ?",
             [secret.base32, userId]
         );
         
-        // 3. สร้าง QR Code Data URL
         qrcode.toDataURL(secret.otpauth_url, (err, data_url) => {
             if (err) {
                 console.error("QR code generation error: ", err);
@@ -189,7 +257,6 @@ app.post("/api/verify-2fa", async (req, res) => {
     const { userId, token } = req.body;
 
     try {
-        // 1. ดึง Secret และ Role name
         const [users] = await pool.execute(
             "SELECT U.*, R.role_name FROM users U JOIN role R ON U.role_id = R.role_id WHERE U.user_id = ?", 
             [userId]
@@ -202,16 +269,14 @@ app.post("/api/verify-2fa", async (req, res) => {
         const user = users[0];
         const { totp_secret, role_name } = user;
 
-        // 2. ตรวจสอบรหัส 6 หลัก
         const verified = speakeasy.totp.verify({
             secret: totp_secret,
             encoding: 'base32',
             token: token,
-            window: 1 // อนุญาตให้รหัสถูกหรือผิดไป 1 ช่วงเวลา (30 วินาที)
+            window: 1 
         });
 
         if (verified) {
-            // 3. สร้าง JWT (Token ล็อกอิน)
             const loginToken = jwt.sign(
                 { 
                     userId: user.user_id, 
@@ -242,14 +307,11 @@ app.post("/api/verify-2fa", async (req, res) => {
 
 /**
  * Endpoint 5: Get Current User (Protected)
- * (แก้ไข: ให้ค้นหาข้อมูลล่าสุดจาก DB)
  */
 app.get("/api/auth/me", authenticateToken, async (req, res) => {
-    // req.user มาจาก middleware (มี userId, email, fullname, role)
     const userIdFromToken = req.user.userId; 
 
     try {
-        // ใช้ userId จาก Token ไปค้นหาข้อมูลทั้งหมดใน DB
         const [users] = await pool.execute("SELECT * FROM users WHERE user_id = ?", [userIdFromToken]);
         
         if (users.length === 0) {
@@ -258,14 +320,13 @@ app.get("/api/auth/me", authenticateToken, async (req, res) => {
 
         const user = users[0];
 
-        // ส่งข้อมูลที่ครบถ้วนกลับไป
         res.json({
-            user_id: user.user_id, // ส่งเป็น snake_case ให้ตรงกับ DB และ React
+            user_id: user.user_id, 
             fullname: user.fullname,
             email: user.email,
             phone_number: user.phone_number,
             position: user.position,
-            role: req.user.role // 'role' มาจาก token
+            role: req.user.role 
         });
 
     } catch (error) {
@@ -275,44 +336,33 @@ app.get("/api/auth/me", authenticateToken, async (req, res) => {
 });
 
 
-// +++++++++++++++++++++++ (ส่วนที่เพิ่มเข้ามา) +++++++++++++++++++++++
 /**
  * Endpoint 6: Update User Profile (Protected)
- * (Endpoint ใหม่สำหรับหน้า ProfileEditENG.js)
  */
 app.put("/api/profile-edit", authenticateToken, async (req, res) => {
-    // 1. ดึง ID ผู้ใช้จาก Token ที่ตรวจสอบแล้ว (ปลอดภัย)
     const userIdFromToken = req.user.userId;
-
-    // 2. ดึงข้อมูลที่ส่งมาจาก Form
     const { fullname, email, phone_number, position } = req.body;
 
-    // 3. ตรวจสอบข้อมูล
     if (!fullname || !email) {
         return res.status(400).json({ message: "Fullname and Email are required." });
     }
 
     try {
-        // 4. อัปเดตข้อมูลในฐานข้อมูล
         await pool.execute(
             "UPDATE users SET fullname = ?, email = ?, phone_number = ?, position = ? WHERE user_id = ?",
             [fullname, email, phone_number, position, userIdFromToken]
         );
 
-        // 5. ส่งคำตอบว่าสำเร็จ
         res.json({ message: "Profile updated successfully!" });
 
     } catch (error) {
         console.error("Update Profile Error:", error);
-        // ตรวจสอบ lỗi email ซ้ำ
         if (error.code === 'ER_DUP_ENTRY') {
             return res.status(409).json({ message: "This email is already in use." });
         }
         res.status(500).json({ message: "Server Error", error: error.message });
     }
 });
-// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
 
 
 app.get("/api/inventoryBalanceReportChart", async (req, res) => {
@@ -338,7 +388,7 @@ app.get("/api/inventoryBalanceReportChart", async (req, res) => {
 
 
 // 4. สั่งให้ Server รัน
-const PORT = 3001;
 app.listen(PORT, () => {
-    console.log(`✅ Server is running on http://localhost:${PORT}`);
+    console.log(`🚀 Backend server is running on http://localhost:${PORT}`);
+    console.log(`   (Ready to command ESP at ${ESP_IP})`);
 });

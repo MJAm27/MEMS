@@ -1,0 +1,88 @@
+/* เพิ่ม Drop Shadow และ Border Radius ให้กับ Container หลัก */
+.return-page-container {
+    max-width: 500px;
+    margin: 2rem auto;
+    background-color: #ffffff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15), 0 5px 10px rgba(0, 0, 0, 0.05);
+}
+
+/* Header/Title Bar */
+.return-page-container h1 {
+    font-size: 1.5rem;
+}
+
+/* --- STEP: DoorControlScreen --- */
+
+/* กล่อง Icon */
+.door-control-icon-box {
+    padding: 2rem;
+    border-radius: 50%;
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.3s ease;
+}
+
+/* ปุ่มหลัก */
+.door-control-btn {
+    padding: 0.75rem 3rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* สีสำหรับปุ่มเปิด (เขียว) */
+.door-control-btn.open-btn {
+    background-color: #10B981; /* Green 600 */
+}
+.door-control-btn.open-btn:hover {
+    background-color: #059669; /* Green 700 */
+    transform: translateY(-1px);
+}
+
+/* สีสำหรับปุ่มปิด (ชมพู) */
+.door-control-btn.close-btn {
+    background-color: #EC4899; /* Pink 600 */
+}
+.door-control-btn.close-btn:hover {
+    background-color: #DB2777; /* Pink 700 */
+    transform: translateY(-1px);
+}
+
+/* --- STEP: InputAndScanScreen --- */
+.scan-btn {
+    background-color: #EC4899; /* Pink 500 */
+}
+.scan-btn:hover {
+    background-color: #DB2777; /* Pink 600 */
+}
+
+/* --- STEP: ConfirmationScreen --- */
+.confirmation-card {
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    background-color: #F9FAFB;
+}
+
+/* ปุ่มยกเลิก (ชมพู) */
+.cancel-btn {
+    background-color: #EC4899;
+}
+.cancel-btn:hover {
+    background-color: #DB2777;
+}
+
+/* ปุ่มยืนยัน (เขียว) */
+.confirm-btn {
+    background-color: #10B981;
+}
+.confirm-btn:hover {
+    background-color: #059669;
+}
