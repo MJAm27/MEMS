@@ -441,10 +441,7 @@ io.on('connection', socket => {
 });
 
 // 4. สั่งให้ Server รัน
-<<<<<<< HEAD
 // ✅ ใช้ server.listen เพื่อรันทั้ง Express และ Socket.IO
-=======
->>>>>>> 99d1d56949968587da928e3cd41b57e2f73c55e8
 server.listen(PORT, () => {
     console.log(`🚀 Backend server is running on http://localhost:${PORT}`);
     console.log(`   (Ready to command ESP at ${ESP_IP})`);
