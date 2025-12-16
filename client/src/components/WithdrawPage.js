@@ -1,45 +1,77 @@
 import React, { useState } from 'react';
 import { FaArrowLeft, FaLockOpen, FaTimesCircle, FaCheckCircle, FaMinus, FaPlus, FaCamera, FaTrash } from 'react-icons/fa';
+import axios from 'axios'; // 🚨 ใช้ axios สำหรับเชื่อมต่อ API จริง
 import './WithdrawPage.css';
 
-// Mock Data สำหรับจำลองการดึงข้อมูลอะไหล่
+// Mock Data สำหรับการจำลองผลลัพธ์การค้นหาอะไหล่ (ใช้ในการทดสอบก่อนเชื่อม DB จริง)
+// ใน Production ข้อมูลนี้จะมาจาก API /api/withdraw/partInfo
 const MOCK_PART_DATA = {
     'ABU-001': { partId: 'ABU-001', partName: 'Patient Valve (ABU-001)', sku: 'ABU-001', currentStock: 50, imageUrl: 'https://via.placeholder.com/100x100?text=ABU' },
     'BATT-001': { partId: 'BATT-001', partName: 'BATTERY 12V 7.2Ah', sku: 'BATT-001', currentStock: 40, imageUrl: 'https://via.placeholder.com/100x100?text=BATT' },
 };
 
-// Mock API Call functions
-const mockApi = {
-    openDoor: async () => {
-        return new Promise((resolve) => {
-            setTimeout(() => { resolve({ success: true }); }, 500);
-        });
+// ----------------------------------------------------------------------
+// Configuration และ API Logic สำหรับ Production
+// ----------------------------------------------------------------------
+
+const API_BASE_URL = 'http://localhost:3001/api/withdraw'; 
+
+const realApi = {
+    // 1. ดึงข้อมูลอะไหล่จาก DB
+    fetchPartInfo: async (itemId) => {
+        try {
+            // ส่ง Part ID ไปค้นหาใน DB
+            const response = await axios.post(`${API_BASE_URL}/partInfo`, { partId: itemId });
+            // API Backend (server.js) จะคืนค่า { partId, partName, currentStock, imageUrl, ...}
+            return response.data;
+        } catch (error) {
+            const message = error.response?.data?.error || 'ไม่สามารถดึงข้อมูลอะไหล่ได้ (ตรวจสอบรหัส)';
+            // ใช้ MOCK_PART_DATA เป็น fallback ในกรณีที่ Backend ยังไม่พร้อม (สามารถลบทิ้งได้เมื่อใช้งานจริง)
+            const fallback = MOCK_PART_DATA[itemId];
+            if (fallback) return fallback; 
+            throw new Error(message);
+        }
     },
-    fetchPartInfo: (itemId) => {
-        return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                const part = MOCK_PART_DATA[itemId];
-                if (part) {
-                    resolve(part);
-                } else {
-                    reject(new Error("ไม่พบรายการอะไหล่"));
-                }
-            }, 500);
-        });
-    },
+    
+    // 2. ยืนยันการเบิกและตัดสต็อกใน DB
     confirmAndCutStock: async (assetId, cart) => {
-        console.log("MOCK API: ยืนยันการเบิก", { Machine: assetId, Items: cart });
-        
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                resolve({ success: true, transactionId: 'TX-2025-' + Date.now() });
-            }, 1500);
-        });
+        const token = localStorage.getItem('token'); 
+        if (!token) {
+            throw new Error('ไม่พบ Token ผู้ใช้งาน, กรุณาล็อกอินใหม่');
+        }
+
+        try {
+            const response = await axios.post(
+                `${API_BASE_URL}/confirm`, 
+                { machine_SN: assetId, cartItems: cart }, // ส่งเลขครุภัณฑ์เครื่องจักรและรายการอะไหล่
+                { 
+                    headers: {
+                        Authorization: `Bearer ${token}` // ส่ง Token เพื่อยืนยันตัวตน (authenticateToken)
+                    }
+                }
+            );
+            return response.data;
+        } catch (error) {
+            const message = error.response?.data?.error || 'เกิดข้อผิดพลาดในการยืนยันรายการ';
+            throw new Error(message);
+        }
     }
+    
+    // 3. (Optional) API สำหรับสั่งปิดประตูจริง
+    /* closeDoor: async () => {
+        const token = localStorage.getItem('token');
+        await axios.get('http://localhost:3001/api/close', { 
+            headers: { Authorization: `Bearer ${token}` } 
+        });
+    } */
 };
 
-// Component หลัก
-function WithdrawPage({ user = { fullname: 'วิศวกร A', employeeId: 'U-4572742117' } }) {
+
+// ⚠️ แก้ไข: รับ Prop 'user' โดยไม่มีค่าเริ่มต้น เพื่อใช้ข้อมูลของวิศวกรที่ล็อกอินมาจริง
+function WithdrawPage({ user }) { 
+    // ใช้ Fallback เพื่อป้องกัน Component พัง หาก Prop ยังไม่ถูกโหลด
+    const activeUser = user || { fullname: 'กำลังโหลด...', employeeId: 'N/A' };
+
     const [currentStep, setCurrentStep] = useState(1);
     const [doorStatus, setDoorStatus] = useState({ state: 'closed', message: 'กรุณาเปิดตู้เพื่อเริ่ม' });
     const [currentPartId, setCurrentPartId] = useState(''); 
@@ -54,7 +86,12 @@ function WithdrawPage({ user = { fullname: 'วิศวกร A', employeeId: '
         setIsProcessing(true);
         setError('');
         try {
-            await mockApi.openDoor();
+            // 🚨 ใน Production ควรเรียก API เปิดประตูจริง
+            // await axios.get('http://localhost:3001/api/open');
+            
+            // ใช้ Mock สำหรับการทดสอบ UI/UX
+            await new Promise((resolve) => setTimeout(resolve, 500)); 
+            
             setDoorStatus({ state: 'open', message: 'ตู้เปิดแล้ว' });
             setCurrentStep(2); 
         } catch (err) {
@@ -80,7 +117,8 @@ function WithdrawPage({ user = { fullname: 'วิศวกร A', employeeId: '
         setIsProcessing(true);
         setError('');
         try {
-            const partInfo = await mockApi.fetchPartInfo(itemId);
+            // ⚠️ ใช้ realApi ใน Production เพื่อเชื่อมต่อ DB
+            const partInfo = await realApi.fetchPartInfo(itemId); 
             
             const existingIndex = cartItems.findIndex(item => item.partId === itemId);
             
@@ -89,7 +127,13 @@ function WithdrawPage({ user = { fullname: 'วิศวกร A', employeeId: '
                     index === existingIndex ? { ...item, quantity: item.quantity + quantity } : item
                 ));
             } else {
-                setCartItems(prev => [...prev, { ...partInfo, quantity: quantity }]);
+                setCartItems(prev => [...prev, { 
+                    partId: partInfo.partId, 
+                    partName: partInfo.partName, 
+                    currentStock: partInfo.currentStock,
+                    imageUrl: partInfo.imageUrl || 'https://via.placeholder.com/100x100?text=Part',
+                    quantity: quantity
+                }]);
             }
 
             setCurrentPartId(''); 
@@ -121,9 +165,13 @@ function WithdrawPage({ user = { fullname: 'วิศวกร A', employeeId: '
         setIsProcessing(true);
         setError('');
         try {
-            const result = await mockApi.confirmAndCutStock(assetId, cartItems);
+            // ⚠️ ใช้ realApi ใน Production เพื่อตัดสต็อกและบันทึก Transaction
+            const result = await realApi.confirmAndCutStock(assetId, cartItems);
             alert(`ยืนยันการเบิกสำเร็จ! Transaction ID: ${result.transactionId}`);
             
+            // 🚨 สั่งปิดประตูจริง (ถ้ามี API)
+            // await realApi.closeDoor();
+
             setDoorStatus({ state: 'closing', message: 'รายการถูกยืนยันแล้ว ปิดตู้...' });
             setCurrentStep(4);
             setAssetId('');
@@ -210,11 +258,11 @@ function WithdrawPage({ user = { fullname: 'วิศวกร A', employeeId: '
                         <button
                             type="button"
                             onClick={() => {
-                                // Logic การคลิกปุ่ม: ถ้าช่องกรอกว่าง ให้ใช้ Mock ID เพื่อจำลองการสแกนสำเร็จ
+                                // Logic: ถ้าช่องกรอกว่าง ให้ใช้ Mock ID เพื่อจำลองการสแกนสำเร็จ
                                 const itemToUse = currentPartId || 'ABU-001'; 
                                 handleAddItemToCart(itemToUse, 1);
                             }}
-                            disabled={isProcessing || !assetId} // เปิดใช้งานเมื่อมี Asset ID เท่านั้น
+                            disabled={isProcessing || !assetId} 
                             className={`py-3 w-full flex items-center justify-center rounded-lg text-white font-bold transition duration-200 ${
                                 isProcessing || !assetId ? 'bg-gray-400 cursor-not-allowed' : 'bg-pink-500 hover:bg-pink-600'
                             }`}
@@ -300,7 +348,7 @@ function WithdrawPage({ user = { fullname: 'วิศวกร A', employeeId: '
             
             {/* รายละเอียดการเบิก */}
             <div className="bg-background-gray p-4 rounded-lg shadow-inner">
-                <p className="font-semibold text-gray-700">ผู้เบิก: {user.fullname}</p>
+                <p className="font-semibold text-gray-700">ผู้เบิก: {activeUser.fullname}</p>
                 <p className="text-sm text-gray-500">เลขครุภัณฑ์เครื่องจักร: **{assetId || 'ไม่ได้ระบุ'}**</p>
                 <p className="text-sm text-gray-500">วันที่: {new Date().toLocaleDateString('th-TH')}</p>
                 <p className="text-sm font-semibold text-pink-600">รวม: {cartItems.length} รายการ</p>

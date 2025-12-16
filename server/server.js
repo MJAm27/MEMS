@@ -118,18 +118,20 @@ async function commandServo(action) { // action คือ 'open' หรือ 'c
         throw new Error('Failed to command ESP8266 (Check if ESP is online)');
     }
 }
+// --- Helper function สำหรับสร้าง ID ---
+function generateTransactionId(prefix = 'TX') {
+    return `${prefix}-${Date.now().toString().slice(-10)}`;
+}
 
 // --- API Endpoints สำหรับ ESP8266 ---
 
 // 📌 API: สำหรับ "เปิด" Servo
-app.get('/api/open', async (req, res) => {
-    // ‼️ ควรใช้ req.user.userId แทน HARDCODED_USER_ID ใน Production
-    const userId = HARDCODED_USER_ID; 
-    const ACTION_TYPE_ID = 1; // ID 1 คือ 'Servo Open' 
-    
+app.get('/api/open', authenticateToken, async (req, res) => {
+    const ACTION_TYPE_ID = 'A-001'; // 'เปิดประตู'
+
     try {
-        await commandServo('open');
-        await logActionToDB(userId, ACTION_TYPE_ID);
+         // await commandServo('open'); // 🚨 เปิดใช้เมื่อเชื่อมต่อ ESP จริง
+        await logActionToDB(req.user.userId, ACTION_TYPE_ID);
         res.status(200).send({ message: 'Servo Opened and action logged.' });
 
     } catch (error) {
@@ -138,21 +140,158 @@ app.get('/api/open', async (req, res) => {
 });
 
 // 📌 API: สำหรับ "ปิด" Servo
-app.get('/api/close', async (req, res) => {
-    // ‼️ ควรใช้ req.user.userId แทน HARDCODED_USER_ID ใน Production
-    const userId = HARDCODED_USER_ID; 
-    const ACTION_TYPE_ID = 2; // ID 2 คือ 'Servo Close'
+app.get('/api/close', authenticateToken, async (req, res) => {
+    const ACTION_TYPE_ID = 'A-002'; // 'ปิดประตู'
 
     try {
-        await commandServo('close');
-        await logActionToDB(userId, ACTION_TYPE_ID);
-        res.status(200).send({ message: 'Servo Closed and action logged.' });
+        // await commandServo('close'); // 🚨 เปิดใช้เมื่อเชื่อมต่อ ESP จริง
+        await logActionToDB(req.user.userId, ACTION_TYPE_ID);
+         res.status(200).send({ message: 'Servo Closed and action logged.' });
 
     } catch (error) {
-        res.status(500).send({ error: error.message });
+    res.status(500).send({ error: error.message });
     }
 });
 
+// --- API Endpoints สำหรับ Withdrawal (เชื่อมต่อ DB) ---
+
+// 1. API: Fetch Part Info (POST /api/withdraw/partInfo)
+app.post('/api/withdraw/partInfo', async (req, res) => {
+    // partId ที่ส่งมาใน body จะเท่ากับ equipment_type_id (เช่น 'ABU-001')
+    const { partId } = req.body; 
+
+    if (!partId) {
+        return res.status(400).json({ error: 'Part ID is required.' });
+    }
+
+    try {
+        // Query: รวมสต็อก (current_quantity) จากทุก Lot สำหรับ Part Type นั้น
+        const sql = `
+            SELECT
+                ET.equipment_type_id AS partId,
+                ET.Equipment_name AS partName,
+                ET.unit,
+                COALESCE(SUM(L.current_quantity), 0) AS currentStock,
+                ET.img AS imageUrl
+            FROM equipment_type ET
+            LEFT JOIN equipment E ON ET.equipment_type_id = E.equipment_type_id
+            LEFT JOIN lot L ON E.equipment_id = L.equipment_id
+            WHERE ET.equipment_type_id = ?
+            GROUP BY ET.equipment_type_id, ET.Equipment_name, ET.unit, ET.img
+         `;
+        
+        const [rows] = await pool.query(sql, [partId]);
+
+        if (rows.length === 0 || rows[0].currentStock === 0) {
+            return res.status(404).json({ error: 'ไม่พบรายการอะไหล่หรือไม่มีสต็อก' });
+        }
+        
+        // จัดการ URL รูปภาพที่อาจเป็น NULL ใน DB
+        rows[0].imageUrl = rows[0].imageUrl === 'NULL' || !rows[0].imageUrl ? '' : rows[0].imageUrl;
+
+        res.json(rows[0]);
+
+    } catch (error) {
+        console.error("DB Error fetching part info:", error.message);
+        res.status(500).json({ error: 'Server error while fetching part details.' });
+    }
+});
+
+
+// 2. API: Confirm and Cut Stock (POST /api/withdraw/confirm)
+app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
+    const { machine_SN, cartItems } = req.body;
+    const userId = req.user.userId; // ดึง user ID จาก Token
+
+    if (!machine_SN || !cartItems || cartItems.length === 0) {
+        return res.status(400).json({ error: 'Machine SN และรายการเบิกเป็นสิ่งจำเป็น' });
+    }
+     
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        await connection.beginTransaction(); // เริ่ม Transaction
+        
+        const transactionId = generateTransactionId('WTH');
+        const transactionTypeId = 'T-WTH'; // 🚨 สมมติให้ T-WTH เป็น ID สำหรับ Transaction Type 'เบิก'
+
+        // 1. ตรวจสอบ/สร้าง Machine (ถ้าไม่มีในตาราง machine)
+        const [machineCheck] = await connection.query("SELECT machine_SN FROM machine WHERE machine_SN = ?", [machine_SN]);
+        if (machineCheck.length === 0) {
+            await connection.query("INSERT INTO machine (machine_SN, machine_name) VALUES (?, ?)", [machine_SN, `Machine ${machine_SN} (Created by Withdrawal)`]);
+    }
+
+        // 2. สร้าง Transaction หลัก
+        const insertTransactionSql = `
+            INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_SN)
+            VALUES (?, ?, CURDATE(), CURTIME(), ?, ?)
+        `;
+        await connection.query(insertTransactionSql, [transactionId, transactionTypeId, userId, machine_SN]);
+
+        // 3. วนลูปเพื่อตัดสต็อกและบันทึกรายการอะไหล่
+        for (const item of cartItems) {
+            const { partId, quantity } = item; // partId = equipment_type_id (e.g., 'ABU-001')
+
+            // 3a. ค้นหา Lot ที่พร้อมใช้งาน (เรียงตามวันหมดอายุ/นำเข้า เพื่อให้เป็น FIFO)
+            const [lotRows] = await connection.query(`
+                SELECT 
+                    L.lot_id, L.current_quantity, E.equipment_id, ET.Equipment_name
+                FROM lot L
+                JOIN equipment E ON L.equipment_id = E.equipment_id
+                JOIN equipment_type ET ON E.equipment_type_id = ET.equipment_type_id
+                WHERE E.equipment_type_id = ? AND L.current_quantity > 0
+                ORDER BY L.expiry_date ASC, L.import_date ASC
+            `, [partId]);
+
+            let requiredQty = quantity;
+            let totalAvailable = lotRows.reduce((sum, lot) => sum + lot.current_quantity, 0);
+
+            if (totalAvailable < requiredQty) {
+                throw new Error(`สต็อกไม่เพียงพอสำหรับ ${lotRows[0]?.Equipment_name || partId} (ต้องการ ${requiredQty} มีเพียง ${totalAvailable})`);
+            }
+
+            // 3b. Logic ตัดสต็อก
+            for (const lot of lotRows) {
+                if (requiredQty <= 0) break;
+
+                 // ตัดสต็อกจาก Lot นั้น
+                await connection.query(
+                    "UPDATE lot SET current_quantity = current_quantity - ? WHERE lot_id = ?",
+                    [deductAmount, lot.lot_id]
+                );
+
+                // บันทึกรายการอะไหล่ที่เบิก (equipment_list)
+                const listId = generateTransactionId('EL');
+                await connection.query(
+                    "INSERT INTO equipment_list (equipment_list_id, transaction_id, equipment_id, quantity) VALUES (?, ?, ?, ?)",
+                    [listId, transactionId, lot.equipment_id, deductAmount]
+                );
+                
+                requiredQty -= deductAmount;
+             }
+        }
+
+        // 4. บันทึก Log การทำรายการปิดประตู (A-002)
+        await connection.query(
+            "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id) VALUES (?, CURTIME(), CURDATE(), ?, ?)",
+            [generateTransactionId('LG'), 'A-002', transactionId]
+        );
+
+        await connection.commit(); // ยืนยันการทำรายการทั้งหมด
+        res.json({ success: true, transactionId: transactionId, message: 'บันทึกการเบิกและตัดสต็อกสำเร็จ' });
+
+    } catch (error) {
+        if (connection) {
+            await connection.rollback(); // ยกเลิกการทำรายการทั้งหมดหากเกิดข้อผิดพลาด
+        }
+        console.error("Withdrawal Transaction Failed:", error.message);
+        res.status(500).json({ error: error.message || 'เกิดข้อผิดพลาดในการทำรายการตัดสต็อก' });
+    } finally {
+        if (connection) {
+            connection.release();
+        }
+    }
+});
 // --- API Endpoints เดิม (Login, Register, 2FA, Profile) ---
 
 /**
@@ -454,6 +593,150 @@ io.on('connection', socket => {
     clearInterval(interval);
     console.log('client disconnected', socket.id);
   });
+});
+
+function generateTransactionId(prefix = 'TX') {
+    return `${prefix}-${Date.now().toString().slice(-10)}`;
+}
+// -----------------------------------------------------------------------------------
+
+// 1. API: Fetch Part Info (POST /api/withdraw/partInfo)
+// ใช้ Part ID (equipment_type_id) เพื่อดึงข้อมูลและรวมสต็อก
+app.post('/api/withdraw/partInfo', async (req, res) => {
+    // partId ที่ส่งมาใน body จะเท่ากับ equipment_type_id (เช่น 'ABU-001')
+    const { partId } = req.body; 
+
+    if (!partId) {
+        return res.status(400).json({ error: 'Part ID is required.' });
+    }
+
+    try {
+        // Query: รวมสต็อก (current_quantity) จากทุก Lot สำหรับ Part Type นั้น
+        const sql = `
+            SELECT
+                ET.equipment_type_id AS partId,
+                ET.Equipment_name AS partName,
+                ET.unit,
+                -- รวมสต็อกทั้งหมดจากตาราง lot ที่เชื่อมโยงกับ equipment_type_id นี้
+                COALESCE(SUM(L.current_quantity), 0) AS currentStock,
+                ET.img AS imageUrl
+            FROM equipment_type ET
+            LEFT JOIN equipment E ON ET.equipment_type_id = E.equipment_type_id
+            LEFT JOIN lot L ON E.equipment_id = L.equipment_id
+            WHERE ET.equipment_type_id = ?
+            GROUP BY ET.equipment_type_id, ET.Equipment_name, ET.unit, ET.img
+        `;
+        
+        const [rows] = await pool.query(sql, [partId]);
+
+        if (rows.length === 0 || rows[0].currentStock === 0) {
+            return res.status(404).json({ error: 'ไม่พบรายการอะไหล่หรือไม่มีสต็อก' });
+        }
+
+        res.json(rows[0]);
+
+    } catch (error) {
+        console.error("DB Error fetching part info:", error.message);
+        res.status(500).json({ error: 'Server error while fetching part details.' });
+    }
+});
+
+
+// 2. API: Confirm and Cut Stock (POST /api/withdraw/confirm)
+// API นี้ต้องมีการตรวจสอบ Token (authenticateToken)
+app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
+    const { machine_SN, cartItems } = req.body;
+    const userId = req.user.userId; // ดึง user ID จาก Token
+
+    if (!machine_SN || !cartItems || cartItems.length === 0) {
+        return res.status(400).json({ error: 'Machine SN และรายการเบิกเป็นสิ่งจำเป็น' });
+    }
+    
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        await connection.beginTransaction(); // เริ่ม Transaction
+
+        const transactionId = generateTransactionId('WTH');
+        const transactionTypeId = 'T-WTH'; // 🚨 ต้องมี ID Transaction Type สำหรับการเบิกในตาราง transactions_type
+
+        // 1. ตรวจสอบ/สร้าง Machine (ถ้าไม่มีในตาราง machine)
+        const [machineCheck] = await connection.query("SELECT machine_SN FROM machine WHERE machine_SN = ?", [machine_SN]);
+        if (machineCheck.length === 0) {
+             await connection.query("INSERT INTO machine (machine_SN, machine_name) VALUES (?, ?)", [machine_SN, 'Machine (Created by Withdrawal)']);
+        }
+
+        // 2. สร้าง Transaction หลัก
+        const insertTransactionSql = `
+            INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_SN)
+            VALUES (?, ?, CURDATE(), CURTIME(), ?, ?)
+        `;
+        await connection.query(insertTransactionSql, [transactionId, transactionTypeId, userId, machine_SN]);
+
+        // 3. วนลูปเพื่อตัดสต็อกและบันทึกรายการอะไหล่
+        for (const item of cartItems) {
+            const { partId, quantity } = item; // partId = equipment_type_id (e.g., 'ABU-001')
+            
+            // 3a. ค้นหา Lot ที่พร้อมใช้งาน (ใช้ Logic หาง่ายๆ จาก equipment_id ที่มี stock)
+            const [lotRows] = await connection.query(`
+                SELECT 
+                    L.lot_id, L.current_quantity, E.equipment_id
+                FROM lot L
+                JOIN equipment E ON L.equipment_id = E.equipment_id
+                WHERE E.equipment_type_id = ? AND L.current_quantity > 0
+                ORDER BY L.expiry_date ASC, L.import_date ASC
+            `, [partId]);
+
+            let requiredQty = quantity;
+            let totalAvailable = lotRows.reduce((sum, lot) => sum + lot.current_quantity, 0);
+
+            if (totalAvailable < requiredQty) {
+                 throw new Error(`สต็อกไม่เพียงพอสำหรับ ${item.partName} (ต้องการ ${requiredQty} มีเพียง ${totalAvailable})`);
+            }
+            
+            // 3b. Logic ตัดสต็อกแบบ FIFO (หรือตามลำดับ Lot ที่มีใน Query)
+            for (const lot of lotRows) {
+                if (requiredQty <= 0) break;
+
+                const deductAmount = Math.min(requiredQty, lot.current_quantity);
+                
+                // ตัดสต็อกจาก Lot นั้น
+                await connection.query(
+                    "UPDATE lot SET current_quantity = current_quantity - ? WHERE lot_id = ?",
+                    [deductAmount, lot.lot_id]
+                );
+
+                // บันทึกรายการอะไหล่ที่เบิก (equipment_list)
+                const listId = generateTransactionId('EL');
+                await connection.query(
+                    "INSERT INTO equipment_list (equipment_list_id, transaction_id, equipment_id, quantity) VALUES (?, ?, ?, ?)",
+                    [listId, transactionId, lot.equipment_id, deductAmount]
+                );
+                
+                requiredQty -= deductAmount;
+            }
+        }
+
+        // 4. บันทึก Log การทำรายการปิดประตู (A-002)
+        await connection.query(
+             "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id) VALUES (?, CURTIME(), CURDATE(), ?, ?)",
+             [generateTransactionId('LG'), 'A-002', transactionId]
+        );
+        
+        await connection.commit(); // ยืนยันการทำรายการทั้งหมด
+        res.json({ success: true, transactionId: transactionId, message: 'บันทึกการเบิกและตัดสต็อกสำเร็จ' });
+
+    } catch (error) {
+        if (connection) {
+            await connection.rollback(); // ยกเลิกการทำรายการทั้งหมดหากเกิดข้อผิดพลาด
+        }
+        console.error("Withdrawal Transaction Failed:", error.message);
+        res.status(500).json({ error: error.message || 'เกิดข้อผิดพลาดในการทำรายการตัดสต็อก' });
+    } finally {
+        if (connection) {
+            connection.release();
+        }
+    }
 });
 
 // 4. สั่งให้ Server รัน
