@@ -8,6 +8,7 @@ import React from 'react';
     import InventoryBalanceReportChart from './components/InventoryBalanceReportChart'
     import LowStockAlert from './components/LowStockAlert'
     import UserList from './components/UserList'
+    import EditUser from './components/EditUser'
     
 
     function App() {
@@ -25,6 +26,7 @@ import React from 'react';
                     <Route path='/inventoryBalanceReportChart' element={<InventoryBalanceReportChart />}/>
                     <Route path='/lowStockAlert' element={<LowStockAlert />}/>
                     <Route path='/userList' element={<UserList />}/>
+                    <Route path='/editUser' element={<EditUser />}/>
                     
                 </Routes>
             </BrowserRouter>
