@@ -1,40 +1,50 @@
-
-const express = require('express');
-const mysql = require("mysql2/promise"); // โค้ดเดิมใช้ mysql2/promise
+const express = require("express");
+const mysql = require("mysql2/promise");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const speakeasy = require("speakeasy");
 const qrcode = require("qrcode");
-const cors = require('cors');
+const cors = require("cors");
 const axios = require('axios'); // สำหรับเชื่อมต่อ ESP8266
+// ++++++++++ แก้ไข: นำเข้า http และ socket.io ++++++++++
+const http = require('http'); 
+const { Server } = require("socket.io"); 
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 const app = express();
+// ++++++++++ แก้ไข: สร้าง HTTP Server และผูก Socket.IO ++++++++++
+const server = http.createServer(app); 
+const io = new Server(server, { 
+    cors: {
+        origin: "*", 
+        methods: ["GET", "POST"]
+    }
+}); 
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 const PORT = 3001; // Port สำหรับ Backend
 
 // 1. ตั้งค่า Middlewares
-app.use(cors());
+app.use(cors()); 
 app.use(express.json());
 
-require('dotenv').config()
-
-// --- โค้ดส่วน Database Configuration เดิม ---
+// 3. ตั้งค่าการเชื่อมต่อฐานข้อมูล (ใช้ค่า Hardcode)
 const dbConfig = {
-    host: process.env.DATABASE_HOST,
-    user: process.env.DATABASE_USER,
-    password: process.env.DATABASE_PASSWORD,
-    database: process.env.DATABASE_NAME,
-    port: process.env.DATABASE_PORT,
+    host:'localhost',
+    user: 'myuser',
+    password: 'emailkmutnb',
+    database: 'projectmems',
+    port: '3306', 
     waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
-    connectTimeout: 20000, 
+    connectionLimit: 10, 
+    queueLimit: 0
 };
+
+// สร้าง Connection Pool เพื่อจัดการการเชื่อมต่ออย่างมีประสิทธิภาพ
 const pool = mysql.createPool(dbConfig);
-// เปลี่ยน 'db' ที่ใช้ในส่วน ESP เป็น 'pool' เพื่อให้สอดคล้องกับโค้ดด้านบน
-const db = pool; 
-// ------------------------------------------
+const db = pool; // ตั้งชื่อ db เพื่อให้โค้ดส่วน ESP ใช้งานได้
 
-
+// ตรวจสอบการเชื่อมต่อฐานข้อมูลเมื่อ Server เริ่มทำงาน
 pool.query("SELECT 1")
     .then(() => console.log("✅ Database connected successfully!"))
     .catch(err => console.error("❌ Database connection failed:", err.message));
@@ -49,24 +59,27 @@ const ESP_IP = 'http://192.168.1.139';
 const HARDCODED_USER_ID = 123464;
 // -------------------------------------------------------------------
 
-
 // +++++++++++++++++++++++ Middleware ตรวจสอบ Token +++++++++++++++++++++++
+/**
+ * Middleware สำหรับตรวจสอบ JWT (Token)
+ */
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = authHeader && authHeader.split(' ')[1]; // แยก "Bearer <TOKEN>"
 
     if (token == null) {
-        return res.sendStatus(401); 
+        return res.sendStatus(401); // 401 Unauthorized (ไม่มี Token)
     }
 
     jwt.verify(token, JWT_SECRET, (err, userPayload) => {
         if (err) {
             console.error("JWT Verification Error:", err.message);
-            return res.sendStatus(403); 
+            return res.sendStatus(403); // 403 Forbidden (Token ไม่ถูกต้อง หรือหมดอายุ)
         }
         
+        // Token ถูกต้อง, เก็บข้อมูล user ที่ถอดรหัสได้ไว้ใน req
         req.user = userPayload; 
-        next(); 
+        next(); // ไปยัง Endpoint ถัดไป
     });
 }
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -106,7 +119,7 @@ async function commandServo(action) { // action คือ 'open' หรือ 'c
     }
 }
 
-// --- API Endpoints สำหรับ ESP8266 (ส่วนใหม่) ---
+// --- API Endpoints สำหรับ ESP8266 ---
 
 // 📌 API: สำหรับ "เปิด" Servo
 app.get('/api/open', async (req, res) => {
@@ -139,6 +152,7 @@ app.get('/api/close', async (req, res) => {
         res.status(500).send({ error: error.message });
     }
 });
+
 
 // --- API Endpoints เดิม (Login, Register, 2FA, Profile) ---
 
@@ -215,7 +229,7 @@ app.post("/api/register", async (req, res) => {
 
 
 /**
- * Endpoint 3: สร้าง QR Code สำหรับผู้ใช้ครั้งแรก
+ * Endpoint 3: สร้าง QR Code สำหรับผู้ใช้ครั้งแรก (Setup 2FA)
  */
 app.post("/api/setup-2fa", async (req, res) => {
     const { userId } = req.body;
@@ -249,9 +263,8 @@ app.post("/api/setup-2fa", async (req, res) => {
 });
 
 
-
 /**
- * Endpoint 4: ตรวจสอบรหัส 6 หลัก (Verify)
+ * Endpoint 4: ตรวจสอบรหัส 6 หลัก (Verify 2FA)
  */
 app.post("/api/verify-2fa", async (req, res) => {
     const { userId, token } = req.body;
@@ -302,7 +315,6 @@ app.post("/api/verify-2fa", async (req, res) => {
         res.status(500).json({ message: "Server Error", error: error.message });
     }
 });
-
 
 
 /**
@@ -365,8 +377,12 @@ app.put("/api/profile-edit", authenticateToken, async (req, res) => {
 });
 
 
+/**
+ * Endpoint 7: Report Chart Data
+ */
 app.get("/api/inventoryBalanceReportChart", async (req, res) => {
     try {
+        // ++++++++++ แก้ไข: ล้อมรอบ SQL ด้วย Backticks (`) ++++++++++
         const sql = `
             SELECT 
                 et.Equipment_name AS name, 
@@ -376,6 +392,7 @@ app.get("/api/inventoryBalanceReportChart", async (req, res) => {
             LEFT JOIN lot l ON e.equipment_id = l.equipment_id
             GROUP BY et.equipment_type_id, et.Equipment_name
         `;
+        // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
         const [rows] = await pool.query(sql);
         res.json(rows);
@@ -389,8 +406,10 @@ app.get("/api/inventoryBalanceReportChart", async (req, res) => {
 // Simple REST endpoint to get current low-stock items
 app.get('/api/lowStockAlert', async (req, res) => {
   try {
+    // ++++++++++ แก้ไข: ล้อมรอบ SQL ด้วย Backticks (`) ++++++++++
     const [rows] = await pool.query(
       `SELECT id, sku, name, quantity, limit_quantity FROM products WHERE quantity < limit_quantity ORDER BY quantity ASC`);
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     res.json(rows);
   } catch (err) {
     console.error(err);
@@ -399,13 +418,16 @@ app.get('/api/lowStockAlert', async (req, res) => {
 });
 
 // When a client connects, send the current low-stock count
+// ++++++++++ แก้ไข: io ถูกประกาศและกำหนดค่าแล้วด้านบน ++++++++++
 io.on('connection', socket => {
   console.log('client connected', socket.id);
 
   const sendLowStock = async () => {
     try {
+      // ++++++++++ แก้ไข: ล้อมรอบ SQL ด้วย Backticks (`) ++++++++++
       const [rows] = await pool.query(
         `SELECT id, sku, name, quantity, limit_quantity FROM products WHERE quantity < limit_quantity`);
+      // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       socket.emit('low_stock', { count: rows.length, items: rows });
     } catch (err) {
       console.error('sendLowStock err', err);
@@ -425,7 +447,8 @@ io.on('connection', socket => {
 });
 
 // 4. สั่งให้ Server รัน
-app.listen(PORT, () => {
-    console.log(`🚀 Backend server is running on http://localhost:${PORT}`);
-    console.log(`   (Ready to command ESP at ${ESP_IP})`);
+// ++++++++++ แก้ไข: ใช้ server.listen แทน app.listen ++++++++++
+server.listen(PORT, () => {
+    console.log(`✅ Server is running on http://localhost:${PORT}`);
 });
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
