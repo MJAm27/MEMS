@@ -7,8 +7,19 @@ const speakeasy = require("speakeasy");
 const qrcode = require("qrcode");
 const cors = require('cors');
 const axios = require('axios'); // สำหรับเชื่อมต่อ ESP8266
+const http = require('http');
+const { Server } = require('socket.io');
 
 const app = express();
+
+const server = http.createServer(app); // สร้าง HTTP Server
+const io = new Server(server, {        // สร้าง Socket.IO
+    cors: {
+        origin: "*", // อนุญาตทุกโดเมน (หรือระบุเฉพาะ Frontend ของคุณ)
+        methods: ["GET", "POST"]
+    }
+});
+
 const PORT = 3001; // Port สำหรับ Backend
 
 // 1. ตั้งค่า Middlewares
@@ -425,7 +436,7 @@ io.on('connection', socket => {
 });
 
 // 4. สั่งให้ Server รัน
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`🚀 Backend server is running on http://localhost:${PORT}`);
     console.log(`   (Ready to command ESP at ${ESP_IP})`);
 });
