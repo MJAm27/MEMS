@@ -29,7 +29,7 @@ function Setup2FA() {
             setLoading(true);
             try {
                 const response = await axios.post(
-                    `${REACT_APP_API_URL}/api/setup-2fa`,
+                    `${process.env.REACT_APP_API_URL}/api/setup-2fa`,
                     { userId }
                 );
                 setQrCodeData(response.data.otpauth_url); 
@@ -71,7 +71,7 @@ function Setup2FA() {
 
         try {
             const response = await axios.post(
-                `${REACT_APP_API_URL}/api/verify-2fa`,
+                `${process.env.REACT_APP_API_URL}/api/verify-2fa`,
                 { userId, token: code }
             );
 

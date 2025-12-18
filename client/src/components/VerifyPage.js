@@ -53,7 +53,7 @@ function VerifyPage() {
         }
 
         try {
-            const response = await axios.post(`${REACT_APP_API_URL}/api/verify-2fa`, { userId, token });
+            const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/verify-2fa`, { userId, token });
             
             const {token: loginToken} = response.data;
             if (loginToken) {

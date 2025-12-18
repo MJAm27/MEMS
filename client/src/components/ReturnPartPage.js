@@ -123,7 +123,7 @@ const ConfirmationScreen = ({ returnItems, onConfirmReturn, onScanMore, onCancel
         };
 
         try {
-            await axios.post(`${REACT_APP_API_URL}/api/return-part`, payload);
+            await axios.post(`${process.env.REACT_APP_API_URL}/api/return-part`, payload);
             
             alert(`✅ การคืนอะไหล่ ${items.length} รายการถูกบันทึกในระบบเรียบร้อยแล้ว!`);
             onConfirmReturn(); 

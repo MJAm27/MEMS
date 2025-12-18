@@ -21,7 +21,7 @@ const realApi = {
     fetchPartInfo: async (itemId) => {
         try {
             // ส่ง Part ID ไปค้นหาใน DB
-            const response = await axios.post(`${REACT_APP_API_URL}/partInfo`, { partId: itemId });
+            const response = await axios.post(`${process.env.REACT_APP_API_URL}/partInfo`, { partId: itemId });
             // API Backend (server.js) จะคืนค่า { partId, partName, currentStock, imageUrl, ...}
             return response.data;
         } catch (error) {
@@ -42,7 +42,7 @@ const realApi = {
 
         try {
             const response = await axios.post(
-                `${REACT_APP_API_URL}/confirm`, 
+                `${process.env.REACT_APP_API_URL}/confirm`, 
                 { machine_SN: assetId, cartItems: cart }, // ส่งเลขครุภัณฑ์เครื่องจักรและรายการอะไหล่
                 { 
                     headers: {

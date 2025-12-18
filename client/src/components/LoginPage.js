@@ -15,7 +15,7 @@ function LoginPage() {
         setError('');
         try {
 
-            const response = await axios.post(`${REACT_APP_API_URL}/api/login`, { email, password });
+            const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/login`, { email, password });
             const { status, userId, token } = response.data;
             if (status === '2fa_required') {
                 navigate('/verify', { state: { userId: userId } });
