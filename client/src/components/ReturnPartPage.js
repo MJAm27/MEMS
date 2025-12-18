@@ -6,7 +6,7 @@ import './ReturnPartPage.css';
 import axios from "axios"; // นำเข้า axios สำหรับเรียก API จริง
 
 // --- URL Backend (แก้ไขให้ตรงกับ Port ของคุณ) ---
-const API_URL = "http://localhost:3001"; 
+// const API_URL = "http://localhost:3001"; 
 // ------------------------------------------------
 
 
@@ -123,7 +123,7 @@ const ConfirmationScreen = ({ returnItems, onConfirmReturn, onScanMore, onCancel
         };
 
         try {
-            await axios.post(`${API_URL}/api/return-part`, payload);
+            await axios.post(`${REACT_APP_API_URL}/api/return-part`, payload);
             
             alert(`✅ การคืนอะไหล่ ${items.length} รายการถูกบันทึกในระบบเรียบร้อยแล้ว!`);
             onConfirmReturn(); 

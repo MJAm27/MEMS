@@ -4,7 +4,7 @@ import axios from 'axios';
 import './Setup2FA.css';
 import { QRCodeSVG } from 'qrcode.react';
 
-const API_BASE_URL = "http://localhost:3001";
+// const API_BASE_URL = "http://localhost:3001";
 
 function Setup2FA() {
     const navigate = useNavigate();
@@ -29,7 +29,7 @@ function Setup2FA() {
             setLoading(true);
             try {
                 const response = await axios.post(
-                    `${API_BASE_URL}/api/setup-2fa`,
+                    `${REACT_APP_API_URL}/api/setup-2fa`,
                     { userId }
                 );
                 setQrCodeData(response.data.otpauth_url); 
@@ -71,7 +71,7 @@ function Setup2FA() {
 
         try {
             const response = await axios.post(
-                `${API_BASE_URL}/api/verify-2fa`,
+                `${REACT_APP_API_URL}/api/verify-2fa`,
                 { userId, token: code }
             );
 

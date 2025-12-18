@@ -14,14 +14,14 @@ const MOCK_PART_DATA = {
 // Configuration และ API Logic สำหรับ Production
 // ----------------------------------------------------------------------
 
-const API_BASE_URL = 'http://localhost:3001/api/withdraw'; 
+// const API_BASE_URL = 'http://localhost:3001/api/withdraw'; 
 
 const realApi = {
     // 1. ดึงข้อมูลอะไหล่จาก DB
     fetchPartInfo: async (itemId) => {
         try {
             // ส่ง Part ID ไปค้นหาใน DB
-            const response = await axios.post(`${API_BASE_URL}/partInfo`, { partId: itemId });
+            const response = await axios.post(`${REACT_APP_API_URL}/partInfo`, { partId: itemId });
             // API Backend (server.js) จะคืนค่า { partId, partName, currentStock, imageUrl, ...}
             return response.data;
         } catch (error) {
@@ -42,7 +42,7 @@ const realApi = {
 
         try {
             const response = await axios.post(
-                `${API_BASE_URL}/confirm`, 
+                `${REACT_APP_API_URL}/confirm`, 
                 { machine_SN: assetId, cartItems: cart }, // ส่งเลขครุภัณฑ์เครื่องจักรและรายการอะไหล่
                 { 
                     headers: {

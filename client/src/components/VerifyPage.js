@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './VerifyPage.css'; 
 
-const API_BASE_URL = "http://localhost:3001"; 
+// const API_BASE_URL = "http://localhost:3001"; 
 function VerifyPage() {
     const location = useLocation();
     const navigate = useNavigate();
@@ -53,7 +53,7 @@ function VerifyPage() {
         }
 
         try {
-            const response = await axios.post(`${API_BASE_URL}/api/verify-2fa`, { userId, token });
+            const response = await axios.post(`${REACT_APP_API_URL}/api/verify-2fa`, { userId, token });
             
             const {token: loginToken} = response.data;
             if (loginToken) {
