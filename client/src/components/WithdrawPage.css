@@ -1,0 +1,100 @@
+/* ---------------------------------------------------- */
+/* WithdrawPage.css: สไตล์เน้น Card และ Responsive Layout*/
+/* ---------------------------------------------------- */
+
+:root {
+    --primary-color: #ec4899; 
+    --secondary-color: #10b981; 
+    --error-color: #ef4444; 
+    --background-gray: #f9fafb; 
+    --text-dark: #1f2937;
+    --text-muted: #6b7280;
+    --shadow-main: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* 1. Base Container (ปรับให้ยืดหยุ่นและอยู่ตรงกลาง) */
+.withdraw-page-container {
+    padding: 20px;
+    min-height: 100vh;
+    background-color: var(--background-gray);
+    position: relative;
+    font-family: Arial, sans-serif;
+    
+    /* ++++++++++ การปรับเพื่อให้ Card อยู่ตรงกลาง ++++++++++ */
+    display: flex;
+    justify-content: center; /* กึ่งกลางแนวนอน */
+    align-items: center;    /* กึ่งกลางแนวตั้ง */
+    /* +++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+}
+
+/* 2. Main Container (ห่อหุ้ม Header และ Card) */
+.max-w-md.mx-auto {
+    /* ใช้ max-width ที่ยืดหยุ่นกว่า max-w-md (448px) */
+    width: 90%; 
+    max-width: 448px; 
+    
+    /* ถ้าหน้าจอย่อเล็กกว่า 448px จะใช้ 90% ของหน้าจอ */
+    margin: 0; 
+    align-self: center; 
+}
+
+/* 3. Header Style */
+.withdraw-header {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 16px;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    
+    /* ให้ Header กว้างเท่ากับ Main Container */
+    width: 100%; 
+}
+
+/* 4. Card/Modal Style */
+.withdraw-card {
+    background-color: white;
+    border-radius: 0 0 12px 12px; 
+    box-shadow: var(--shadow-main);
+    padding: 24px;
+    position: relative;
+    z-index: 5;
+}
+
+/* 5. ปุ่มและ Form Element (เพื่อให้ยืดหยุ่น) */
+.action-button-main {
+    width: 100%;
+    padding: 14px;
+    border-radius: 9999px; 
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: white;
+    transition: background-color 0.2s;
+    margin-top: 20px;
+}
+
+input[type="text"], 
+input[type="number"],
+.form-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background-color: white;
+    transition: border-color 0.2s;
+}
+
+/* [Styles for Colors and Icons remain the same] */
+
+.bg-green-500 { background-color: var(--secondary-color); }
+.bg-green-500:hover { background-color: #059669; }
+.bg-pink-500 { background-color: var(--primary-color); }
+.bg-pink-500:hover { background-color: #d83b8b; }
+.bg-red-500 { background-color: var(--error-color); }
+.bg-red-500:hover { background-color: #dc2626; }
+
+.status-icon-container { margin-bottom: 20px; }
+.text-pink-500 { color: var(--primary-color) !important; }
+.text-green-500 { color: var(--secondary-color) !important; }
+.text-red-500 { color: var(--error-color) !important; }
+.text-text-dark { color: var(--text-dark); }
+.text-text-muted { color: var(--text-muted); }

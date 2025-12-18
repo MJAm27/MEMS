@@ -13,6 +13,7 @@ import "./EngineerMainPage.css";
 import ProfileENG from './ProfileENG'; 
 import ProfileEditENG from './ProfileEditENG'; 
 import ReturnPartPage from './ReturnPartPage';
+import WithdrawPage from './WithdrawPage';
 
 
 function EngineerMainPage({ user, handleLogout, refreshUser }) { 
@@ -141,7 +142,7 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                             <Route path="change-password" element={<h2>หน้าเปลี่ยนรหัสผ่าน</h2>} />
                         </Route>
                         <Route path="engineer/return" element={<ReturnPartPage />} />
-                        <Route path="engineer/return" element={<h2 className="page-title">🔄 หน้าคืนอะไหล่</h2>} />
+                        <Route path="engineer/withdraw" element={<WithdrawPage />} />
                         <Route path="engineer/borrow" element={<h2 className="page-title">📦 หน้ายืมอะไหล่</h2>} />
                         <Route path="engineer/search" element={<h2>หน้าค้นหา</h2>} />
                         <Route path="engineer/history" element={<h2>หน้าประวัติ</h2>} />
