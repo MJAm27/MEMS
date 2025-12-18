@@ -3,10 +3,6 @@ import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import './RegisterPage.css';
 
-// *** แก้ไข: Hardcode Base URL ของ Backend ที่รันอยู่พอร์ต 3001 ***
-const API_BASE_URL = "http://localhost:3001";
-// ******************************************************************
-
 function RegisterPage() {
     const [formData, setFormData] = useState({
         fullname: '',
@@ -40,8 +36,7 @@ function RegisterPage() {
         }
 
         try {
-            // *** แก้ไข: ใช้ API_BASE_URL ที่ถูกกำหนดแล้ว ***
-            const response = await axios.post(`${API_BASE_URL}/api/register`, formData);
+            const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/register`, formData);
             setSuccess(response.data.message);
 
             // หน่วงเวลา 2 วินาที ก่อนนำทางไปหน้า Login
