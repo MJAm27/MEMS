@@ -1,98 +1,99 @@
-import React, { useState } from "react";
-import ScannerComponent from './ScannerComponent'; // ⭐ นำเข้า ScannerComponent ที่สร้างใหม่
-// นำเข้าไอคอนที่เกี่ยวข้องกับการคืนอะไหล่และการแสดงผล
+import React, { useState, useEffect, useCallback } from "react";
 import { FaQrcode, FaBoxOpen, FaSyncAlt, FaArrowLeft } from "react-icons/fa"; 
+import { Html5QrcodeScanner } from 'html5-qrcode';
 import './ReturnPartPage.css'; 
-import axios from "axios"; // นำเข้า axios สำหรับเรียก API จริง
+import axios from "axios";
 
-// --- URL Backend (แก้ไขให้ตรงกับ Port ของคุณ) ---
-// const API_URL = "http://localhost:3001"; 
-// ------------------------------------------------
-
-
-// --- Component ย่อย: InputAndScanScreen (เปลี่ยนชื่อเป็น ScannerScreen เพื่อให้ชัดเจนขึ้น) ---
+// --- Component ย่อย: InputAndScanScreen (หน้าจอเลือกวันที่และสแกน) ---
 const InputAndScanScreen = ({ onScanComplete, onCancelReturn, initialDate, onBackToList }) => {
-    // State สำหรับควบคุมการเปิดกล้องสแกน
     const [isScanning, setIsScanning] = useState(false); 
-    
-    // ใช้ initialDate ถ้ามีค่า, ไม่เช่นนั้นใช้ วันที่ปัจจุบัน
     const [date, setDate] = useState(initialDate || new Date().toISOString().slice(0, 10));
 
-    const handleScanSuccess = (scannedData) => {
+    // แก้ไข: ใช้ useCallback และตรวจสอบตัวแปร date ให้ถูกต้อง
+    const handleScanSuccess = useCallback((scannedData) => {
         setIsScanning(false);
-        // ส่งข้อมูลที่สแกนได้จริง พร้อมวันที่คืน ไปยัง Component หลัก
-        onScanComplete({ ...scannedData, date: date }); 
-    };
+        onScanComplete({ ...scannedData, date: date });
+    }, [date, onScanComplete]);
 
-    const handleScanError = (error) => {
-        setIsScanning(false);
-        alert(`❌ ข้อผิดพลาดในการเข้าถึงกล้อง: ${error.message || 'ไม่ทราบสาเหตุ'}`);
-    };
+    // Logic ควบคุมกล้องสแกน
+    useEffect(() => {
+        let scanner = null;
+        if (isScanning) {
+            scanner = new Html5QrcodeScanner("reader", {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+            });
 
-    // ⭐ Logic การแสดงผล Scanner Component
+            scanner.render((decodedText) => {
+                // ส่งข้อมูลที่สแกนได้ไปยัง handleScanSuccess
+                handleScanSuccess({ 
+                    lotId: decodedText, 
+                    equipmentId: decodedText, 
+                    equipmentName: `อะไหล่รหัส ${decodedText}`, 
+                    quantity: 1, 
+                    img: "https://via.placeholder.com/100x100?text=Part" 
+                });
+                scanner.clear();
+            }, (err) => { /* scanning... */ });
+        }
+        return () => { if (scanner) scanner.clear().catch(e => {}); };
+    }, [isScanning, handleScanSuccess]); // เพิ่ม handleScanSuccess เป็น dependency
+
     if (isScanning) {
         return (
-            <div className="p-4">
+            <div className="p-4 flex flex-col items-center">
                 <h2 className="text-xl font-bold mb-4 text-gray-700">สแกน QR Code/Barcode</h2>
-                <ScannerComponent 
-                    onScanSuccess={handleScanSuccess} 
-                    onError={handleScanError}
-                    onCancelScan={() => setIsScanning(false)} // ปุ่มยกเลิก
-                />
+                <div id="reader" className="w-full rounded-xl overflow-hidden border-2 border-pink-500 shadow-lg"></div>
+                <button 
+                    onClick={() => setIsScanning(false)}
+                    className="mt-6 w-full py-3 bg-gray-500 text-white rounded-lg font-bold"
+                >
+                    ยกเลิกการสแกน
+                </button>
             </div>
         );
     }
     
-    // ⭐ Logic การแสดงผล Input/ปุ่มสแกน (เมื่อ isScanning = false)
     return (
         <div className="p-4">
             <h2 className="text-xl font-bold mb-6 text-gray-700 flex items-center">
-                <FaSyncAlt className="mr-2"/> คืนอะไหล่
+                <FaSyncAlt className="mr-2 text-pink-500"/> คืนอะไหล่
             </h2>
             
-            {/* ปุ่มย้อนกลับไปรายการ หากมีการสแกนแล้ว */}
             {initialDate && (
                 <button
                     onClick={onBackToList}
-                    className="mb-4 text-sm text-pink-600 hover:text-pink-800 flex items-center"
+                    className="mb-4 text-sm text-pink-600 hover:text-pink-800 flex items-center font-bold"
                 >
                     <FaArrowLeft className="mr-1"/> กลับไปหน้ารายการ ({date})
                 </button>
             )}
 
-            {/* ส่วนเลือกวันที่คืน - ถูกปิดการใช้งานหากมีการสแกนแล้ว */}
-            <div className="mb-8">
-                <label className="block text-sm font-medium text-gray-700">วันที่คืน</label>
+            <div className="mb-8 bg-white p-4 rounded-lg shadow-sm">
+                <label className="block text-sm font-bold text-gray-500 uppercase mb-1">วันที่คืน</label>
                 <input 
                     type="date" 
                     value={date} 
                     onChange={(e) => setDate(e.target.value)}
                     disabled={!!initialDate} 
-                    className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 
-                                focus:border-pink-500 focus:ring-pink-500 text-gray-700 
-                                ${initialDate ? 'bg-gray-200 cursor-not-allowed' : 'bg-white'}`}
+                    className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 focus:ring-pink-500 
+                                ${initialDate ? 'bg-gray-100 cursor-not-allowed text-gray-400' : 'bg-white'}`}
                 />
             </div>
             
-            {/* ปุ่มหลัก: สแกน - กดแล้วตั้งค่า isScanning = true */}
             <button 
-                onClick={() => setIsScanning(true)} // ⭐ เปิด Scanner
-                className="w-full mb-4 px-4 py-2 text-white font-semibold rounded-lg transition-colors 
-                           flex items-center justify-center scan-btn bg-pink-500 hover:bg-pink-600"
+                onClick={() => setIsScanning(true)}
+                className="w-full mb-4 px-4 py-4 text-white font-bold rounded-xl transition-all shadow-lg
+                           flex items-center justify-center bg-pink-500 hover:bg-pink-600 active:scale-95"
             >
-                <FaQrcode className="mr-2" /> สแกนสำหรับคืน
+                <FaQrcode className="mr-2 text-xl" /> เปิดกล้องสแกนเพื่อคืน
             </button>
             
-            {/* ปุ่มรอง: ยกเลิกการคืน */}
             <button 
-                onClick={() => {
-                    alert("คลิก: ยกเลิกการคืนทั้งหมด");
-                    onCancelReturn(); // ยกเลิกและรีเซ็ต
-                }}
-                className="w-full px-4 py-2 text-white font-semibold rounded-lg 
-                           bg-red-500 hover:bg-red-600 transition-colors"
+                onClick={onCancelReturn}
+                className="w-full px-4 py-2 text-gray-400 font-semibold hover:text-red-500 transition-colors"
             >
-                ยกเลิกการคืนทั้งหมด
+                ยกเลิกรายการทั้งหมด
             </button>
         </div>
     );
@@ -101,8 +102,8 @@ const InputAndScanScreen = ({ onScanComplete, onCancelReturn, initialDate, onBac
 // --- Component ย่อย: ConfirmationScreen (ยืนยันรายการคืน) ---
 const ConfirmationScreen = ({ returnItems, onConfirmReturn, onScanMore, onCancelReturn }) => {
     const [items, setItems] = useState(returnItems); 
+    const [loading, setLoading] = useState(false);
     
-    // อัปเดตรายการเมื่อมีการเปลี่ยน quantity
     const updateQuantity = (lotId, newQuantity) => {
         setItems(prevItems => prevItems.map(item => 
             item.lotId === lotId 
@@ -112,8 +113,8 @@ const ConfirmationScreen = ({ returnItems, onConfirmReturn, onScanMore, onCancel
     };
 
     const handleConfirm = async () => {
+        setLoading(true);
         const payload = {
-            userId: 'U-4572742117',
             returnDate: items[0].date, 
             items: items.map(item => ({
                 equipmentId: item.equipmentId,
@@ -123,69 +124,55 @@ const ConfirmationScreen = ({ returnItems, onConfirmReturn, onScanMore, onCancel
         };
 
         try {
-            await axios.post(`${process.env.REACT_APP_API_URL}/api/return-part`, payload);
-            
-            alert(`✅ การคืนอะไหล่ ${items.length} รายการถูกบันทึกในระบบเรียบร้อยแล้ว!`);
+            const token = localStorage.getItem('token');
+            await axios.post(`${process.env.REACT_APP_API_URL}/api/return-part`, payload, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            alert(`✅ บันทึกการคืนอะไหล่สำเร็จ!`);
             onConfirmReturn(); 
         } catch (error) {
-            console.error('Error confirming return:', error);
-            alert(`❌ ข้อผิดพลาดในการบันทึกการคืน: ${error.response?.data?.error || 'Server Error'}`);
+            alert(`❌ ข้อผิดพลาด: ${error.response?.data?.error || 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้'}`);
+        } finally {
+            setLoading(false);
         }
     };
     
     return (
         <div className="p-4">
-            <h2 className="text-xl font-bold mb-4 text-gray-700">ยืนยันการคืนอะไหล่ ({items.length} รายการ)</h2>
-            
-            {items.map((item, index) => (
-                <div key={item.lotId} className="p-4 confirmation-card border rounded-lg shadow-md bg-white mb-4">
-                    {/* ข้อมูลรายการที่สแกนมา */}
-                    <p className="font-semibold text-lg mb-2">{item.equipmentName}</p>
-                    <p className="text-sm text-gray-600">Lot ID: {item.lotId}</p>
-                    {index === 0 && <p className="text-sm text-gray-600 mb-4">วันที่คืน: {item.date}</p>}
-
-                    <div className="flex items-center space-x-4">
-                        {/* จำลองรูปภาพอะไหล่ */}
-                        <img src={`/${item.img}`} alt={item.equipmentName} className="w-16 h-16 object-cover rounded border" />
-                        
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">จำนวนที่คืน:</label>
-                            <input 
-                                type="number" 
-                                min="1"
-                                value={item.quantity} 
-                                onChange={(e) => updateQuantity(item.lotId, e.target.value)}
-                                className="w-20 text-center border rounded-md p-1 mt-1 focus:border-green-600 focus:ring-green-600"
-                            />
+            <h2 className="text-xl font-bold mb-4 text-gray-700">ยืนยันการคืน ({items.length} รายการ)</h2>
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto mb-6">
+                {items.map((item) => (
+                    <div key={item.lotId} className="p-4 border rounded-xl bg-white shadow-sm flex items-center">
+                        <img src={item.img} alt="" className="w-16 h-16 object-cover rounded-lg mr-4 border" />
+                        <div className="flex-grow">
+                            <p className="font-bold text-gray-800 leading-tight">{item.equipmentName}</p>
+                            <p className="text-xs text-gray-400 mb-2">Lot: {item.lotId}</p>
+                            <div className="flex items-center">
+                                <span className="text-sm mr-2 text-gray-500">จำนวน:</span>
+                                <input 
+                                    type="number" 
+                                    value={item.quantity} 
+                                    onChange={(e) => updateQuantity(item.lotId, e.target.value)}
+                                    className="w-16 border rounded p-1 text-center font-bold"
+                                />
+                            </div>
                         </div>
                     </div>
-                </div>
-            ))}
+                ))}
+            </div>
 
-
-            <div className="mt-6 flex flex-col space-y-4">
-                {/* ปุ่มใหม่: สแกนเพิ่ม */}
-                <button 
-                    onClick={onScanMore} 
-                    className="w-full px-4 py-2 text-white font-semibold rounded-lg bg-pink-500 hover:bg-pink-600 transition-colors flex items-center justify-center"
-                >
-                    <FaQrcode className="mr-2" /> สแกนอะไหล่เพิ่ม
+            <div className="space-y-3">
+                <button onClick={onScanMore} className="w-full py-3 border-2 border-pink-500 text-pink-500 font-bold rounded-xl flex items-center justify-center">
+                    <FaQrcode className="mr-2" /> สแกนเพิ่ม
                 </button>
-                
-                <div className="flex justify-between space-x-4">
-                    {/* ปุ่มยกเลิกทั้งหมด */}
+                <div className="flex space-x-3">
+                    <button onClick={onCancelReturn} className="flex-1 py-3 bg-gray-200 text-gray-600 font-bold rounded-xl">ยกเลิก</button>
                     <button 
-                        onClick={onCancelReturn}
-                        className="flex-1 px-4 py-2 text-white font-semibold rounded-lg bg-red-500 hover:bg-red-600"
+                        onClick={handleConfirm} 
+                        disabled={loading}
+                        className={`flex-1 py-3 text-white font-bold rounded-xl shadow-lg ${loading ? 'bg-gray-400' : 'bg-green-500'}`}
                     >
-                        ยกเลิกทั้งหมด
-                    </button>
-                    {/* ปุ่มยืนยันการคืน */}
-                    <button 
-                        onClick={handleConfirm}
-                        className="flex-1 px-4 py-2 text-white font-semibold rounded-lg bg-green-500 hover:bg-green-600"
-                    >
-                        ยืนยันการคืน ({items.length} รายการ)
+                        {loading ? 'กำลังบันทึก...' : 'ยืนยันการคืน'}
                     </button>
                 </div>
             </div>
@@ -193,13 +180,8 @@ const ConfirmationScreen = ({ returnItems, onConfirmReturn, onScanMore, onCancel
     );
 };
 
-
-// ------------------------------------------------------------------
-// 📌 Component หลัก: ReturnPartPage
-// ------------------------------------------------------------------
-
+// --- Component หลัก: ReturnPartPage ---
 function ReturnPartPage() {
-    // Step 1: สแกน, Step 2: ยืนยันรายการ
     const [step, setStep] = useState(1); 
     const [returnItems, setReturnItems] = useState([]); 
 
@@ -209,66 +191,40 @@ function ReturnPartPage() {
     };
 
     const handleScanComplete = (lotData) => {
-        // ตรวจสอบว่ามี Lot ID นี้อยู่แล้วหรือไม่ (เพื่อรวมจำนวน)
         const existingItemIndex = returnItems.findIndex(item => item.lotId === lotData.lotId);
-
         if (existingItemIndex > -1) {
-            // หากซ้ำ: เพิ่มจำนวนเข้าไป
             const updatedItems = [...returnItems];
             updatedItems[existingItemIndex].quantity += lotData.quantity;
             setReturnItems(updatedItems);
-            alert(`รายการ Lot ID: ${lotData.lotId} ถูกรวมจำนวนแล้ว`);
         } else {
-            // หากเป็นรายการใหม่: เพิ่มเข้าไปในรายการ
             setReturnItems([...returnItems, lotData]);
         }
-        
-        setStep(2); // ไปสู่ขั้นตอนยืนยัน
+        setStep(2);
     };
 
-    const renderStep = () => {
-        const initialDate = returnItems.length > 0 ? returnItems[0].date : null;
-
-        switch (step) {
-            case 1: // สแกน (InputAndScanScreen)
-                return (
+    return (
+        <div className="return-page-container min-h-screen bg-gray-50">
+            <header className="bg-white p-4 shadow-sm border-b-2 border-pink-500">
+                <h1 className="text-lg font-black text-pink-600 flex items-center justify-center uppercase tracking-wider">
+                    <FaBoxOpen className="mr-2"/> Return Parts System
+                </h1>
+            </header>
+            <div className="p-4 max-w-md mx-auto">
+                {step === 1 ? (
                     <InputAndScanScreen 
                         onScanComplete={handleScanComplete} 
                         onCancelReturn={resetFlow} 
-                        initialDate={initialDate}
+                        initialDate={returnItems.length > 0 ? returnItems[0].date : null}
                         onBackToList={() => setStep(2)} 
                     />
-                );
-            case 2: // ยืนยันรายการ (ConfirmationScreen)
-                if (returnItems.length === 0) {
-                    setStep(1);
-                    return null;
-                }
-                return (
+                ) : (
                     <ConfirmationScreen 
                         returnItems={returnItems} 
                         onConfirmReturn={resetFlow} 
                         onCancelReturn={resetFlow} 
                         onScanMore={() => setStep(1)} 
                     />
-                );
-            default:
-                return <InputAndScanScreen onScanComplete={handleScanComplete} onCancelReturn={resetFlow} />;
-        }
-    };
-
-    return (
-        <div className="return-page-container min-h-screen bg-gray-50">
-            <div className="bg-gradient-to-r from-pink-500 to-pink-700 p-4 shadow-lg">
-                <h1 className="text-xl font-bold text-white flex items-center">
-                    <FaBoxOpen className="mr-2"/> ขั้นตอนการคืนอะไหล่ (Step {step}/2)
-                </h1>
-            </div>
-            <div className="p-4 max-w-md mx-auto">
-                {renderStep()}
-            </div>
-            <div className="text-center text-sm text-gray-500 mt-4 p-4">
-                หมายเหตุ: ระบบรองรับการสแกนหลายรายการใน Transaction เดียว
+                )}
             </div>
         </div>
     );
