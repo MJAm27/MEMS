@@ -1310,142 +1310,105 @@ app.delete("/api/users/:id", async (req, res) => {
 
 // -----------------------------------------------------------------------------------
 
-// 1. API: Fetch Part Info (POST /api/withdraw/partInfo)
-// ใช้ Part ID (equipment_type_id) เพื่อดึงข้อมูลและรวมสต็อก
+// ==========================================
+// 1. API สำหรับดึงข้อมูลอะไหล่ (ใช้ตอนสแกนบาร์โค้ด)
+// ==========================================
 app.post('/api/withdraw/partInfo', async (req, res) => {
-    // partId ที่ส่งมาใน body จะเท่ากับ equipment_type_id (เช่น 'ABU-001')
     const { partId } = req.body; 
-
-    if (!partId) {
-        return res.status(400).json({ error: 'Part ID is required.' });
-    }
-
     try {
-        // Query: รวมสต็อก (current_quantity) จากทุก Lot สำหรับ Part Type นั้น
         const sql = `
             SELECT
-                ET.equipment_type_id AS partId,
-                ET.Equipment_name AS partName,
-                ET.unit,
-                -- รวมสต็อกทั้งหมดจากตาราง lot ที่เชื่อมโยงกับ equipment_type_id นี้
-                COALESCE(SUM(L.current_quantity), 0) AS currentStock,
-                ET.img AS imageUrl
-            FROM equipment_type ET
-            LEFT JOIN equipment E ON ET.equipment_type_id = E.equipment_type_id
-            LEFT JOIN lot L ON E.equipment_id = L.equipment_id
-            WHERE ET.equipment_type_id = ?
-            GROUP BY ET.equipment_type_id, ET.Equipment_name, ET.unit, ET.img
+                e.equipment_id AS partId,
+                et.Equipment_name AS partName,
+                et.unit,
+                e.\`model/size\` AS model,
+                et.img AS imageUrl,
+                COALESCE((SELECT SUM(current_quantity) FROM lot WHERE equipment_id = e.equipment_id), 0) AS currentStock
+            FROM equipment e
+            JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
+            WHERE e.equipment_id = ?
         `;
-        
         const [rows] = await pool.query(sql, [partId]);
 
-        if (rows.length === 0 || rows[0].currentStock === 0) {
-            return res.status(404).json({ error: 'ไม่พบรายการอะไหล่หรือไม่มีสต็อก' });
+        if (rows.length > 0) {
+            // ปรับแต่ง imageUrl ถ้าใน DB เป็นคำว่า 'NULL'
+            if (rows[0].imageUrl === 'NULL' || !rows[0].imageUrl) {
+                rows[0].imageUrl = 'https://via.placeholder.com/100x100?text=No+Image';
+            }
+            res.json(rows[0]);
+        } else {
+            res.status(404).json({ error: 'ไม่พบข้อมูลอะไหล่รหัสนี้ในระบบ' });
         }
-
-        res.json(rows[0]);
-
     } catch (error) {
-        console.error("DB Error fetching part info:", error.message);
-        res.status(500).json({ error: 'Server error while fetching part details.' });
+        console.error("Fetch Part Error:", error);
+        res.status(500).json({ error: 'Database error' });
     }
 });
 
-
-// 2. API: Confirm and Cut Stock (POST /api/withdraw/confirm)
-// API นี้ต้องมีการตรวจสอบ Token (authenticateToken)
+// ==========================================
+// 2. API สำหรับยืนยันการเบิก (Withdraw) และตัดสต็อกแบบ FIFO
+// ==========================================
 app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
     const { machine_SN, cartItems } = req.body;
-    const userId = req.user.userId; // ดึง user ID จาก Token
-
-    if (!machine_SN || !cartItems || cartItems.length === 0) {
-        return res.status(400).json({ error: 'Machine SN และรายการเบิกเป็นสิ่งจำเป็น' });
-    }
-    
+    const userId = req.user.userId;
     let connection;
+
     try {
         connection = await pool.getConnection();
-        await connection.beginTransaction(); // เริ่ม Transaction
+        await connection.beginTransaction();
 
-        const transactionId = generateTransactionId('WTH');
-        const transactionTypeId = 'T-WTH'; // 🚨 ต้องมี ID Transaction Type สำหรับการเบิกในตาราง transactions_type
+        const transactionId = 'WTH-' + Date.now();
 
-        // 1. ตรวจสอบ/สร้าง Machine (ถ้าไม่มีในตาราง machine)
-        const [machineCheck] = await connection.query("SELECT machine_SN FROM machine WHERE machine_SN = ?", [machine_SN]);
-        if (machineCheck.length === 0) {
-             await connection.query("INSERT INTO machine (machine_SN, machine_name) VALUES (?, ?)", [machine_SN, 'Machine (Created by Withdrawal)']);
-        }
+        // 1. บันทึกลงตาราง transactions
+        await connection.query(
+            "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_SN) VALUES (?, 'T-WTH', CURDATE(), CURTIME(), ?, ?)",
+            [transactionId, userId, machine_SN]
+        );
 
-        // 2. สร้าง Transaction หลัก
-        const insertTransactionSql = `
-            INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_SN)
-            VALUES (?, ?, CURDATE(), CURTIME(), ?, ?)
-        `;
-        await connection.query(insertTransactionSql, [transactionId, transactionTypeId, userId, machine_SN]);
-
-        // 3. วนลูปเพื่อตัดสต็อกและบันทึกรายการอะไหล่
         for (const item of cartItems) {
-            const { partId, quantity } = item; // partId = equipment_type_id (e.g., 'ABU-001')
+            let requiredQty = item.quantity;
             
-            // 3a. ค้นหา Lot ที่พร้อมใช้งาน (ใช้ Logic หาง่ายๆ จาก equipment_id ที่มี stock)
-            const [lotRows] = await connection.query(`
-                SELECT 
-                    L.lot_id, L.current_quantity, E.equipment_id
-                FROM lot L
-                JOIN equipment E ON L.equipment_id = E.equipment_id
-                WHERE E.equipment_type_id = ? AND L.current_quantity > 0
-                ORDER BY L.expiry_date ASC, L.import_date ASC
-            `, [partId]);
+            // 2. ดึง Lot ที่มีของ โดยเรียงตามวันที่นำเข้า (FIFO)
+            const [lots] = await connection.query(
+                "SELECT lot_id, current_quantity FROM lot WHERE equipment_id = ? AND current_quantity > 0 ORDER BY import_date ASC",
+                [item.partId]
+            );
 
-            let requiredQty = quantity;
-            let totalAvailable = lotRows.reduce((sum, lot) => sum + lot.current_quantity, 0);
-
-            if (totalAvailable < requiredQty) {
-                 throw new Error(`สต็อกไม่เพียงพอสำหรับ ${item.partName} (ต้องการ ${requiredQty} มีเพียง ${totalAvailable})`);
-            }
-            
-            // 3b. Logic ตัดสต็อกแบบ FIFO (หรือตามลำดับ Lot ที่มีใน Query)
-            for (const lot of lotRows) {
+            for (const lot of lots) {
                 if (requiredQty <= 0) break;
 
-                const deductAmount = Math.min(requiredQty, lot.current_quantity);
+                // คำนวณจำนวนที่จะหักจาก Lot นี้ (แก้ไขจุดที่เคยผิดพลาด)
+                let deductAmount = Math.min(lot.current_quantity, requiredQty);
                 
-                // ตัดสต็อกจาก Lot นั้น
+                // หักสต็อกใน Lot
                 await connection.query(
                     "UPDATE lot SET current_quantity = current_quantity - ? WHERE lot_id = ?",
                     [deductAmount, lot.lot_id]
                 );
 
-                // บันทึกรายการอะไหล่ที่เบิก (equipment_list)
-                const listId = generateTransactionId('EL');
+                // บันทึกรายการลง equipment_list
+                const listId = 'EL-' + Math.random().toString(36).substr(2, 9);
                 await connection.query(
                     "INSERT INTO equipment_list (equipment_list_id, transaction_id, equipment_id, quantity) VALUES (?, ?, ?, ?)",
-                    [listId, transactionId, lot.equipment_id, deductAmount]
+                    [listId, transactionId, item.partId, deductAmount]
                 );
-                
+
                 requiredQty -= deductAmount;
+            }
+
+            if (requiredQty > 0) {
+                throw new Error(`สต็อกอะไหล่ ${item.partId} ไม่เพียงพอสำหรับการเบิก`);
             }
         }
 
-        // 4. บันทึก Log การทำรายการปิดประตู (A-002)
-        await connection.query(
-             "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id) VALUES (?, CURTIME(), CURDATE(), ?, ?)",
-             [generateTransactionId('LG'), 'A-002', transactionId]
-        );
-        
-        await connection.commit(); // ยืนยันการทำรายการทั้งหมด
-        res.json({ success: true, transactionId: transactionId, message: 'บันทึกการเบิกและตัดสต็อกสำเร็จ' });
+        await connection.commit();
+        res.json({ success: true, transactionId });
 
     } catch (error) {
-        if (connection) {
-            await connection.rollback(); // ยกเลิกการทำรายการทั้งหมดหากเกิดข้อผิดพลาด
-        }
-        console.error("Withdrawal Transaction Failed:", error.message);
-        res.status(500).json({ error: error.message || 'เกิดข้อผิดพลาดในการทำรายการตัดสต็อก' });
+        if (connection) await connection.rollback();
+        res.status(500).json({ error: error.message });
     } finally {
-        if (connection) {
-            connection.release();
-        }
+        if (connection) connection.release();
     }
 });
 
