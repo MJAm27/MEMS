@@ -1,31 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect ,useCallback} from 'react';
 import { FaArrowLeft, FaLockOpen, FaCheckCircle, FaMinus, FaPlus, FaCamera, FaTrash, FaKeyboard } from 'react-icons/fa';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import axios from 'axios';
 import './WithdrawPage.css';
 
-const MOCK_PART_DATA = {
-    'ABU-001': { partId: 'ABU-001', partName: 'Patient Valve (ABU-001)', sku: 'ABU-001', currentStock: 50, imageUrl: 'https://via.placeholder.com/100x100?text=ABU' },
-    'BATT-001': { partId: 'BATT-001', partName: 'BATTERY 12V 7.2Ah', sku: 'BATT-001', currentStock: 40, imageUrl: 'https://via.placeholder.com/100x100?text=BATT' },
-};
-
 const realApi = {
     fetchPartInfo: async (itemId) => {
         try {
-            const response = await axios.post(`${process.env.REACT_APP_API_URL}/partInfo`, { partId: itemId });
+            const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/withdraw/partInfo`, { partId: itemId });
             return response.data;
         } catch (error) {
-            const fallback = MOCK_PART_DATA[itemId];
-            if (fallback) return fallback; 
             throw new Error(error.response?.data?.error || 'ไม่พบข้อมูลอะไหล่');
         }
     },
     confirmAndCutStock: async (assetId, cart) => {
-        const token = localStorage.getItem('token'); 
-        if (!token) throw new Error('กรุณาล็อกอินใหม่');
+        const token = localStorage.getItem('token');
         try {
             const response = await axios.post(
-                `${process.env.REACT_APP_API_URL}/confirm`, 
+                `${process.env.REACT_APP_API_URL}/api/withdraw/confirm`, 
                 { machine_SN: assetId, cartItems: cart },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -47,7 +39,7 @@ function WithdrawPage({ user }) {
     const [isProcessing, setIsProcessing] = useState(false);
     const [showScanner, setShowScanner] = useState(false);
 
-    const handleAddItemToCart = async (itemId, quantity = 1) => {
+    const handleAddItemToCart = useCallback(async (itemId, quantity = 1) => {
         const idToSearch = itemId || currentPartId;
         if (!assetId) { setError('กรุณากรอกเลขครุภัณฑ์ก่อน'); return; }
         if (!idToSearch) { setError('กรุณาระบุรหัสอะไหล่'); return; }
@@ -70,31 +62,41 @@ function WithdrawPage({ user }) {
         } finally {
             setIsProcessing(false);
         }
-    };
-
+    }, [assetId, currentPartId]);
+    
+    // --- Logic สแกนเนอร์ ---
     useEffect(() => {
         let scanner = null;
         if (showScanner && currentStep === 2) {
             scanner = new Html5QrcodeScanner("reader", {
-                fps: 10,
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.0
+                fps: 20, // เพิ่มความเร็วในการสแกน
+                qrbox: { width: 300, height: 150 }, // ปรับให้เหมาะกับ Barcode แนวยาว
+                aspectRatio: 1.0,
+                experimentalFeatures: {
+                    useBarCodeDetectorIfSupported: true
+                }
             });
+
             scanner.render((decodedText) => {
                 handleAddItemToCart(decodedText, 1);
-                setShowScanner(false);
+                setShowScanner(false); // ปิดสแกนเนอร์เมื่อสแกนสำเร็จ
                 scanner.clear();
-            }, (err) => {});
+            }, (err) => { /* scanning... */ });
         }
+
         return () => {
-            if (scanner) scanner.clear().catch(e => console.error("Scanner clear error", e));
+            if (scanner) {
+                scanner.clear().catch(e => console.error("Scanner clear error", e));
+            }
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [showScanner, currentStep]);
+    }, [showScanner, currentStep, handleAddItemToCart]);
+
+    
 
     const handleOpenDoor = async () => {
         setIsProcessing(true);
         try {
+            // จำลองการเปิดตู้ หรือส่ง API สั่งเปิด Servo ที่นี่
             await new Promise(r => setTimeout(r, 800)); 
             setDoorStatus({ state: 'open', message: 'ตู้เปิดแล้ว' });
             setCurrentStep(2); 
@@ -116,6 +118,7 @@ function WithdrawPage({ user }) {
         } catch (err) { setError(err.message); } finally { setIsProcessing(false); }
     };
 
+    // --- Render Functions (เหมือนเดิม) ---
     const renderStep1_OpenDoor = () => (
         <div className="flex flex-col items-center py-10">
             <div className="mb-6">
