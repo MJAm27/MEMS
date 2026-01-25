@@ -1,0 +1,411 @@
+/* ManageEquipment.css - Based on ManageMachine.css but refined */
+
+.manage-equipment-container {
+    background-color: #fff;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    min-height: 80vh;
+  }
+  
+  /* Header Section */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+  
+  .page-title-text {
+    font-size: 1.5rem;
+    color: #343a40;
+    margin: 0 0 5px 0;
+    font-weight: 700;
+  }
+  
+  .page-subtitle-text {
+    color: #6c757d;
+    margin: 0;
+    font-size: 0.95rem;
+  }
+  
+  /* Buttons */
+  .btn-primary {
+    background-color: var(--primary-color, #e83e8c);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  
+  .btn-primary:hover {
+    background-color: #d63384;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(232, 62, 140, 0.3);
+  }
+  
+  .btn-secondary {
+    background-color: #f1f3f5;
+    color: #495057;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  
+  .btn-secondary:hover {
+    background-color: #e9ecef;
+  }
+  
+  /* Search Bar */
+  .search-bar-wrapper {
+    position: relative;
+    margin-bottom: 20px;
+    max-width: 400px;
+  }
+  
+  .search-bar-wrapper input {
+    width: 100%;
+    padding: 12px 15px 12px 45px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  
+  .search-bar-wrapper input:focus {
+    border-color: var(--primary-color, #e83e8c);
+  }
+  
+  .search-icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #adb5bd;
+  }
+  
+  /* Table Styles */
+  .table-container {
+    overflow-x: auto;
+  }
+  
+  .custom-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  
+  .custom-table th {
+    background-color: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+    padding: 15px;
+    border-bottom: 2px solid #dee2e6;
+    text-align: left;
+    white-space: nowrap;
+  }
+  
+  .custom-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #f1f3f5;
+    color: #333;
+    vertical-align: middle;
+  }
+  
+  .custom-table tr:hover td {
+    background-color: #fafafa;
+  }
+  
+  .custom-table th.text-center, 
+  .custom-table td.text-center {
+    text-align: center;
+  }
+  
+  /* Specific Styles for Equipment */
+  .equip-thumbnail {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    object-fit: cover;
+    border: 1px solid #dee2e6;
+  }
+  
+  .no-img-box {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    background-color: #f1f3f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #adb5bd;
+  }
+  
+  .equip-name {
+    font-weight: 500;
+    color: #212529;
+  }
+  
+  .badge-warning {
+    background-color: #fff3cd;
+    color: #856404;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  
+  .text-primary { color: var(--primary-color, #e83e8c); }
+  .text-danger { color: #dc3545; }
+  .fw-bold { font-weight: 600; }
+  .text-muted { color: #868e96; font-size: 0.8rem; display: block; margin-top: 2px; }
+  
+  /* Action Buttons */
+  .action-btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    transition: background 0.2s;
+    font-size: 1.1rem;
+    margin: 0 2px;
+  }
+  
+  .edit-btn { color: #ffc107; }
+  .edit-btn:hover { background-color: #fff3cd; }
+  
+  .delete-btn { color: #dc3545; }
+  .delete-btn:hover { background-color: #ffe6e6; }
+  
+  .empty-state {
+    text-align: center;
+    padding: 40px !important;
+    color: #adb5bd;
+  }
+  
+  /* Modal Styles */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1050;
+    animation: fadeIn 0.2s;
+  }
+  
+  .modal-content {
+    background: white;
+    padding: 0;
+    border-radius: 12px;
+    width: 95%;
+    max-width: 800px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Large Modal for Equipment Form */
+  .large-modal {
+    max-width: 650px; /* กว้างกว่าปกติเพราะมีหลายฟิลด์ */
+  }
+  
+  .modal-header {
+    padding: 20px 25px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .modal-header h3 { margin: 0; font-size: 1.25rem; }
+  
+  .close-btn {
+    background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #aaa;
+  }
+  .close-btn:hover { color: #333; }
+  
+  .modal-body { padding: 25px; }
+  
+  .form-group { margin-bottom: 15px; }
+  
+  /* Row Layout for Form */
+  .form-row {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+  }
+  .col-half {
+    flex: 1;
+  }
+  
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333;
+    font-size: 0.95rem;
+  }
+  
+  .form-group input, 
+  .form-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 1rem;
+    background-color: #fff;
+  }
+  
+  .form-group input:focus,
+  .form-group select:focus {
+    border-color: var(--primary-color, #e83e8c);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(232, 62, 140, 0.1);
+  }
+  
+  .form-group input:disabled {
+    background-color: #e9ecef;
+    cursor: not-allowed;
+  }
+  
+  .modal-footer {
+    padding: 15px 25px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    background-color: #f8f9fa;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+.section-box {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border: 1px solid #e9ecef;
+}
+
+.section-box h4 {
+    margin-top: 0;
+    font-size: 1rem;
+    color: #495057;
+    margin-bottom: 10px;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 5px;
+    display: inline-block;
+}
+
+.highlight-box {
+    background-color: #e3f2fd; /* สีฟ้าอ่อนสำหรับ Lot */
+    border-color: #bbdefb;
+}
+
+.toggle-row {
+    margin-bottom: 10px;
+    display: flex;
+    gap: 15px;
+}
+
+.toggle-row label {
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+}
+
+/* --- เพิ่มต่อท้ายไฟล์ ManageEquipment.css --- */
+
+/* พื้นหลังสีดำจางๆ */
+.image-viewer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.85); /* สีดำโปร่งแสง 85% */
+    z-index: 2000; /* ต้องสูงกว่า Modal ปกติ (ปกติ 1050) */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.3s;
+    cursor: zoom-out; /* เมาส์เป็นรูปแว่นขยาย - */
+}
+
+/* กล่องใส่รูป */
+.image-viewer-content {
+    position: relative;
+    max-width: 90%;
+    max-height: 90%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* ตัวรูปภาพขยาย */
+.image-viewer-content img {
+    max-width: 100%;
+    max-height: 90vh; /* สูงไม่เกิน 90% ของจอ */
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    border: 2px solid #fff;
+    object-fit: contain;
+}
+
+/* ปุ่มปิด (X) มุมขวาบน */
+.close-image-btn {
+    position: absolute;
+    top: -40px;
+    right: -40px;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.close-image-btn:hover {
+    transform: scale(1.2);
+    color: #ff4d4d;
+}
+
+/* Responsive สำหรับมือถือ */
+@media (max-width: 768px) {
+    .close-image-btn {
+        top: -40px;
+        right: 0;
+    }
+}
