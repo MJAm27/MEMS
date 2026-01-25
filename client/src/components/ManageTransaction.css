@@ -1,0 +1,102 @@
+/* ใช้ Styles หลักเหมือน ManageEquipment แต่เพิ่มส่วนนี้เข้าไป */
+
+.manage-transaction-container {
+    background-color: #fff;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    min-height: 80vh;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Modal ที่กว้างกว่าปกติ สำหรับ Transaction */
+.transaction-modal {
+    max-width: 800px !important; /* ขยายความกว้าง */
+    width: 95%;
+}
+
+/* Badge สถานะ */
+.badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+.bg-success { background-color: #28a745; }
+.bg-warning { background-color: #ffc107; color: #333; }
+
+/* Grid Layout ใน Modal */
+.info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.info-grid p { margin: 5px 0; font-size: 0.95rem; color: #333; }
+
+/* Section Box */
+.section-box {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border: 1px solid #e9ecef;
+}
+.section-box h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1rem;
+    color: #495057;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 5px;
+}
+
+/* Add Item Row */
+.add-item-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+/* Mini Table inside Modal */
+.mini-table-container {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+}
+.mini-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.mini-table th, .mini-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #eee;
+    text-align: left;
+    font-size: 0.9rem;
+}
+.mini-table th {
+    background-color: #eee;
+    position: sticky;
+    top: 0;
+}
+
+/* Delete Icon */
+.delete-icon {
+    color: #dc3545;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.delete-icon:hover {
+    transform: scale(1.2);
+}
+
+/* Button & Search styles เหมือนเดิม... */
+.btn-primary {
+    background-color: #e83e8c; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; font-weight: 600;
+}
+.search-bar-wrapper input { width: 100%; padding: 12px 15px 12px 40px; border: 1px solid #ced4da; border-radius: 8px; }
+.custom-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+.custom-table th { background: #f8f9fa; padding: 15px; text-align: left; }
+.custom-table td { padding: 15px; border-bottom: 1px solid #eee; }
