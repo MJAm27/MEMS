@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import "./ManageEquipment.css";
 import { FaPlus, FaSearch, FaEdit, FaTrash, FaTimes } from "react-icons/fa";
 import axios from "axios";
+import * as XLSX from 'xlsx';
+import Barcode from 'react-barcode';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
@@ -163,11 +165,92 @@ function ManageEquipment() {
 
   const [previewImage, setPreviewImage] = useState(null);
 
+  const handleExportExcel = () => {
+    // 1. ใช้ filteredInventory (ตามที่คุณประกาศไว้บรรทัด 104)
+    const dataToExport = filteredInventory.map(item => ({
+        "Lot ID": item.lot_id,                // จำเป็นสำหรับระบุล็อต
+        "รหัสอุปกรณ์": item.equipment_id,
+        "ชื่ออุปกรณ์": item.equipment_name,
+        "ประเภท": item.equipment_type_name || "-",
+        "จำนวนคงเหลือ": item.current_quantity || 0, // ใน DB และ State คุณใช้ current_quantity
+        "ราคาต้นทุน": item.price || 0,
+        "วันที่นำเข้า": item.import_date ? new Date(item.import_date).toLocaleDateString('th-TH') : "-",
+        "วันหมดอายุ": item.expiry_date ? new Date(item.expiry_date).toLocaleDateString('th-TH') : "-",
+        "ซัพพลายเออร์": item.supplier_name || "-"
+    }));
+
+    // 2. สร้างไฟล์ Excel
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "InventoryData");
+
+    // 3. ดาวน์โหลด
+    XLSX.writeFile(workbook, "Inventory_Report.xlsx");
+};
+
+  // ฟังก์ชันสำหรับดาวน์โหลด Barcode เป็นไฟล์ภาพ PNG
+const downloadBarcode = (lotId) => {
+    const svg = document.getElementById(`barcode-${lotId}`);
+    if (svg) {
+        // 1. แปลง SVG เป็น String
+        const serializer = new XMLSerializer();
+        const svgString = serializer.serializeToString(svg);
+        
+        // 2. สร้าง Canvas
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const img = new Image();
+
+        // 3. กำหนดขนาดรูปภาพ
+        // ต้อง Encode svgString ให้เป็น Base64 หรือ URL component
+        const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+        const url = URL.createObjectURL(svgBlob);
+
+        img.onload = () => {
+            canvas.width = img.width + 20;  // เผื่อขอบขาวนิดหน่อย
+            canvas.height = img.height + 20;
+            
+            // เติมพื้นหลังสีขาว (ถ้าไม่เติมจะเป็นพื้นใส)
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 10, 10);
+
+            // 4. สั่งดาวน์โหลด
+            const pngUrl = canvas.toDataURL("image/png");
+            const downloadLink = document.createElement("a");
+            downloadLink.href = pngUrl;
+            downloadLink.download = `Barcode_${lotId}.png`;
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+            
+            URL.revokeObjectURL(url);
+        };
+
+        img.src = url;
+    }
+};
+
   return (
     <div className="manage-equipment-container fade-in">
       <div className="page-header">
-        <h2 className="page-title-text">จัดการข้อมูลอะไหล่</h2>
-        <button className="btn-primary" onClick={handleAddNew}><FaPlus />เพิ่มอะไหล่ใหม่</button>
+          <div className="header-title">
+              <h2 className="page-title-text">จัดการข้อมูลอะไหล่</h2>
+          </div>
+
+          {/* รวมกลุ่มปุ่มไว้ด้วยกัน */}
+          <div className="header-actions" style={{ display: 'flex', gap: '10px' }}>
+              <button 
+                  className="btn-success" 
+                  onClick={handleExportExcel} 
+                  style={{ backgroundColor: '#28a745', color: 'white', border: 'none', padding: '10px 15px', borderRadius: '5px', display: 'flex', alignItems: 'center', gap: '5px' }}
+              >
+                  Export to Excel
+              </button>
+              <button className="btn-primary" onClick={handleAddNew}>
+                  <FaPlus /> เพิ่มอะไหล่ใหม่
+              </button>
+          </div>
       </div>
 
       <div className="search-bar-wrapper">
@@ -196,7 +279,7 @@ function ManageEquipment() {
                     <tr key={item.lot_id}>
                         <td style={{ textAlign: "center" }}>{item.img ? (
                           <img 
-                            src={item.img} 
+                            src={item.img ? `${process.env.REACT_APP_API_URL}/uploads/${item.img}` : "/default.png"} 
                             alt="Equipment"
                             // คลิกแล้วเรียกใช้ฟังก์ชันขยายรูปเหมือนใน Modal
                             onClick={() => setPreviewImage(item.img)} 
@@ -210,10 +293,23 @@ function ManageEquipment() {
                             }}
                             title="คลิกเพื่อขยาย"
                           />
+                          
                         ) : (
                           <div style={{ color: '#ccc', fontSize: '0.8rem' }}>ไม่มีรูป</div>
                         )}</td>
-                        <td className="text-primary fw-bold">{item.lot_id}</td>
+                        <td className="text-primary fw-bold">{item.lot_id}<Barcode 
+                            id={`barcode-${item.lot_id}`} // ID สำคัญสำหรับการดึงไป save
+                            value={item.lot_id} 
+                            width={1.5} 
+                            height={50} 
+                            fontSize={14}
+                        />
+                        <button 
+                            onClick={() => downloadBarcode(item.lot_id)}
+                            style={{ marginTop: '5px', fontSize: '0.8rem', padding: '5px 10px', cursor: 'pointer' }}
+                        >
+                            💾 บันทึก Barcode
+                        </button></td>
                         <td>{item.equipment_name}</td>
                         <td>{item.model_size}</td>
                         <td>{item.supplier_name}</td>

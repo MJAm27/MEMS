@@ -1,22 +1,17 @@
-/* ManageEquipment.css - Based on ManageMachine.css but refined */
+
+
+.page-header {
+    display: flex;
+    justify-content: space-between; /* จัดชื่ออยู่ซ้าย ปุ่มอยู่ขวา */
+    align-items: center;           /* จัดให้อยู่ตรงกลางแนวตั้งเสมอกัน */
+    width: 100%;
+    margin-bottom: 20px;
+}
 
 .manage-equipment-container {
-    background-color: #fff;
-    border-radius: 12px;
-    padding: 30px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-    min-height: 80vh;
-  }
-  
-  /* Header Section */
-  .page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 25px;
-    flex-wrap: wrap;
-    gap: 15px;
-  }
+    max-width: 100%; /* กำหนดความกว้างสูงสุด */
+    margin: 0 auto;    /* จัดหน้าให้อยู่กึ่งกลางหน้าจอเสมอ */
+}
   
   .page-title-text {
     font-size: 1.5rem;
