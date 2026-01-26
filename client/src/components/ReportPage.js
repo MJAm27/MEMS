@@ -62,19 +62,15 @@ function ReportPage() {
       <div className="report-usage-grid">
         <div className="usage-card">
           เบิกรายวัน
-          <strong>{usage.borrow.daily}</strong>
         </div>
         <div className="usage-card">
           เบิกรายเดือน
-          <strong>{usage.borrow.monthly}</strong>
         </div>
         <div className="usage-card">
           คืนรายวัน
-          <strong>{usage.return.daily}</strong>
         </div>
         <div className="usage-card">
           คืนรายเดือน
-          <strong>{usage.return.monthly}</strong>
         </div>
       </div>
 

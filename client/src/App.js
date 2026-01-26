@@ -5,11 +5,16 @@ import React from 'react';
     import Setup2FAPage from './components/Setup2FAPage';
     import DashboardPage from './components/DashboardPage';
     import RegisterPage from './components/RegisterPage';
+<<<<<<< HEAD
     import InventoryBalanceReportChart from './components/InventoryBalanceReportChart'
     //import LowStockAlert from './components/LowStockAlert'
     import UserList from './components/UserList'
     import EditUser from './components/EditUser'
     
+=======
+    import ProfileEditENG from './components/Profile'
+    import InventoryBalanceReportChart from './components/InventoryBalanceReportChart';
+>>>>>>> 952a636d28d4d48590e7b09e416970bf25bba5ea
 
     function App() {
         return (
@@ -22,11 +27,16 @@ import React from 'react';
                     <Route path="/setup-2fa" element={<Setup2FAPage />} />
                     
                     <Route path="/dashboard/*" element={<DashboardPage />} /> 
+                    <Route path="/profileEditENG" element={<ProfileEditENG />} /> 
+                    <Route path="/report/inventory-balance" element={<InventoryBalanceReportChart />} />
 
+<<<<<<< HEAD
                     <Route path='/inventoryBalanceReportChart' element={<InventoryBalanceReportChart />}/>
 
                     <Route path='/userList' element={<UserList />}/>
                     <Route path='/editUser' element={<EditUser />}/>
+=======
+>>>>>>> 952a636d28d4d48590e7b09e416970bf25bba5ea
                     
                 </Routes>
             </BrowserRouter>

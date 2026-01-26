@@ -100,15 +100,15 @@ function AdminMainPage({ user, handleLogout }) {
                     </button>
 
                     <button className="nav-link" onClick={() => navigate("/dashboard/admin/alert")}>
-                        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                            <FaBell /> 
+                        <div className="nav-link-content">
+                            <FaBell />
+                            <span>แจ้งเตือน</span>
                             {alertCount > 0 && (
-                                <span className="notification-badge-sidebar">
+                                <span className="notification-badge-inline">
                                     {alertCount}
                                 </span>
                             )}
                         </div>
-                        <span style={{ marginLeft: alertCount > 0 ? '15px' : '0' }}>แจ้งเตือน</span>
                     </button>
 
                     <button className="nav-link" onClick={() => navigate("/dashboard/admin/profile")}>

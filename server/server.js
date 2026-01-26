@@ -884,7 +884,7 @@ app.get("/api/alerts/low-stock", async (req, res) => {
 // =======================================================
 
 // 1. เปิดให้เข้าถึงรูปภาพในโฟลเดอร์ uploads ได้ผ่าน URL
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ... (code config อื่นๆ) ...
 
@@ -906,8 +906,7 @@ app.post("/api/upload", upload.single('image'), (req, res) => {
         return res.status(400).json({ message: "No file uploaded" });
     }
     // สร้าง URL เพื่อส่งกลับไปให้ Frontend มาแก้ตรงนี้ด้วยจ้าาา เสียวรูปไม่ขึ้น
-    const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-    res.json({ url: imageUrl });
+    res.json({ filename: req.file.filename });
 });
 
 // 1. ดึงข้อมูลทั้งหมด 4 ตารางมาแสดง (READ)

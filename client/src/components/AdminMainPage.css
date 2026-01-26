@@ -109,6 +109,24 @@ body {
     background: #eee;
     margin: 15px 0;
 }
+
+.nav-link-content {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.notification-badge-inline {
+    background-color: #EC407A; 
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-left: auto; /* ดันไปขวาสุดของเมนู */
+    box-shadow: 0 2px 5px rgba(255, 77, 79, 0.3);
+}
+
 /* ==================== Main Actions Container (Home Page Buttons) ==================== */
 .content-body{
     padding: 20px;
@@ -320,22 +338,7 @@ body {
 /* ... CSS เดิม ... */
 
 /* Badge สีแดงใน Sidebar */
-.notification-badge-sidebar {
-    position: absolute;
-    top: -5px;
-    right: -8px; /* ปรับตำแหน่งตามความสวยงาม */
-    background-color: #dc3545; /* สีแดง */
-    color: white;
-    border-radius: 50%;
-    width: 18px;
-    height: 18px;
-    font-size: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    border: 2px solid white; /* ตัดขอบให้ดูเด่นขึ้น */
-}
+
 
 /* ปรับ Nav Link ให้รองรับ badge */
 .nav-link svg {
