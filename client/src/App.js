@@ -6,7 +6,7 @@ import React from 'react';
     import DashboardPage from './components/DashboardPage';
     import RegisterPage from './components/RegisterPage';
     import InventoryBalanceReportChart from './components/InventoryBalanceReportChart'
-    import LowStockAlert from './components/LowStockAlert'
+    //import LowStockAlert from './components/LowStockAlert'
     import UserList from './components/UserList'
     import EditUser from './components/EditUser'
     
@@ -24,7 +24,7 @@ import React from 'react';
                     <Route path="/dashboard/*" element={<DashboardPage />} /> 
 
                     <Route path='/inventoryBalanceReportChart' element={<InventoryBalanceReportChart />}/>
-                    <Route path='/lowStockAlert' element={<LowStockAlert />}/>
+
                     <Route path='/userList' element={<UserList />}/>
                     <Route path='/editUser' element={<EditUser />}/>
                     
@@ -34,3 +34,5 @@ import React from 'react';
     }
 
     export default App;
+
+                        //<Route path='/lowStockAlert' element={<LowStockAlert />}/>

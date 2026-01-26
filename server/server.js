@@ -657,6 +657,36 @@ app.post('/api/machine', async (req, res) => {
     }
 });
 
+// ค้นหาเลขครุภัณฑ์ (Machine)
+app.get('/api/search/machines', async (req, res) => {
+    const { term } = req.query;
+    try {
+        const [rows] = await pool.query(
+            "SELECT machine_SN, machine_name FROM machine WHERE machine_SN LIKE ? OR machine_name LIKE ? LIMIT 10",
+            [`%${term}%`, `%${term}%`]
+        );
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ค้นหาอะไหล่ (Parts)
+app.get('/api/search/parts', async (req, res) => {
+    const { term } = req.query;
+    try {
+        const sql = `
+            SELECT e.equipment_id, et.equipment_name, e.model_size 
+            FROM equipment e 
+            JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id 
+            WHERE e.equipment_id LIKE ? OR et.equipment_name LIKE ? LIMIT 10`;
+        const [rows] = await pool.query(sql, [`%${term}%`, `%${term}%`]);
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // PUT /api/machine/:sn
 app.put('/api/machine/:sn', async (req, res) => {
     try {
@@ -1321,7 +1351,7 @@ app.post('/api/withdraw/partInfo', async (req, res) => {
                 e.equipment_id AS partId,
                 et.Equipment_name AS partName,
                 et.unit,
-                e.\`model/size\` AS model,
+                e.model_size AS model,
                 et.img AS imageUrl,
                 COALESCE((SELECT SUM(current_quantity) FROM lot WHERE equipment_id = e.equipment_id), 0) AS currentStock
             FROM equipment e
