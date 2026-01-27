@@ -109,60 +109,113 @@ body {
     margin: 15px 0;
 }
 /* ==================== Main Actions Container (Home Page Buttons) ==================== */
-.content-body{
-    padding: 20px;
-}
-
-.main-actions-contaier{
+.content-body {
+    padding: 30px;
     display: flex;
-    justify-content: center;
-    gap: 350px;
-    margin-top: 100px;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: center; /* จัดเนื้อหาให้อยู่กลางหน้า */
+    min-height: 80vh;
 }
 
-.action-button{
-    padding: 15px 30px;
-    border-radius: 10px;
-    font-size: 1.1rem;
+.content-body h1 {
+    margin-bottom: 10px;
+    color: var(--text-dark);
     font-weight: 700;
+}
+
+.content-body p {
+    color: var(--text-muted);
+    margin-bottom: 40px;
+}
+
+.main-actions-container {
+    display: flex;
+    flex-direction: row;      /* บังคับให้เรียงในแนวนอน */
+    justify-content: center;  /* จัดกลุ่มปุ่มทั้งหมดไว้กึ่งกลางหน้าจอ */
+    align-items: center;      /* จัดให้อยู่กึ่งกลางในแนวตั้ง */
+    gap: 30px;               /* ระยะห่างระหว่างปุ่ม (ปรับตัวเลขนี้ได้ตามความเหมาะสม) */
+    margin-top: 50px;
+    width: 100%;
+    max-width: 1000px;       /* จำกัดความกว้างรวมเพื่อให้ปุ่มเกาะกลุ่มกันสวยงาม */
+    flex-wrap: nowrap;       /* ห้ามปุ่มตกบรรทัด (ยกเว้นในมือถือ) */
+}
+
+.action-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    
+    /* ปรับให้ขนาดปุ่มเท่ากันทั้ง 3 ปุ่ม */
+    width: 220px;            
+    height: 180px;           
+    
+    padding: 20px;
+    border-radius: 16px;
+    font-size: 1.1rem;
+    font-weight: 600;
     cursor: pointer;
-    min-width: 180px;
-    text-align: center;
-    transition: all 0.3S ease;
-    box-shadow: 0 4PX 15px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    
+    /* สไตล์สีขาวเหมือนกันทัั้งหมด */
+    background-color: #ffffff;
+    color: #343a40;
+    border: 1px solid #eee;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-/* สไตล์สำหรับปุ่มหลัก/ปุ่มเด่น (เบิกอะไหล่) */
-.primary-action{
-    background-color: #ff93c0;
+/* เอฟเฟกต์ตอนนำเมาส์ไปวาง (Hover) */
+.action-button:hover {
+    background-color: #fff9fb; /* เปลี่ยนเป็นสีชมพูอ่อนๆ */
+    color: #e83e8c;           /* เปลี่ยนสีตัวอักษรเป็นชมพู */
+    border-color: #e83e8c;
+    transform: translateY(-8px); /* ให้ปุ่มลอยขึ้นเล็กน้อย */
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+}
+
+.action-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+}
+/* ปรับไอคอนให้ใหญ่ขึ้นและมีระยะห่าง */
+.action-button svg {
+    font-size: 3rem;
+    margin-bottom: 15px;
+}
+
+/* สไตล์สำหรับปุ่มหลัก (เบิกอะไหล่) - เน้นสีชมพูตามธีม */
+.primary-action {
+    background: linear-gradient(135deg, #ff93c0 0%, #e83e8c 100%);
     color: white;
-    border: 2px solid #007bff;
-}
-.primary-action:hover{
-    background-color: #0056b3;
-    transform: translate(-3px);
-    box-shadow: 0 6px 20px rgba(0, 123, 255, 0.3);
 }
 
-/* สไตล์สำหรับปุ่มรอง (คืน/ยืมอะไหล่) */
-.secondary-action{
-    background-color: white;
+.primary-action:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(232, 62, 140, 0.3);
+}
+
+/* สไตล์สำหรับปุ่มรอง (คืน/ยืมอะไหล่) - ขาวสะอาดตา */
+.secondary-action {
+    background-color: #ffffff;
     color: #343a40;
-    border: 2px solid #ced4da;
+    border: 1px solid #eee;
 }
-.secondary-action:hover{
-    background-color: #f8f9fa;
-    border-color: #007bff;
-    transform: translate(-3px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+
+.secondary-action:hover {
+    background-color: #fff0f6;
+    color: #e83e8c;
+    border-color: #e83e8c;
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
 }
-.page-title {
-    color: #343a40;
-    margin-top: 0;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #eee;
+
+/* ปรับแต่งสำหรับหน้าจอมือถือ */
+@media (max-width: 600px) {
+    .main-actions-container {
+        grid-template-columns: 1fr; /* มือถือให้เรียงแถวละ 1 ปุ่ม */
+    }
 }
+
 /* ==================== Main Content ==================== */
 .main-content-wrapper {
     flex-grow: 1;
