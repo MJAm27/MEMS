@@ -63,13 +63,14 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
 
     return (
         <div className={`layout-wrapper ${sidebarOpen ? "sidebar-open" : "sidebar-closed"}`}>
-            <aside className="sidebar-container"> 
-                <div className="sidebar-header">
+            {/* Sidebar */}
+            <aside className="sidebar-container" style={{ left: sidebarOpen ? 0 : "-260px", transition: "0.3s" }}>
+                <div className="sidebar-header" style={{ padding: '20px', borderBottom: '1px solid #eee' }}>
                     <div className="brand"><h2>MEMS</h2></div>
                 </div>
-                <nav className="sidebar-nav">
-                    <button className="nav-link active" onClick={() => navigate("/dashboard/engineer/home")}>
-                        <FaHome /> <span>หน้าหลัก</span>
+                <nav className="sidebar-nav" style={{ padding: '10px' }}>
+                    <button className="nav-link" onClick={() => navigate("/dashboard/engineer/home")} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '15px', cursor: 'pointer' }}>
+                        <FaHome /> <span style={{ marginLeft: '10px' }}>หน้าหลัก</span>
                     </button>
                     <button className="nav-link" onClick={() => navigate("/dashboard/engineer/search")}>
                         <FaSearch /> <span>ค้นหา</span>
@@ -88,21 +89,20 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                         <FaHandHolding /> <span>ยืมอะไหล่</span>
                     </button>
                 </nav>
-                <button className="logout-btn-top" onClick={localHandleLogout} style={{margin:'15px'}}> 
+                <button className="logout-btn-top" onClick={localHandleLogout} style={{ position: 'absolute', bottom: '20px', left: '20px' }}>
                     <FaSignOutAlt /> ออกจากระบบ
                 </button>
             </aside>
 
-            <main className="main-content-wrapper"> 
+            <main className="main-content-wrapper" style={{ marginLeft: sidebarOpen ? "260px" : "0" }}>
                 <header className="top-navbar">
-                    <button className="sidebar-toggle-btn" onClick={toggleSidebar}><FaBars /></button>
-                    <div className="nav-right">
-                        <div className="user-profile-display">
-                            <div className="user-text">
-                                <span className="name">{user?.fullname}</span> 
-                                <span className="role">วิศวกร</span>
-                            </div>
-                            <div className="avatar-circle">{user?.fullname?.charAt(0)}</div>
+                    <button className="sidebar-toggle-btn" onClick={toggleSidebar} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>
+                        <FaBars />
+                    </button>
+                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span>{user?.fullname}</span>
+                        <div className="avatar-circle" style={{ width: '40px', height: '40px', background: '#e83e8c', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'white' }}>
+                            {user?.fullname?.charAt(0)}
                         </div>
                     </div>
                 </header>

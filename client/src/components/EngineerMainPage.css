@@ -1,374 +1,100 @@
-/* ==================== Variables & Reset ==================== */
+/* ==================== Variables ==================== */
 :root {
-    --primary-color: #e83e8c; /* สีชมพูหลัก */
+    --primary-color: #e83e8c;
     --primary-light: #ffe6f2;
-    --secondary-color: #6c757d;
     --bg-body: #f4f6f9;
     --bg-white: #ffffff;
     --text-dark: #343a40;
     --text-muted: #6c757d;
     --sidebar-width: 260px;
     --header-height: 70px;
-    --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.05);
-    --radius: 12px;
-    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --radius: 16px;
+    --transition: all 0.3s ease;
 }
 
 * { box-sizing: border-box; }
 
 body {
     margin: 0;
-    font-family: 'Kanit', 'Segoe UI', sans-serif; 
+    font-family: 'Kanit', sans-serif;
     background-color: var(--bg-body);
-    color: var(--text-dark);
 }
 
-.layout-wrapper {
-    display: flex;
-    min-height: 100vh;
-    position: relative;
-    overflow-x: hidden;
-}
+/* ==================== Layout ==================== */
+.layout-wrapper { display: flex; min-height: 100vh; }
 
-/* ==================== Sidebar ==================== */
-.sidebar-container {
-    width: var(--sidebar-width);
-    background: var(--bg-white);
-    border-right: 1px solid rgba(0,0,0,0.05);
-    display: flex;
-    flex-direction: column;
-    position: fixed;
-    top: 0; bottom: 0; left: 0;
-    z-index: 1000;
-    transition: var(--transition);
-    box-shadow: 2px 0 10px rgba(0,0,0,0.02);
-}
-
-.sidebar-header {
-    height: var(--header-height);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-bottom: 1px solid rgba(0,0,0,0.05);
-}
-
-.brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: var(--primary-color);
-}
-
-.brand h3 { margin: 0; font-weight: 700; letter-spacing: 1px; font-size: 1.5rem; }
-.brand-icon { font-size: 1.8rem; }
-
-.sidebar-nav {
-    list-style: none;
-    padding: 20px 15px;
-    margin: 0;
-    flex-grow: 1;
-}
-
-/* ⭐️ แก้ไขปุ่ม Nav Link: ลบ Border และตั้งค่าพื้นหลังเป็น None */
-.nav-link {
-    display: flex;
-    align-items: center;
-    padding: 12px 20px;
-    color: var(--text-muted);
-    text-decoration: none;
-    border-radius: 8px;
-    margin-bottom: 5px;
-    transition: var(--transition);
-    font-weight: 500;
-    
-    /* ⭐️ แก้ไขสำหรับลบกรอบ */
-    border: none; 
-    background: none; 
-    width: 100%;
-    text-align: left;
-    cursor: pointer;
-}
-
-.nav-link svg { margin-right: 15px; font-size: 1.2rem; }
-
-.nav-link:hover {
-    background-color: var(--bg-body);
-    color: var(--primary-color);
-    transform: translateX(5px);
-}
-
-.nav-link.active {
-    background-color: var(--primary-light);
-    color: var(--primary-color);
-    font-weight: 600;
-}
-
-.nav-divider {
-    height: 1px;
-    background: #eee;
-    margin: 15px 0;
-}
-/* ==================== Main Actions Container (Home Page Buttons) ==================== */
-.content-body {
-    padding: 30px;
-    display: flex;
-    flex-direction: column;
-    align-items: center; /* จัดเนื้อหาให้อยู่กลางหน้า */
-    min-height: 80vh;
-}
-
-.content-body h1 {
-    margin-bottom: 10px;
-    color: var(--text-dark);
-    font-weight: 700;
-}
-
-.content-body p {
-    color: var(--text-muted);
-    margin-bottom: 40px;
-}
-
-.main-actions-container {
-    display: flex;
-    flex-direction: row;      /* บังคับให้เรียงในแนวนอน */
-    justify-content: center;  /* จัดกลุ่มปุ่มทั้งหมดไว้กึ่งกลางหน้าจอ */
-    align-items: center;      /* จัดให้อยู่กึ่งกลางในแนวตั้ง */
-    gap: 30px;               /* ระยะห่างระหว่างปุ่ม (ปรับตัวเลขนี้ได้ตามความเหมาะสม) */
-    margin-top: 50px;
-    width: 100%;
-    max-width: 1000px;       /* จำกัดความกว้างรวมเพื่อให้ปุ่มเกาะกลุ่มกันสวยงาม */
-    flex-wrap: nowrap;       /* ห้ามปุ่มตกบรรทัด (ยกเว้นในมือถือ) */
-}
-
-.action-button {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    
-    /* ปรับให้ขนาดปุ่มเท่ากันทั้ง 3 ปุ่ม */
-    width: 220px;            
-    height: 180px;           
-    
-    padding: 20px;
-    border-radius: 16px;
-    font-size: 1.1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    
-    /* สไตล์สีขาวเหมือนกันทัั้งหมด */
-    background-color: #ffffff;
-    color: #343a40;
-    border: 1px solid #eee;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-/* เอฟเฟกต์ตอนนำเมาส์ไปวาง (Hover) */
-.action-button:hover {
-    background-color: #fff9fb; /* เปลี่ยนเป็นสีชมพูอ่อนๆ */
-    color: #e83e8c;           /* เปลี่ยนสีตัวอักษรเป็นชมพู */
-    border-color: #e83e8c;
-    transform: translateY(-8px); /* ให้ปุ่มลอยขึ้นเล็กน้อย */
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
-}
-
-.action-icon {
-    font-size: 3rem;
-    margin-bottom: 15px;
-}
-/* ปรับไอคอนให้ใหญ่ขึ้นและมีระยะห่าง */
-.action-button svg {
-    font-size: 3rem;
-    margin-bottom: 15px;
-}
-
-/* สไตล์สำหรับปุ่มหลัก (เบิกอะไหล่) - เน้นสีชมพูตามธีม */
-.primary-action {
-    background: linear-gradient(135deg, #ff93c0 0%, #e83e8c 100%);
-    color: white;
-}
-
-.primary-action:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 12px 24px rgba(232, 62, 140, 0.3);
-}
-
-/* สไตล์สำหรับปุ่มรอง (คืน/ยืมอะไหล่) - ขาวสะอาดตา */
-.secondary-action {
-    background-color: #ffffff;
-    color: #343a40;
-    border: 1px solid #eee;
-}
-
-.secondary-action:hover {
-    background-color: #fff0f6;
-    color: #e83e8c;
-    border-color: #e83e8c;
-    transform: translateY(-8px);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
-}
-
-/* ปรับแต่งสำหรับหน้าจอมือถือ */
-@media (max-width: 600px) {
-    .main-actions-container {
-        grid-template-columns: 1fr; /* มือถือให้เรียงแถวละ 1 ปุ่ม */
-    }
-}
-
-/* ==================== Main Content ==================== */
 .main-content-wrapper {
     flex-grow: 1;
     margin-left: var(--sidebar-width);
     transition: var(--transition);
     display: flex;
     flex-direction: column;
+}
+
+.content-body {
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* จัด Title ให้อยู่กลาง */
+}
+
+/* ==================== ⭐️ ส่วนที่แก้ไข: กลุ่มปุ่ม (Container) ⭐️ ==================== */
+.main-actions-container {
+    display: flex !important;      /* บังคับใช้ Flex */
+    flex-direction: row !important; /* บังคับเรียงแนวนอนเท่านั้น */
+    justify-content: center;       /* จัดกลุ่มไว้กลางหน้าจอ */
+    align-items: center;
+    gap: 25px;                     /* ระยะห่างที่พอดี */
+    margin-top: 50px;
     width: 100%;
+    max-width: 1000px;             /* บีบขอบเขตไม่ให้กระจายตัว */
+    flex-wrap: nowrap !important;  /* ⭐️ ห้ามตกบรรทัดเด็ดขาด ⭐️ */
 }
 
-/* Top Navbar */
-.top-navbar {
-    height: var(--header-height);
-    background: var(--bg-white);
-    padding: 0 30px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.03);
-    position: sticky;
-    top: 0;
-    z-index: 900;
-}
-
-.nav-left { display: flex; align-items: center; gap: 15px; }
-.page-title-mobile { display: none; margin: 0; font-size: 1.2rem; color: var(--primary-color); }
-
-.sidebar-toggle-btn {
-    background: none; border: none; font-size: 1.5rem;
-    cursor: pointer; color: var(--text-dark); padding: 5px;
-}
-
-/* Right Side Navigation & Logout */
-.nav-right {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-}
-
-.user-profile-display {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding-right: 20px;
-    border-right: 1px solid #eee;
-}
-
-.user-text { text-align: right; display: flex; flex-direction: column; }
-.user-text .name { font-weight: 600; font-size: 0.95rem; }
-.user-text .role { font-size: 0.8rem; color: var(--text-muted); }
-.avatar-circle {
-    width: 40px; height: 40px;
-    background: var(--primary-color);
-    color: white;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 700;
-    font-size: 1.2rem;
-}
-
-/* Logout Button in Header */
-.logout-btn-top {
-    background-color: #ffe6e6;
-    color: #dc3545;
-    border: 1px solid #ffcccc;
-    padding: 8px 15px;
-    border-radius: 20px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 600;
-    transition: var(--transition);
-    font-family: inherit;
-}
-
-.logout-btn-top:hover {
-    background-color: #dc3545;
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(220, 53, 69, 0.2);
-}
-
-/* Content Body */
-.content-body { padding: 30px; max-width: 1400px; margin: 0 auto; width: 100%; }
-.section-header { margin: 30px 0 20px; font-size: 1.2rem; color: var(--text-muted); border-left: 4px solid var(--primary-color); padding-left: 15px; }
-
-/* ==================== Cards & Dashboard ==================== */
-/* ... (ส่วนของ Cards & Dashboard อื่นๆ ที่คุณไม่ได้ให้มาในคำถามนี้) ... */
-
-
-/* Loading */
-.loading-container {
-    height: 100vh;
+.action-button {
+    flex: 1;                       /* ให้ทุกปุ่มกว้างเท่ากันอัตโนมัติ */
+    max-width: 250px;              /* จำกัดความกว้างไม่ให้ใหญ่เกินไป */
+    height: 200px;                 /* ความสูงสี่เหลี่ยมสวยๆ */
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: var(--bg-body);
-    color: var(--primary-color);
+    background-color: var(--bg-white);
+    border: 1px solid #eee;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    padding: 20px;
 }
-.spinner {
-    width: 50px; height: 50px;
-    border: 5px solid #ddd;
-    border-top: 5px solid var(--primary-color);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+
+.action-button:hover {
+    transform: translateY(-8px);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    background-color: var(--primary-light);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+}
+
+.action-icon {
+    font-size: 3.5rem !important;
     margin-bottom: 15px;
 }
-@keyframes spin { 100% { transform: rotate(360deg); } }
 
-.fade-in { animation: fadeIn 0.5s ease-in; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-/* ==================== Responsive ==================== */
-@media (max-width: 768px) {
-    .sidebar-container { left: -100%; box-shadow: none; }
-    .layout-wrapper.sidebar-open .sidebar-container { left: 0; box-shadow: 5px 0 15px rgba(0,0,0,0.1); }
-    
-    .main-content-wrapper { margin-left: 0; }
-    
-    .page-title-mobile { display: block; }
-    
-    /* Mobile Header Adjustments */
-    .user-profile-display { padding-right: 10px; border-right: none; }
-    .user-text { display: none; } /* ซ่อนชื่อในมือถือ */
-    
-    .logout-btn-top span { display: none; } /* ซ่อนคำว่า "ออก" */
-    .logout-btn-top { width: 35px; height: 35px; padding: 0; justify-content: center; border-radius: 50%; }
-
-    .dashboard-welcome-card { flex-direction: column; text-align: center; gap: 15px; }
-    .content-body { padding: 20px; }
-    
-    .mobile-overlay {
-        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.5); z-index: 950;
-    }
+.action-button span {
+    font-size: 1.2rem;
+    font-weight: 600;
 }
 
-@media (min-width: 769px) {
-    
-    .layout-wrapper.sidebar-closed .sidebar-container { 
-        left: calc(var(--sidebar-width) * -1); 
+/* ปรับแต่ง Sidebar & Topbar (แบบย่อ) */
+.sidebar-container { width: var(--sidebar-width); background: var(--bg-white); position: fixed; height: 100vh; border-right: 1px solid #eee; }
+.top-navbar { height: var(--header-height); background: var(--bg-white); display: flex; align-items: center; padding: 0 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .main-actions-container {
+        flex-direction: column !important; /* จอมือถือค่อยให้เรียงแนวตั้ง */
+        flex-wrap: wrap !important;
     }
-    
-    .layout-wrapper.sidebar-closed .main-content-wrapper { 
-        margin-left: 0; 
-    }
-    
-    .sidebar-container {
-        left: 0; 
-    }
-    .main-content-wrapper {
-        margin-left: var(--sidebar-width); 
-    }
+    .action-button { width: 100%; max-width: 300px; height: 150px; }
 }
