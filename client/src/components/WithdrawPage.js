@@ -159,8 +159,8 @@ function WithdrawPage({ user }) {
     const renderStep1_OpenDoor = () => (
         <div className="text-center">
             <div className="status-icon-wrapper"><FaLockOpen size={45} /></div>
-            <h3 className="step-title">ขั้นตอนที่ 1: เปิดประตูตู้</h3>
-            <p className="step-desc">กรุณากดปุ่มเพื่อเปิดตู้และเตรียมการเบิก</p>
+            <h3 className="step-title">ขั้นตอนที่ 1: เปิดประตูกล่อง</h3>
+            <p className="step-desc">กรุณากดปุ่มเพื่อเปิดกล่องและเตรียมการเบิก</p>
             <button onClick={() => setCurrentStep(2)} className="action-button-main">
                 {isProcessing ? 'กำลังประมวลผล...' : 'เปิดประตูตู้'}
             </button>
