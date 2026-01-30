@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FaLockOpen, FaCheckCircle,  FaPlus, FaCamera } from 'react-icons/fa';
+import { FaLockOpen, FaCheckCircle, FaPlus, FaCamera, FaTrash } from 'react-icons/fa';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import axios from 'axios';
 import './WithdrawPage.css';
@@ -7,7 +7,7 @@ import './WithdrawPage.css';
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 function WithdrawPage({ user }) { 
-    const activeUser = user || { fullname: 'กำลังโหลด...', employeeId: 'N/A' };
+    const activeUser = user || { fullname: 'ผู้ใช้งาน', employeeId: 'N/A' };
     const [currentStep, setCurrentStep] = useState(1);
     const [assetId, setAssetId] = useState('');
     const [currentPartId, setCurrentPartId] = useState('');
@@ -16,11 +16,9 @@ function WithdrawPage({ user }) {
     const [isProcessing, setIsProcessing] = useState(false);
     const [showScanner, setShowScanner] = useState(false);
 
-    // --- State สำหรับระบบช่วยค้นหา (Autocomplete) ---
     const [machineSuggestions, setMachineSuggestions] = useState([]);
     const [partSuggestions, setPartSuggestions] = useState([]);
 
-    // 1. ฟังก์ชันค้นหาเลขครุภัณฑ์
     const handleMachineSearch = async (val) => {
         setAssetId(val);
         if (val.length > 1) {
@@ -33,7 +31,6 @@ function WithdrawPage({ user }) {
         }
     };
 
-    // 2. ฟังก์ชันค้นหาอะไหล่
     const handlePartSearch = async (val) => {
         setCurrentPartId(val);
         if (val.length > 1) {
@@ -46,10 +43,23 @@ function WithdrawPage({ user }) {
         }
     };
 
-    // 3. ฟังก์ชันเพิ่มของลงตะกร้า (รองรับทั้งสแกนและเลือกจากลิสต์)
-    const handleAddItemToCart = useCallback(async (itemId, quantity = 1) => {
-        const idToSearch = itemId || currentPartId;
-        if (!assetId) { setError('กรุณากรอกเลขครุภัณฑ์ก่อน'); return; }
+    const updateItemQuantity = (index, delta) => {
+        setCartItems(prev => {
+            const newItems = [...prev];
+            const newQty = newItems[index].quantity + delta;
+            if (newQty > 0) {
+                newItems[index] = { ...newItems[index], quantity: newQty };
+            }
+            return newItems;
+        });
+    };
+
+    const handleAddItemToCart = useCallback(async (scannedId, quantity = 1) => {
+        const idToSearch = scannedId || currentPartId;
+        if (!assetId) { 
+            setError('กรุณากรอกเลขครุภัณฑ์ก่อน (Asset ID)'); 
+            return; 
+        }
         if (!idToSearch) { setError('กรุณาระบุรหัสอะไหล่'); return; }
 
         setIsProcessing(true);
@@ -57,30 +67,35 @@ function WithdrawPage({ user }) {
         try {
             const response = await axios.post(`${API_BASE}/api/withdraw/partInfo`, { partId: idToSearch });
             const partInfo = response.data;
-            
+
             setCartItems(prev => {
-                const existing = prev.find(item => item.partId === partInfo.partId);
+                const existing = prev.find(item => item.lotId === partInfo.lotId);
                 if (existing) {
-                    return prev.map(item => item.partId === partInfo.partId 
+                    return prev.map(item => item.lotId === partInfo.lotId 
                         ? { ...item, quantity: item.quantity + quantity } : item);
                 }
-                return [...prev, { ...partInfo, quantity }];
+                // ✅ ต้องมั่นใจว่าบันทึกทั้ง lotId และ partId ลงในตะกร้า
+                return [...prev, { 
+                    ...partInfo, 
+                    lotId: partInfo.lotId, 
+                    partId: partInfo.partId || partInfo.equipment_id, // ค่านี้นำไปใช้บันทึกลง equipment_list
+                    quantity: quantity 
+                }];
             });
             setCurrentPartId('');
             setPartSuggestions([]);
         } catch (err) {
-            setError(err.response?.data?.error || err.message);
+            setError(err.response?.data?.error || 'ไม่พบข้อมูลอะไหล่');
         } finally {
             setIsProcessing(false);
         }
     }, [assetId, currentPartId]);
 
-    // --- Logic สแกนเนอร์ ---
     useEffect(() => {
         let scanner = null;
         if (showScanner && currentStep === 2) {
             scanner = new Html5QrcodeScanner("reader", {
-                fps: 20, qrbox: { width: 300, height: 150 },
+                fps: 10, qrbox: { width: 350, height: 150 },
                 aspectRatio: 1.0, experimentalFeatures: { useBarCodeDetectorIfSupported: true }
             });
             scanner.render((decodedText) => {
@@ -93,26 +108,60 @@ function WithdrawPage({ user }) {
     }, [showScanner, currentStep, handleAddItemToCart]);
 
     const handleFinalConfirm = async () => {
+        if (cartItems.length === 0) {
+            setError("กรุณาเลือกอะไหล่อย่างน้อย 1 รายการ");
+            return;
+        }
+
         setIsProcessing(true);
+        setError("");
+
         try {
             const token = localStorage.getItem('token');
-            await axios.post(`${API_BASE}/api/withdraw/confirm`, 
-                { machine_SN: assetId, cartItems },
+
+            const payload = { 
+                machine_SN: assetId, 
+                cartItems: cartItems.map(item => ({
+                    lotId: item.lotId,
+                    partId: item.partId , // ป้องกันกรณีชื่อตัวแปรไม่ตรง
+                    quantity: item.quantity
+                }))
+            };
+
+            const response = await axios.post(`${API_BASE}/api/withdraw/confirm`, 
+                payload,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-            setCurrentStep(4);
-        } catch (err) { setError(err.response?.data?.error || 'ยืนยันรายการล้มเหลว'); } 
-        finally { setIsProcessing(false); }
+
+            if (response.data.success) {
+                setCurrentStep(4); 
+            }
+        } catch (err) {
+            setError(err.response?.data?.error || 'ยืนยันรายการล้มเหลว');
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
-    // --- Render Functions ---
+    const renderStepIndicator = () => (
+        <div className="step-progress-bar">
+            {[1, 2, 3].map((step) => (
+                <div key={step} className={`step-item ${currentStep >= step ? 'active' : ''}`}>
+                    <div className="step-number">
+                        {currentStep > step ? <FaCheckCircle /> : step}
+                    </div>
+                    {step < 3 && <div className="step-line"></div>}
+                </div>
+            ))}
+        </div>
+    );
 
     const renderStep1_OpenDoor = () => (
         <div className="text-center">
-            <div className="status-icon-wrapper"><FaLockOpen size={50} className="text-pink-500" /></div>
-            <h3>ขั้นตอนที่ 1: เปิดประตูตู้</h3>
-            <p className="text-gray-500 mb-6">กรุณากดปุ่มเพื่อเปิดตู้สแตนบาย</p>
-            <button onClick={() => setCurrentStep(2)} className="action-button-main bg-pink-500">
+            <div className="status-icon-wrapper"><FaLockOpen size={45} /></div>
+            <h3 className="step-title">ขั้นตอนที่ 1: เปิดประตูตู้</h3>
+            <p className="step-desc">กรุณากดปุ่มเพื่อเปิดตู้และเตรียมการเบิก</p>
+            <button onClick={() => setCurrentStep(2)} className="action-button-main">
                 {isProcessing ? 'กำลังประมวลผล...' : 'เปิดประตูตู้'}
             </button>
         </div>
@@ -123,7 +172,7 @@ function WithdrawPage({ user }) {
             <div className="form-input-group relative">
                 <label>เลขครุภัณฑ์ (Asset ID)</label>
                 <input type="text" className="withdraw-input" value={assetId} 
-                    onChange={(e) => handleMachineSearch(e.target.value)} placeholder="พิมพ์เพื่อค้นหาเลขเครื่อง..." />
+                    onChange={(e) => handleMachineSearch(e.target.value)} placeholder="ค้นหาเลขเครื่อง..." />
                 {machineSuggestions.length > 0 && (
                     <ul className="search-suggestions">
                         {machineSuggestions.map(m => (
@@ -135,21 +184,21 @@ function WithdrawPage({ user }) {
                 )}
             </div>
             
-            <div className="bg-gray-50 p-4 rounded-2xl border-2 border-dashed border-gray-200">
+            <div className="scanner-section">
                 {showScanner ? (
-                    <div id="reader" className="w-full rounded-lg overflow-hidden border-2 border-pink-500"></div>
+                    <div id="reader" className="scanner-box"></div>
                 ) : (
-                    <button onClick={() => setShowScanner(true)} className="w-full py-4 text-pink-500 font-bold flex items-center justify-center gap-2">
+                    <button onClick={() => setShowScanner(true)} className="scanner-toggle">
                         <FaCamera /> สแกนบาร์โค้ดอะไหล่
                     </button>
                 )}
             </div>
 
-            <div className="form-input-group relative mt-4">
+            <div className="form-input-group relative">
                 <div className="flex gap-2">
                     <input type="text" className="withdraw-input flex-grow" value={currentPartId} 
                         onChange={(e) => handlePartSearch(e.target.value)} placeholder="ค้นหาหรือพิมพ์รหัสอะไหล่..." />
-                    <button onClick={() => handleAddItemToCart()} className="p-4 bg-gray-800 text-white rounded-xl"><FaPlus /></button>
+                    <button onClick={() => handleAddItemToCart()} className="add-btn"><FaPlus /></button>
                 </div>
                 {partSuggestions.length > 0 && (
                     <ul className="search-suggestions">
@@ -163,29 +212,64 @@ function WithdrawPage({ user }) {
             </div>
 
             {cartItems.length > 0 && (
-                <button onClick={() => setCurrentStep(3)} className="action-button-main bg-green-500">ถัดไป: สรุปรายการ</button>
+                <div className="cart-section">
+                    <h4 className="section-label">รายการที่เลือกแล้ว:</h4>
+                    <div className="space-y-3">
+                        {cartItems.map((item, index) => (
+                            <div key={index} className="cart-item-card">
+                                <img src={item.img ? `${API_BASE}/uploads/${item.img}` : "/default-part.png"} 
+                                    alt={item.partName} className="cart-item-image" 
+                                    onError={(e) => { e.target.src = "https://via.placeholder.com/60"; }} />
+                                <div className="flex-grow">
+                                    <span className="item-name">{item.partName}</span>
+                                    <span className="item-lot">Lot: {item.lotId}</span>
+                                </div>
+                                <div className="qty-control">
+                                    <button onClick={() => updateItemQuantity(index, -1)} className="qty-btn">-</button>
+                                    <span className="qty-val">{item.quantity}</span>
+                                    <button onClick={() => updateItemQuantity(index, 1)} className="qty-btn">+</button>
+                                </div>
+                                <button onClick={() => setCartItems(cartItems.filter((_, i) => i !== index))} className="delete-btn">
+                                    <FaTrash size={12} />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                    <button onClick={() => setCurrentStep(3)} className="action-button-main mt-4">สรุปรายการเบิก</button>
+                </div>
             )}
-            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+            {error && <p className="error-msg">{error}</p>}
         </div>
     );
 
     const renderStep3_Confirmation = () => (
         <div className="space-y-4">
-            <div className="p-4 bg-gray-800 text-white rounded-2xl">
-                <p className="text-xs opacity-70">ผู้เบิก: {activeUser.fullname}</p>
-                <p className="text-lg font-bold">เครื่องจักร: {assetId}</p>
+            <div className="p-4 bg-gray-800 text-white rounded-2xl shadow-md">
+                <p className="text-lg font-bold flex items-center gap-2">
+                    <span className="text-pink-400">เลขครุภัณฑ์:</span> {assetId}
+                </p>
             </div>
             <div className="max-h-60 overflow-y-auto space-y-2">
-                {cartItems.map(item => (
-                    <div key={item.partId} className="flex justify-between items-center p-3 bg-white border rounded-xl">
-                        <span className="text-sm font-medium">{item.partName}</span>
-                        <span className="font-bold text-pink-500">x {item.quantity}</span>
+                {cartItems.map((item, index) => (
+                    <div key={index} className="cart-item-card">
+                        <img src={item.img ? `${API_BASE}/uploads/${item.img}` : "https://via.placeholder.com/60"} 
+                            className="cart-item-image" alt={item.partName} />
+                        <div className="flex-grow">
+                            <span className="item-name">{item.partName}</span>
+                            <span className="item-lot text-xs">Lot: {item.lotId}</span>
+                        </div>
+                        <span className="font-black text-pink-500 text-lg">x {item.quantity}</span>
                     </div>
                 ))}
             </div>
-            <button onClick={handleFinalConfirm} disabled={isProcessing} className="action-button-main bg-pink-500">
-                {isProcessing ? 'กำลังยืนยัน...' : 'ยืนยันและตัดสต็อก'}
-            </button>
+            <div className="flex-button-group">
+                <button onClick={() => { if(window.confirm("ยกเลิกรายการ?")) { setCartItems([]); setCurrentStep(2); } }} className="btn-cancel">
+                    ยกเลิก
+                </button>
+                <button onClick={handleFinalConfirm} disabled={isProcessing} className="action-button-main">
+                    ยืนยันการเบิก
+                </button>
+            </div>
         </div>
     );
 
@@ -193,17 +277,17 @@ function WithdrawPage({ user }) {
         <div className="withdraw-page-container">
             <div className="withdraw-title-section">
                 <h2>เบิกอะไหล่</h2>
-                <p>ทำรายการตามขั้นตอนเพื่อตัดสต็อกอัตโนมัติ</p>
+                {renderStepIndicator()}
             </div>
             <div className="withdraw-card">
                 {currentStep === 1 && renderStep1_OpenDoor()}
                 {currentStep === 2 && renderStep2_ScanInput()}
                 {currentStep === 3 && renderStep3_Confirmation()}
                 {currentStep === 4 && (
-                    <div className="text-center py-6">
-                        <FaCheckCircle size={70} className="text-green-500 mb-4 mx-auto" />
-                        <h3 className="font-bold">สำเร็จเรียบร้อย!</h3>
-                        <button onClick={() => window.location.reload()} className="action-button-main bg-gray-800">กลับหน้าหลัก</button>
+                    <div className="success-animation text-center py-6">
+                        <FaCheckCircle size={70} className="check-icon text-green-500 mx-auto mb-4" />
+                        <h3 className="font-bold text-xl">สำเร็จเรียบร้อย!</h3>
+                        <button onClick={() => window.location.reload()} className="action-button-main mt-6">กลับหน้าหลัก</button>
                     </div>
                 )}
             </div>
