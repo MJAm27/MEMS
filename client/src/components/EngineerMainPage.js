@@ -1,7 +1,7 @@
 import React, { useState,useLayoutEffect} from "react";
 import { useNavigate, Routes, Route  } from "react-router-dom"; 
 import {
-    FaBars,FaHome,FaSearch,FaHistory,FaSignOutAlt,FaBoxOpen,FaReply,FaHandHolding
+    FaBars,FaHome,FaSearch,FaHistory,FaSignOutAlt,FaBoxOpen,FaReply,FaHandHolding,FaUserEdit
 } from "react-icons/fa";
 import "./EngineerMainPage.css"; 
 
@@ -77,6 +77,9 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                     </button>
                     <button className="nav-link" onClick={() => navigate("/dashboard/engineer/history")}>
                         <FaHistory /> <span>ประวัติ</span>
+                    </button>
+                    <button className="nav-link" onClick={() => navigate("/dashboard/engineer/profile/edit")}>
+                        <FaUserEdit /> <span>แก้ไขโปรไฟล์</span>
                     </button>
                     <div className="nav-divider"></div>
                     <button className="nav-link" onClick={() => navigate("/dashboard/engineer/withdraw")}>
