@@ -23,12 +23,55 @@
 /* แถบลำดับขั้นตอน 1 2 3 แนวนอน */
 .step-progress-bar {
     display: flex;
-    justify-content: center;
     align-items: center;
-    margin: 20px auto 15px auto;
-    max-width: 320px;
-    width: 100%;
+    justify-content: center;
+    margin-bottom: 30px;
+    padding: 10px;
 }
+
+/* วงกลมตัวเลข */
+.step-circle {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background-color: #f0f0f0; /* สีพื้นหลังเมื่อยังไม่ถึงสเต็ป */
+    color: #999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    border: 3px solid #fff; /* ขอบสีขาว */
+    box-shadow: 0 0 0 4px #f8f8f8; /* วงแหวนรอบนอกจางๆ */
+}
+
+/* สไตล์เมื่อสเต็ปนั้นกำลังทำงาน (Active) */
+.step-item.active .step-circle {
+    background-color: #ff4d94; /* สีชมพูตามรูปตัวอย่าง */
+    color: white;
+    box-shadow: 0 0 0 4px #ffe6f0; /* วงแหวนสีชมพูอ่อนจางๆ */
+}
+
+/* เส้นเชื่อมระหว่างวงกลม */
+.step-line {
+    height: 3px;
+    width: 60px; /* ความยาวของเส้น */
+    background-color: #f0f0f0;
+    margin: 0 5px;
+    transition: background-color 0.3s ease;
+}
+
+/* สีของเส้นเมื่อสเต็ปนั้นผ่านไปแล้ว */
+.step-line.active {
+    background-color: #ff4d94;
+}
+
+/* เพิ่มแอนิเมชันตอนเปลี่ยนสเต็ป */
+.step-item.active .step-circle {
+    transform: scale(1.1);
+}
+
 .step-item { display: flex; align-items: center; flex: 1; }
 .step-item:last-child { flex: 0; }
 .step-number {

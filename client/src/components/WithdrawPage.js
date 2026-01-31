@@ -146,12 +146,17 @@ function WithdrawPage({ user }) {
     const renderStepIndicator = () => (
         <div className="step-progress-bar">
             {[1, 2, 3].map((step) => (
-                <div key={step} className={`step-item ${currentStep >= step ? 'active' : ''}`}>
-                    <div className="step-number">
-                        {currentStep > step ? <FaCheckCircle /> : step}
+                <React.Fragment key={step}>
+                    <div className={`step-item ${currentStep >= step ? 'active' : ''}`}>
+                        <div className="step-circle">
+                            {currentStep > step ? <FaCheckCircle /> : step}
+                        </div>
                     </div>
-                    {step < 3 && <div className="step-line"></div>}
-                </div>
+                    {/* เพิ่มเส้นเชื่อมระหว่างสเต็ป ยกเว้นสเต็ปสุดท้าย */}
+                    {step < 3 && (
+                        <div className={`step-line ${currentStep > step ? 'active' : ''}`}></div>
+                    )}
+                </React.Fragment>
             ))}
         </div>
     );
