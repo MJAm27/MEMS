@@ -71,6 +71,44 @@
 .flex-button-group .btn-cancel { flex: 1; background: #f1f5f9; color: var(--text-sub); border: none; border-radius: 20px; font-weight: 700; cursor: pointer; }
 .flex-button-group .action-button-main { flex: 2; margin-top: 0; }
 
+/* ค้นหาคลาส .withdraw-input ในไฟล์ CSS เดิมแล้วแทนที่ด้วยตัวนี้ */
+.withdraw-input {
+    width: 100%;
+    padding: 15px 20px;       /* เพิ่ม Padding ให้ช่องดูใหญ่ขึ้น */
+    font-size: 1.1rem;        /* ขยายขนาดตัวอักษรข้างใน */
+    border-radius: 12px;      /* เพิ่มความโค้งมน (ปรับเลขตามชอบ เช่น 15px หรือ 25px) */
+    border: 2px solid #ddd;   /* เส้นขอบให้ดูชัดเจน */
+    background-color: #fff;
+    transition: all 0.3s ease;
+    box-sizing: border-box;    /* ป้องกันขนาดเพี้ยน */
+    outline: none;
+}
+
+/* เอฟเฟกต์ตอนคลิกที่ช่องกรอก */
+.withdraw-input:focus {
+    border-color: #e83e8c;    /* เปลี่ยนสีเส้นขอบเมื่อคลิก (สีชมพูตามธีม) */
+    box-shadow: 0 0 8px rgba(232, 62, 140, 0.2);
+}
+
+/* ปรับปุ่มบวก (+) ข้างรหัสอะไหล่ให้เข้ากัน */
+.add-btn {
+    padding: 0 20px;
+    border-radius: 12px;      /* โค้งมนเท่ากับ Input */
+    background-color: #e83e8c;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.add-btn:hover {
+    background-color: #d81b60;
+}
+
 /* องค์ประกอบเสริม */
 .action-button-main {
     width: 100%; padding: 18px; border-radius: 20px; font-weight: 700;
