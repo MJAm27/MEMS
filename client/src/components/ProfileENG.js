@@ -1,7 +1,7 @@
 import React, {} from "react";
 import { Link, useNavigate, Outlet, useLocation } from "react-router-dom";
 import { 
-    FaUserCircle, FaChevronRight, FaKey, FaEdit ,FaSignOutAlt
+    FaUserCircle, FaChevronRight, FaKey, FaEdit 
 } from "react-icons/fa";
 import "./ProfileENG.css"; 
 
@@ -26,7 +26,7 @@ function ProfileENG({ user, handleLogout, refreshUser }) {
           return <div>กำลังโหลดข้อมูลโปรไฟล์...</div>;
     }
 
-    const displayUserId = userData.userId ?? "N/A";
+    const displayUserId = user?.user_id ?? "N/A";
     const displayFullname = userData.fullname || "ผู้ใช้งาน";
     const displayRole = userData.role || "R-ENG";
 
@@ -70,14 +70,7 @@ function ProfileENG({ user, handleLogout, refreshUser }) {
                                 <FaChevronRight className="arrow-icon" />
                             </Link>
                             
-                            <button onClick={localHandleLogout} className="action-item logout-action-item">
-                                <div className="action-icon-box red"><FaSignOutAlt /></div>
-                                <div className="action-text">
-                                    <span>ออกจากระบบ</span>
-                                    <small>สิ้นสุดการใช้งาน</small>
-                                </div>
-                                <FaChevronRight className="arrow-icon" />
-                            </button>
+                            
                         </div>
                     </div>
                 </div>

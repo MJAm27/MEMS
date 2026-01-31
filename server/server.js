@@ -486,12 +486,8 @@ app.get("/api/auth/me", authenticateToken, async (req, res) => {
     const userIdFromToken = req.user.userId; 
 
     try {
-        // ใช้ userId จาก Token ไปค้นหาข้อมูลทั้งหมดใน DB
         const [users] = await pool.execute("SELECT * FROM users WHERE user_id = ?", [userIdFromToken]);
-        
-        if (users.length === 0) {
-            return res.status(404).json({ message: "User not found in database" });
-        }
+        if (users.length === 0) return res.status(404).json({ message: "User not found" });
 
         const user = users[0];
 
@@ -502,6 +498,7 @@ app.get("/api/auth/me", authenticateToken, async (req, res) => {
             email: user.email,
             phone_number: user.phone_number,
             position: user.position,
+            profile_img: user.profile_img,
             role: req.user.role 
         });
 
@@ -519,25 +516,30 @@ app.get("/api/auth/me", authenticateToken, async (req, res) => {
  */
 app.put("/api/profile-edit", authenticateToken, async (req, res) => {
     const userIdFromToken = req.user.userId;
-    const { fullname, email, phone_number, position } = req.body;
-
-    if (!fullname || !email) {
-        return res.status(400).json({ message: "Fullname and Email are required." });
-    }
+    // รับ profile_img เพิ่มเติมจาก Frontend
+    const { fullname, email, phone_number, position, profile_img } = req.body;
 
     try {
-        await pool.execute(
-            "UPDATE users SET fullname = ?, email = ?, phone_number = ?, position = ? WHERE user_id = ?",
-            [fullname, email, phone_number, position, userIdFromToken]
-        );
+        // เพิ่มคอลัมน์ profile_img ลงในคำสั่ง UPDATE
+        const sql = `
+            UPDATE users 
+            SET fullname = ?, email = ?, phone_number = ?, position = ?, profile_img = ? 
+            WHERE user_id = ?
+        `;
+        
+        await pool.execute(sql, [
+            fullname, 
+            email, 
+            phone_number, 
+            position, 
+            profile_img || null, // ถ้าไม่มีการอัปโหลดรูปใหม่ ให้ส่งเป็นค่าว่างหรือ NULL
+            userIdFromToken
+        ]);
 
         res.json({ message: "Profile updated successfully!" });
 
     } catch (error) {
         console.error("Update Profile Error:", error);
-        if (error.code === 'ER_DUP_ENTRY') {
-            return res.status(409).json({ message: "This email is already in use." });
-        }
         res.status(500).json({ message: "Server Error", error: error.message });
     }
 });
@@ -899,18 +901,16 @@ app.get("/api/alerts/low-stock", async (req, res) => {
 // =======================================================
 
 // 1. เปิดให้เข้าถึงรูปภาพในโฟลเดอร์ uploads ได้ผ่าน URL
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// ... (code config อื่นๆ) ...
+app.use('/profile-img', express.static(path.join(__dirname, 'uploads_profile')));
 
 // 2. ตั้งค่า Multer สำหรับ Save ไฟล์
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/'); // เก็บลง folder uploads
+        // มั่นใจว่าชื่อโฟลเดอร์ตรงกับที่คุณสร้างไว้จริง
+        cb(null, 'uploads_profile/'); 
     },
     filename: (req, file, cb) => {
-        // ตั้งชื่อไฟล์ใหม่ป้องกันชื่อซ้ำ: equip-เวลาปัจจุบัน.นามสกุลไฟล์
-        cb(null, 'equip-' + Date.now() + path.extname(file.originalname));
+        cb(null, 'profile-' + Date.now() + path.extname(file.originalname));
     }
 });
 const upload = multer({ storage: storage });

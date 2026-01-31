@@ -2,7 +2,7 @@ import React, { useState, useLayoutEffect } from "react";
 import { useNavigate, Routes, Route } from "react-router-dom"; 
 import {
     FaBars, FaHome, FaSearch, FaHistory, FaSignOutAlt, 
-    FaBoxOpen, FaReply, FaHandHolding, FaUserEdit, FaCheckCircle
+    FaBoxOpen, FaReply, FaHandHolding, FaUserEdit
 } from "react-icons/fa";
 import "./EngineerMainPage.css"; 
 
@@ -79,7 +79,7 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                     <button className="nav-link" onClick={() => navigate("/dashboard/engineer/history")}>
                         <FaHistory /> <span>ประวัติการทำรายการ</span>
                     </button>
-                    <button className="nav-link" onClick={() => navigate("/dashboard/engineer/profile/edit")}>
+                    <button className="nav-link" onClick={() => navigate("/dashboard/engineer/profile")}>
                         <FaUserEdit /> <span>แก้ไขโปรไฟล์</span>
                     </button>
                     <div className="nav-divider"></div>
@@ -105,12 +105,18 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                         <FaBars />
                     </button>
                     
-                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div className="user-profile-nav" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span className="user-name" style={{ fontWeight: '600' }}>{user?.fullname}</span>
-                            <div className="avatar-circle">
-                                {user.fullname?.charAt(0).toUpperCase()}
-                            </div>
+                    <div className="user-profile-nav" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span className="user-name" style={{ fontWeight: '600' }}>{user?.fullname}</span>
+                        <div className="avatar-circle" style={{ overflow: 'hidden' }}>
+                            {user?.profile_img ? (
+                                <img 
+                                    src={`${process.env.REACT_APP_API_URL}/profile-img/${user.profile_img}`} 
+                                    alt="Profile" 
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                />
+                            ) : (
+                                user.fullname?.charAt(0).toUpperCase()
+                            )}
                         </div>
                     </div>
                 </header>
