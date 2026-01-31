@@ -252,6 +252,56 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
     }
 });
 
+// API สำหรับยืนยันการคืน (Return Part) และเพิ่มสต็อก
+app.post('/api/return-part', authenticateToken, async (req, res) => {
+    const { returnDate, items } = req.body;
+    const userId = req.user.userId;
+    let connection;
+
+    try {
+        connection = await pool.getConnection();
+        await connection.beginTransaction();
+
+        // 1. สร้างรหัส Transaction สำหรับการคืน (RTN-)
+        const transactionId = `RTN-${Date.now()}`;
+
+        // 2. บันทึกลงตาราง transactions (ใช้รหัส 'T-RTN' ตามที่คุณเพิ่มใน DB แล้ว)
+        await connection.query(
+            "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_SN) VALUES (?, 'T-RTN', ?, CURTIME(), ?, NULL)",
+            [transactionId, returnDate, userId]
+        );
+
+        for (const item of items) {
+            // 3. เพิ่มสต็อกกลับเข้าไปใน Lot เดิม (คืนของ)
+            const [updateRes] = await connection.query(
+                "UPDATE lot SET current_quantity = current_quantity + ? WHERE lot_id = ?",
+                [item.quantity, item.lotId]
+            );
+
+            if (updateRes.affectedRows === 0) {
+                throw new Error(`ไม่พบรหัสล็อต ${item.lotId} เพื่อทำการคืน`);
+            }
+
+            // 4. บันทึกรายละเอียดลง equipment_list
+            const listId = `EL-RTN-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+            await connection.query(
+                "INSERT INTO equipment_list (equipment_list_id, transaction_id, equipment_id, quantity) VALUES (?, ?, ?, ?)",
+                [listId, transactionId, item.equipmentId, item.quantity]
+            );
+        }
+
+        await connection.commit();
+        res.json({ success: true, message: "บันทึกการคืนอะไหล่สำเร็จ" });
+
+    } catch (error) {
+        if (connection) await connection.rollback();
+        console.error("Return Error:", error);
+        res.status(500).json({ error: error.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
 // --- API Endpoints เดิม (Login, Register, 2FA, Profile) ---
 
 /**
@@ -1387,7 +1437,7 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
             }
 
             // 3. บันทึกรายละเอียดลง equipment_list
-            const listId = `EL-${Math.random().toString(36).substr(2, 9)}`;
+            const listId = `ER-${Date.now().toString().slice(-8)}-${Math.floor(Math.random() * 99)}`;
             await connection.query(
                 "INSERT INTO equipment_list (equipment_list_id, transaction_id, equipment_id, quantity) VALUES (?, ?, ?, ?)",
                 [listId, transactionId, item.partId, item.quantity]
