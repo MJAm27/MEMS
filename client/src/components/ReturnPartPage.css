@@ -1,88 +1,218 @@
-/* เพิ่ม Drop Shadow และ Border Radius ให้กับ Container หลัก */
+:root {
+    --primary-pink: #ff4d94;
+    --dark-bg: #1a1a1a;
+    --card-bg: #ffffff;
+    --text-gray: #666;
+}
+
 .return-page-container {
     max-width: 500px;
-    margin: 2rem auto;
-    background-color: #ffffff;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15), 0 5px 10px rgba(0, 0, 0, 0.05);
+    margin: 0 auto;
+    padding: 20px;
+    font-family: 'Prompt', sans-serif;
 }
 
-/* Header/Title Bar */
-.return-page-container h1 {
-    font-size: 1.5rem;
+.return-header-section {
+    text-align: center;
+    margin-bottom: 30px;
 }
 
-/* --- STEP: DoorControlScreen --- */
+.return-header-section h2 {
+    color: var(--primary-pink);
+    font-weight: 800;
+    font-size: 24px;
+    margin-bottom: 20px;
+}
 
-/* กล่อง Icon */
-.door-control-icon-box {
-    padding: 2rem;
-    border-radius: 50%;
-    margin-bottom: 2rem;
+/* Step Progress Bar (เหมือนหน้าเบิก) */
+.step-progress-bar {
     display: flex;
     justify-content: center;
     align-items: center;
-    transition: background-color 0.3s ease;
+    gap: 10px;
 }
 
-/* ปุ่มหลัก */
-.door-control-btn {
-    padding: 0.75rem 3rem;
-    font-size: 1.1rem;
-    font-weight: 600;
+.step-item {
+    display: flex;
+    align-items: center;
+}
+
+.step-number {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #eee;
+    color: #999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.step-item.active .step-number {
+    background: var(--primary-pink);
+    color: white;
+}
+
+.step-line {
+    width: 40px;
+    height: 2px;
+    background: #eee;
+    margin-left: 10px;
+}
+
+.step-item.active .step-line {
+    background: var(--primary-pink);
+}
+
+/* Card Style */
+.return-card {
+    background: var(--card-bg);
+    border-radius: 25px;
+    padding: 25px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+
+.info-box {
+    margin-bottom: 20px;
+}
+
+.info-box label {
+    display: block;
+    font-size: 12px;
+    color: #aaa;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+}
+
+.info-box input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid #eee;
+    font-size: 16px;
+}
+
+/* Part Item Card (เหมือนหน้าตะกร้าในหน้าเบิก) */
+.part-item-card {
+    display: flex;
+    align-items: center;
+    background: #f9f9f9;
+    padding: 12px;
+    border-radius: 18px;
+    margin-bottom: 12px;
+}
+
+.part-item-card img {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    object-fit: cover;
+    margin-right: 12px;
+}
+
+.item-info {
+    flex-grow: 1;
+}
+
+.item-info .name {
+    display: block;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.item-info .lot {
+    font-size: 11px;
+    color: #999;
+}
+
+.qty-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: white;
+    padding: 5px 10px;
+    border-radius: 10px;
+    margin: 0 10px;
+}
+
+.qty-control button {
+    background: none;
     border: none;
-    border-radius: 8px;
+    color: var(--primary-pink);
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-/* สีสำหรับปุ่มเปิด (เขียว) */
-.door-control-btn.open-btn {
-    background-color: #10B981; /* Green 600 */
-}
-.door-control-btn.open-btn:hover {
-    background-color: #059669; /* Green 700 */
-    transform: translateY(-1px);
+.qty-control span {
+    font-weight: 800;
 }
 
-/* สีสำหรับปุ่มปิด (ชมพู) */
-.door-control-btn.close-btn {
-    background-color: #EC4899; /* Pink 600 */
-}
-.door-control-btn.close-btn:hover {
-    background-color: #DB2777; /* Pink 700 */
-    transform: translateY(-1px);
-}
-
-/* --- STEP: InputAndScanScreen --- */
-.scan-btn {
-    background-color: #EC4899; /* Pink 500 */
-}
-.scan-btn:hover {
-    background-color: #DB2777; /* Pink 600 */
+.main-action-btn {
+    width: 100%;
+    padding: 15px;
+    border-radius: 15px;
+    border: none;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s;
 }
 
-/* --- STEP: ConfirmationScreen --- */
-.confirmation-card {
-    border: 1px solid #E5E7EB;
-    border-radius: 8px;
-    background-color: #F9FAFB;
+.main-action-btn.primary {
+    background: var(--primary-pink);
+    color: white;
 }
 
-/* ปุ่มยกเลิก (ชมพู) */
+.main-action-btn:active {
+    transform: scale(0.98);
+}
+
+.secondary-btn {
+    background: #f0f0f0;
+    border: none;
+    padding: 15px;
+    border-radius: 15px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+/* Scanner */
+.scanner-overlay {
+    margin-top: 15px;
+}
+
+#reader {
+    border-radius: 15px;
+    overflow: hidden;
+    border: none !important;
+}
+
 .cancel-btn {
-    background-color: #EC4899;
-}
-.cancel-btn:hover {
-    background-color: #DB2777;
+    width: 100%;
+    background: #ff4444;
+    color: white;
+    border: none;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 10px;
 }
 
-/* ปุ่มยืนยัน (เขียว) */
-.confirm-btn {
-    background-color: #10B981;
+/* Animation */
+.animate-fade { animation: fadeIn 0.4s ease; }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
-.confirm-btn:hover {
-    background-color: #059669;
+
+.success-screen .success-icon {
+    font-size: 60px;
+    color: #2ecc71;
+    margin-bottom: 20px;
 }
