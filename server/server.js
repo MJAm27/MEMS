@@ -1462,6 +1462,48 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
     }
 });
 
+// ==========================================
+// หน้าประวัติการใช้งานแบบละเอียด (Full History)
+// ==========================================
+app.get('/api/history/full', authenticateToken, async (req, res) => {
+    try {
+        const sql = `
+            SELECT 
+                t.transaction_id, 
+                tt.transaction_type_name as type_name,
+                t.transaction_type_id,
+                t.date, 
+                t.time,
+                t.machine_SN,
+                -- แก้ไขส่วนนี้: ดึงชื่อจาก equipment_type และจำนวนจาก equipment_list
+                (
+                    SELECT JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'name', et.equipment_name,
+                            'qty', el.quantity
+                        )
+                    )
+                    FROM equipment_list el
+                    JOIN equipment e ON el.equipment_id = e.equipment_id
+                    JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
+                    WHERE el.transaction_id = t.transaction_id
+                ) as items_json,
+                -- ดึงเวลาเปิดจาก accesslogs (Action A-001)
+                (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-001' LIMIT 1) as open_time,
+                -- ดึงเวลาปิดจาก accesslogs (Action A-002)
+                (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-002' LIMIT 1) as close_time
+            FROM transactions t
+            LEFT JOIN transactions_type tt ON t.transaction_type_id = tt.transaction_type_id
+            GROUP BY t.transaction_id
+            ORDER BY t.date DESC, t.time DESC
+        `;
+        const [rows] = await pool.query(sql);
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // 4. สั่งให้ Server รัน
 // ✅ ใช้ server.listen เพื่อรันทั้ง Express และ Socket.IO
 server.listen(PORT, () => {

@@ -2,7 +2,7 @@ import React, { useState, useLayoutEffect } from "react";
 import { useNavigate, Routes, Route } from "react-router-dom"; 
 import {
     FaBars, FaHome, FaSearch, FaHistory, FaSignOutAlt, 
-    FaBoxOpen, FaReply, FaHandHolding, FaUserEdit
+    FaBoxOpen, FaReply, FaHandHolding, FaUserEdit, FaCheckCircle
 } from "react-icons/fa";
 import "./EngineerMainPage.css"; 
 
@@ -104,10 +104,13 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                     <button className="sidebar-toggle-btn" onClick={toggleSidebar}>
                         <FaBars />
                     </button>
-                    <div className="user-profile-nav">
-                        <span className="user-name">{user.fullname}</span>
-                        <div className="avatar-circle">
-                            {user.fullname?.charAt(0).toUpperCase()}
+                    
+                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div className="user-profile-nav" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span className="user-name" style={{ fontWeight: '600' }}>{user?.fullname}</span>
+                            <div className="avatar-circle">
+                                {user.fullname?.charAt(0).toUpperCase()}
+                            </div>
                         </div>
                     </div>
                 </header>
@@ -117,12 +120,11 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                         <Route index element={HomeContent} /> 
                         <Route path="engineer/home" element={HomeContent} />
                         
-                        {/* ส่ง user prop ไปให้หน้าจัดการอะไหล่ เพื่อใช้บันทึก userId ลงฐานข้อมูล */}
+                        {/* ส่ง user prop เพื่อใช้บันทึก userId และดึงข้อมูลประวัติ */}
                         <Route path="engineer/withdraw" element={<WithdrawPage user={user} />} />
                         <Route path="engineer/return" element={<ReturnPartPage user={user} />} />
                         <Route path="engineer/history" element={<HistoryPage user={user} />} />
                         
-                        {/* ส่วนจัดการโปรไฟล์ */}
                         <Route path="engineer/profile" element={<ProfileENG user={user} handleLogout={handleLogout} refreshUser={refreshUser} />}>
                             <Route path="edit" element={<ProfileEditENG user={user} refreshUser={refreshUser} />} />
                         </Route>

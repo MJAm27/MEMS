@@ -1,0 +1,147 @@
+/* คอนเทนเนอร์หลัก */
+.history-container { 
+    padding: 20px; 
+    max-width: 1200px; 
+    margin: 0 auto; 
+    font-family: 'Prompt', sans-serif;
+}
+
+/* ส่วนหัวและตัวกรอง */
+.history-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 25px; 
+}
+
+.title-section { 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+    color: #db2777; 
+}
+
+.title-icon { font-size: 24px; }
+
+.filter-group { 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    background: white;
+    padding: 5px 15px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.history-select { 
+    padding: 8px 10px; 
+    border: none; 
+    outline: none; 
+    font-weight: bold;
+    color: #666;
+    cursor: pointer;
+}
+
+/* การ์ดตาราง */
+.history-card { 
+    background: white; 
+    border-radius: 20px; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08); 
+    overflow: hidden; 
+}
+
+.table-responsive { overflow-x: auto; }
+
+.history-table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    text-align: left; 
+}
+
+.history-table th { 
+    padding: 18px 15px; 
+    background: #fdf2f8; 
+    color: #db2777; 
+    font-size: 14px; 
+    font-weight: 600;
+    border-bottom: 2px solid #fce7f3;
+}
+
+.history-table td { 
+    padding: 15px; 
+    border-bottom: 1px solid #f0f0f0; 
+    vertical-align: top; 
+    font-size: 14px;
+}
+
+/* การจัดการข้อมูลอะไหล่แยกคอลัมน์ (ให้บรรทัดตรงกัน) */
+.item-row-detail {
+    height: 28px; /* กำหนดความสูงคงที่เพื่อให้บรรทัดชื่อและจำนวนตรงกันเสมอ */
+    display: flex;
+    align-items: center;
+    color: #444;
+}
+
+.item-qtys-column .item-row-detail {
+    justify-content: center;
+    color: #ff4d94; /* เน้นสีชมพูที่ตัวเลขจำนวน */
+    font-weight: 800;
+}
+
+/* Badge แสดงประเภทรายการ */
+.type-badge { 
+    padding: 6px 12px; 
+    border-radius: 50px; 
+    font-weight: bold; 
+    display: flex; 
+    align-items: center; 
+    gap: 6px; 
+    width: fit-content; 
+    font-size: 12px;
+}
+
+.type-badge.T-WTH { background: #fff0f6; color: #ff4d94; }
+.type-badge.T-RTN { background: #ecfdf5; color: #059669; }
+
+/* ส่วนแสดงเวลาการเข้าถึง (Access Log) */
+.access-log-cell { min-width: 140px; }
+
+.status-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.time-badge {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 10px;
+    border-radius: 8px;
+    background: #f3f4f6; 
+    color: #9ca3af;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid transparent;
+}
+
+.time-badge small { opacity: 0.8; font-weight: normal; }
+
+/* สีเมื่อมีการบันทึกเวลาจริง */
+.active-open { 
+    background: #fff7ed; 
+    color: #ea580c; 
+    border: 1px solid #ffedd5; 
+}
+
+.active-close { 
+    background: #f0fdf4; 
+    color: #16a34a; 
+    border: 1px solid #dcfce7; 
+}
+
+/* ส่วนแสดงวัน/เวลาทำรายการ */
+.time-cell .date-text { font-weight: bold; color: #333; }
+.time-cell .time-text { font-size: 12px; color: #888; margin-top: 2px; }
+
+.font-bold { font-weight: 700; }
+.text-center { text-align: center; }
