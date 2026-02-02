@@ -1,23 +1,30 @@
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
+
 /* ==================== Variables ==================== */
 :root {
-    --primary-color: #e83e8c;
-    --primary-light: #ffe6f2;
-    --bg-body: #f4f6f9;
+    --primary-color: #ff4d94;
+    --primary-gradient: linear-gradient(135deg, #ff4d94 0%, #d946ef 100%);
+    --primary-light: #fff0f6;
+    --bg-body: #f8fafc;
     --bg-white: #ffffff;
-    --text-dark: #343a40;
-    --text-muted: #6c757d;
-    --sidebar-width: 260px;
+    --text-dark: #1e293b;
+    --text-muted: #64748b;
+    --sidebar-width: 280px;
     --header-height: 70px;
-    --radius: 16px;
-    --transition: all 0.3s ease;
+    --radius-lg: 24px;
+    --radius-md: 16px;
+    --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 * { box-sizing: border-box; }
 
 body {
     margin: 0;
-    font-family: 'Kanit', sans-serif;
+    font-family: 'Prompt', sans-serif;
     background-color: var(--bg-body);
+    color: var(--text-dark);
 }
 
 /* ==================== Layout ==================== */
@@ -31,172 +38,288 @@ body {
     flex-direction: column;
 }
 
-.content-body {
-    padding: 40px;
-    display: flex;
-    flex-direction: column;
-    align-items: center; /* จัด Title ให้อยู่กลาง */
-}
-
-/* ==================== ⭐️ ส่วนที่แก้ไข: กลุ่มปุ่ม (Container) ⭐️ ==================== */
-.main-actions-container {
-    display: flex !important;      /* บังคับใช้ Flex */
-    flex-direction: row !important; /* บังคับเรียงแนวนอนเท่านั้น */
-    justify-content: center;       /* จัดกลุ่มไว้กลางหน้าจอ */
-    align-items: center;
-    gap: 25px;                     /* ระยะห่างที่พอดี */
-    margin-top: 50px;
-    width: 100%;
-    max-width: 1000px;             /* บีบขอบเขตไม่ให้กระจายตัว */
-    flex-wrap: nowrap !important;  /* ⭐️ ห้ามตกบรรทัดเด็ดขาด ⭐️ */
-}
-
-.action-button {
-    flex: 1;                       /* ให้ทุกปุ่มกว้างเท่ากันอัตโนมัติ */
-    max-width: 250px;              /* จำกัดความกว้างไม่ให้ใหญ่เกินไป */
-    height: 200px;                 /* ความสูงสี่เหลี่ยมสวยๆ */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background-color: var(--bg-white);
-    border: 1px solid #eee;
-    border-radius: var(--radius);
-    cursor: pointer;
-    transition: var(--transition);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    padding: 20px;
-}
-
-.action-button:hover {
-    transform: translateY(-8px);
-    border-color: var(--primary-color);
-    color: var(--primary-color);
-    background-color: var(--primary-light);
-    box-shadow: 0 12px 24px rgba(0,0,0,0.1);
-}
-
-.action-icon {
-    font-size: 3.5rem !important;
-    margin-bottom: 15px;
-}
-
-.action-button span {
-    font-size: 1.2rem;
-    font-weight: 600;
-}
-
-/* ปรับแต่ง Sidebar & Topbar (แบบย่อ) */
-.sidebar-container { width: var(--sidebar-width); background: var(--bg-white); position: fixed; height: 100vh; border-right: 1px solid #eee; }
-.top-navbar { height: var(--header-height); background: var(--bg-white); display: flex; align-items: center; padding: 0 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-
-/* Responsive */
+/* จัดการหน้าจอเมื่อ Sidebar ปิด หรือบนมือถือ */
 @media (max-width: 768px) {
-    .main-actions-container {
-        flex-direction: column !important; /* จอมือถือค่อยให้เรียงแนวตั้ง */
-        flex-wrap: wrap !important;
-    }
-    .action-button { width: 100%; max-width: 300px; height: 150px; }
+    .main-content-wrapper { margin-left: 0; }
 }
 
-/* ==================== Pending Borrow Section ==================== */
-.pending-container {
+.content-body {
+    padding: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
     width: 100%;
-    max-width: 1000px;
-    margin-top: 40px;
-    padding: 20px;
 }
 
-.section-title {
+/* ==================== Sidebar ==================== */
+.sidebar-eng {
+    width: var(--sidebar-width);
+    height: 100vh;
+    background: var(--bg-white);
+    border-right: 1px solid #f1f5f9;
+    position: fixed;
+    z-index: 1000;
+    transition: var(--transition);
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header {
+    padding: 30px 20px;
+    text-align: center;
+}
+
+.sidebar-logo {
+    font-size: 22px;
+    font-weight: 800;
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.sidebar-nav {
+    flex-grow: 1;
+    padding: 0 15px;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    padding: 14px 20px;
+    margin-bottom: 8px;
+    border-radius: var(--radius-md);
+    color: var(--text-muted);
+    text-decoration: none;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.nav-item i, .nav-item svg {
+    margin-right: 15px;
+    font-size: 18px;
+}
+
+.nav-item:hover {
+    background: var(--primary-light);
+    color: var(--primary-color);
+}
+
+.nav-item.active {
+    background: var(--primary-gradient);
+    color: white;
+    box-shadow: 0 8px 15px rgba(255, 77, 148, 0.2);
+}
+
+/* ==================== Top Header ==================== */
+.main-header {
+    height: var(--header-height);
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 30px;
+    position: sticky;
+    top: 0;
+    z-index: 900;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.user-profile-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #f8fafc;
+    padding: 6px 16px;
+    border-radius: 50px;
+    border: 1px solid #e2e8f0;
+}
+
+.profile-img-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* ==================== Pending Items (Dashboard) ==================== */
+.pending-section {
+    background: var(--bg-white);
+    border-radius: var(--radius-lg);
+    padding: 25px;
+    box-shadow: var(--shadow-sm);
+}
+
+.pending-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 20px;
     display: flex;
     align-items: center;
     gap: 10px;
-    color: var(--text-dark);
-    margin-bottom: 20px;
-    border-left: 5px solid var(--primary-color);
-    padding-left: 15px;
 }
 
 .pending-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 20px;
 }
 
 .pending-card {
-    background: white;
-    border-radius: var(--radius);
+    background: #fff;
+    border: 1px solid #f1f5f9;
+    border-radius: var(--radius-md);
     padding: 20px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    border: 1px solid #f0f0f0;
     transition: var(--transition);
 }
 
 .pending-card:hover {
-    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
 }
 
 .pending-info strong {
-    font-size: 1.1rem;
     color: var(--primary-color);
+    font-size: 1.1rem;
     display: block;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
+}
+
+.pending-info p {
+    margin: 4px 0;
+    font-size: 0.9rem;
+    color: var(--text-muted);
 }
 
 .finalize-form {
     margin-top: 15px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
 }
 
 .finalize-form input {
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-family: 'Kanit';
+    padding: 12px;
+    border: 2px solid #f1f5f9;
+    border-radius: 12px;
+    font-family: 'Prompt';
+    transition: var(--transition);
+}
+
+.finalize-form input:focus {
+    outline: none;
+    border-color: var(--primary-color);
 }
 
 .action-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px;
+    margin-top: 5px;
 }
 
-/* ปุ่มบันทึกการใช้ (สีเขียว) */
+/* ==================== Buttons ==================== */
+.btn-use-part, .btn-return-part {
+    padding: 12px;
+    border-radius: 12px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
 .btn-use-part {
-    grid-column: span 1;
-    background-color: #28a745;
+    background: #22c55e;
+    color: white;
+}
+
+.btn-return-part {
+    background: #ef4444;
+    color: white;
+}
+
+.btn-use-part:hover, .btn-return-part:hover {
+    opacity: 0.9;
+    transform: scale(1.02);
+}
+
+.btn-use-part:active { transform: scale(0.98); }
+/* เพิ่มส่วนนี้เข้าไปใน EngineerMainPage.css หรือแทนที่ส่วนเดิม */
+
+/* ==================== Main Actions Container (Home Page Buttons) ==================== */
+.main-actions-container {
+    display: flex;
+    justify-content: center;
+    gap: 30px; /* ปรับ gap ให้พอดี (Admin ใช้ 350px แต่อาจกว้างไปสำหรับ 3 ปุ่ม) */
+    margin-top: 50px;
+    margin-bottom: 50px;
+    flex-wrap: wrap;
+}
+
+.action-button {
+    padding: 15px 30px;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    min-width: 200px;
+    text-align: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Prompt', sans-serif;
+}
+
+.action-icon {
+    font-size: 2rem;
+    margin-bottom: 5px;
+}
+
+/* สไตล์ปุ่มหลัก (ใช้สีชมพูตามธีม Engineer แต่ทรงเดียวกับ Admin) */
+.primary-action {
+    background-color: var(--primary-color);
     color: white;
     border: none;
-    padding: 10px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    transition: 0.2s;
 }
 
-.btn-use-part:hover { background-color: #218838; }
-
-/* ปุ่มคืนคลัง (สีส้ม/ชมพู) */
-.btn-return-part {
-    grid-column: span 1;
-    background-color: #ffc107;
-    color: #333;
-    border: none;
-    padding: 10px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    transition: 0.2s;
+.primary-action:hover {
+    background-color: #e63980;
+    transform: translateY(-5px);
+    box-shadow: 0 6px 20px rgba(255, 77, 148, 0.3);
 }
 
-.btn-return-part:hover { background-color: #e0a800; }
+/* สไตล์ปุ่มรอง (สีขาวขอบเทา เหมือนใน Admin) */
+.secondary-action {
+    background-color: white;
+    color: #343a40;
+    border: 2px solid #ced4da;
+}
+
+.secondary-action:hover {
+    background-color: #f8f9fa;
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    transform: translateY(-5px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* ปรับแต่ง Welcome Banner ให้คล้าย Admin */
+.welcome-banner {
+    margin-bottom: 30px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 20px;
+}
+
+.welcome-banner h1 {
+    font-size: 28px;
+    font-weight: bold;
+    color: #343a40;
+    margin: 0;
+}
+
+.welcome-banner p {
+    color: #666;
+    margin-top: 5px;
+}

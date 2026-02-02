@@ -180,22 +180,24 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
         <div className="engineer-home-wrapper">
             <div className="welcome-banner fade-in">
                 <h1>หน้าหลักวิศวกร</h1>
-                <p>สวัสดีคุณ {user?.fullname} ยินดีต้อนรับสู่ระบบ MEMS</p>
+                <p>เลือกเมนูเพื่อดำเนินการจัดการอะไหล่</p>
             </div>
 
             <div className="main-actions-container">
-                <button className="action-button secondary-action" onClick={() => navigate("/dashboard/engineer/withdraw")}>
+                {/* ปรับเป็น primary-action สำหรับปุ่มหลัก และ secondary-action สำหรับปุ่มรอง */}
+                <button className="action-button primary-action" onClick={() => navigate("/dashboard/engineer/withdraw")}>
                     <FaBoxOpen className="action-icon" /> <span>เบิกอะไหล่</span>
                 </button>
+                
                 <button className="action-button secondary-action" onClick={() => navigate("/dashboard/engineer/return")}>
                     <FaReply className="action-icon" /> <span>คืนอะไหล่</span>
                 </button>
+                
                 <button className="action-button secondary-action" onClick={() => navigate("/dashboard/engineer/borrow")}>
                     <FaHandHolding className="action-icon" /> <span>เบิกอะไหล่ล่วงหน้า</span>
                 </button>
             </div>
 
-            {/* แก้ไขจาก <pendingBorrowListUI /> เป็น {pendingBorrowListUI} */}
             {pendingBorrowListUI} 
         </div>
     );
