@@ -1,18 +1,18 @@
-@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-    --primary-pink: #ec4899;
-    --primary-hover: #db2777;
-    --bg-gray: #f8fafc; 
-    --card-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+    --primary-pink: #ff4d94;
+    --primary-gradient: linear-gradient(135deg, #ff4d94 0%, #d946ef 100%);
+    --bg-gray: #f8fafc;
+    --card-bg: #ffffff;
     --text-main: #1e293b;
     --text-sub: #64748b;
-    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --shadow-soft: 0 10px 25px rgba(0, 0, 0, 0.05);
+    --shadow-strong: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 }
 
 .withdraw-page-container {
     font-family: 'Prompt', sans-serif;
-    background-color: var(--bg-gray);
     min-height: 100vh;
     padding: 30px 20px;
     display: flex;
@@ -20,152 +20,124 @@
     align-items: center;
 }
 
-/* แถบลำดับขั้นตอน 1 2 3 แนวนอน */
+.withdraw-title-section h2 {
+    color: var(--primary-pink);
+    font-weight: 800;
+    font-size: 26px;
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+/* Step Progress Bar */
 .step-progress-bar {
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 30px;
-    padding: 10px;
 }
 
-/* วงกลมตัวเลข */
+.step-item { display: flex; align-items: center; }
+
 .step-circle {
-    width: 35px;
-    height: 35px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
-    background-color: #f0f0f0; /* สีพื้นหลังเมื่อยังไม่ถึงสเต็ป */
-    color: #999;
+    background-color: #e2e8f0;
+    color: #94a3b8;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: bold;
-    font-size: 16px;
+    font-weight: 800;
     transition: all 0.3s ease;
-    border: 3px solid #fff; /* ขอบสีขาว */
-    box-shadow: 0 0 0 4px #f8f8f8; /* วงแหวนรอบนอกจางๆ */
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 1px #e2e8f0;
 }
 
-/* สไตล์เมื่อสเต็ปนั้นกำลังทำงาน (Active) */
 .step-item.active .step-circle {
-    background-color: #ff4d94; /* สีชมพูตามรูปตัวอย่าง */
+    background-color: var(--primary-pink);
     color: white;
-    box-shadow: 0 0 0 4px #ffe6f0; /* วงแหวนสีชมพูอ่อนจางๆ */
-}
-
-/* เส้นเชื่อมระหว่างวงกลม */
-.step-line {
-    height: 3px;
-    width: 60px; /* ความยาวของเส้น */
-    background-color: #f0f0f0;
-    margin: 0 5px;
-    transition: background-color 0.3s ease;
-}
-
-/* สีของเส้นเมื่อสเต็ปนั้นผ่านไปแล้ว */
-.step-line.active {
-    background-color: #ff4d94;
-}
-
-/* เพิ่มแอนิเมชันตอนเปลี่ยนสเต็ป */
-.step-item.active .step-circle {
     transform: scale(1.1);
+    box-shadow: 0 0 15px rgba(255, 77, 148, 0.3);
 }
 
-.step-item { display: flex; align-items: center; flex: 1; }
-.step-item:last-child { flex: 0; }
-.step-number {
-    width: 36px; height: 36px; border-radius: 50%;
-    background-color: #e2e8f0; color: #94a3b8;
-    display: flex; justify-content: center; align-items: center;
-    font-weight: 700; position: relative; z-index: 2;
-    transition: var(--transition); border: 3px solid #f8fafc;
+.step-line {
+    height: 4px;
+    width: 50px;
+    background-color: #e2e8f0;
+    margin: 0 8px;
+    border-radius: 2px;
 }
-.step-item.active .step-number { background-color: var(--primary-pink); color: white; box-shadow: 0 0 0 4px rgba(236, 72, 153, 0.1); }
-.step-line { height: 3px; background-color: #e2e8f0; flex-grow: 1; margin: 0 -2px; z-index: 1; }
-.step-item.active .step-line { background-color: var(--primary-pink); }
 
-/* การ์ดและรายการสินค้า */
+.step-line.active { background-color: var(--primary-pink); }
+
+/* Main Card */
 .withdraw-card {
-    background: #ffffff; width: 100%; max-width: 460px;
-    border-radius: 32px; box-shadow: var(--card-shadow);
-    padding: 35px; border: 1px solid rgba(255, 255, 255, 0.8);
+    background: var(--card-bg);
+    width: 100%;
+    max-width: 460px;
+    border-radius: 30px;
+    padding: 35px;
+    box-shadow: var(--shadow-strong);
+    border: 1px solid rgba(255, 255, 255, 0.8);
 }
-.cart-item-card {
-    display: flex; align-items: center; gap: 12px; padding: 12px;
-    background: #ffffff; border: 1px solid #f1f5f9; border-radius: 20px;
-}
-.cart-item-image { width: 55px; height: 55px; border-radius: 14px; object-fit: cover; }
-.item-name { font-weight: 700; display: block; font-size: 14px; color: var(--text-main); }
-.item-lot { font-size: 12px; color: var(--text-sub); }
 
-/* ส่วนควบคุมจำนวน */
-.qty-control { display: flex; align-items: center; gap: 8px; background: #f1f5f9; padding: 4px; border-radius: 12px; }
-.qty-btn { width: 28px; height: 28px; border-radius: 8px; border: none; background: white; color: var(--primary-pink); font-weight: 900; cursor: pointer; transition: 0.2s; }
-.qty-btn:active { transform: scale(0.9); }
-.qty-val { font-weight: 700; min-width: 20px; text-align: center; color: var(--text-main); }
-
-/* การจัดวางกลุ่มปุ่มแนวนอน */
-.flex-button-group {
-    display: flex;
-    gap: 12px;
-    margin-top: 15px;
-}
-.flex-button-group .btn-cancel { flex: 1; background: #f1f5f9; color: var(--text-sub); border: none; border-radius: 20px; font-weight: 700; cursor: pointer; }
-.flex-button-group .action-button-main { flex: 2; margin-top: 0; }
-
-/* ค้นหาคลาส .withdraw-input ในไฟล์ CSS เดิมแล้วแทนที่ด้วยตัวนี้ */
+/* Inputs & Forms */
 .withdraw-input {
     width: 100%;
-    padding: 15px 20px;       /* เพิ่ม Padding ให้ช่องดูใหญ่ขึ้น */
-    font-size: 1.1rem;        /* ขยายขนาดตัวอักษรข้างใน */
-    border-radius: 12px;      /* เพิ่มความโค้งมน (ปรับเลขตามชอบ เช่น 15px หรือ 25px) */
-    border: 2px solid #ddd;   /* เส้นขอบให้ดูชัดเจน */
-    background-color: #fff;
+    padding: 14px 20px;
+    font-size: 16px;
+    border-radius: 15px;
+    border: 2px solid #f1f5f9;
+    background-color: #f8fafc;
     transition: all 0.3s ease;
-    box-sizing: border-box;    /* ป้องกันขนาดเพี้ยน */
+    box-sizing: border-box;
     outline: none;
 }
 
-/* เอฟเฟกต์ตอนคลิกที่ช่องกรอก */
 .withdraw-input:focus {
-    border-color: #e83e8c;    /* เปลี่ยนสีเส้นขอบเมื่อคลิก (สีชมพูตามธีม) */
-    box-shadow: 0 0 8px rgba(232, 62, 140, 0.2);
+    border-color: var(--primary-pink);
+    background-color: #fff;
+    box-shadow: 0 0 0 4px rgba(255, 77, 148, 0.1);
 }
 
-/* ปรับปุ่มบวก (+) ข้างรหัสอะไหล่ให้เข้ากัน */
-.add-btn {
-    padding: 0 20px;
-    border-radius: 12px;      /* โค้งมนเท่ากับ Input */
-    background-color: #e83e8c;
+/* Items List */
+.cart-item-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px;
+    background: #fff;
+    border: 1px solid #f1f5f9;
+    border-radius: 22px;
+    margin-bottom: 12px;
+    transition: 0.2s;
+}
+
+.cart-item-image { width: 55px; height: 55px; border-radius: 14px; object-fit: cover; }
+
+/* Buttons */
+.action-button-main {
+    width: 100%;
+    padding: 18px;
+    border-radius: 20px;
+    font-weight: 700;
+    background: var(--primary-gradient);
     color: white;
     border: none;
     cursor: pointer;
-    font-size: 1.2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.2s;
-}
-
-.add-btn:hover {
-    background-color: #d81b60;
-}
-
-/* องค์ประกอบเสริม */
-.action-button-main {
-    width: 100%; padding: 18px; border-radius: 20px; font-weight: 700;
-    background: linear-gradient(135deg, var(--primary-pink) 0%, #d946ef 100%);
-    color: white; border: none; cursor: pointer; transition: var(--transition);
+    transition: 0.3s;
     box-shadow: 0 10px 15px -3px rgba(236, 72, 153, 0.3);
 }
-.search-suggestions {
-    position: absolute; top: 100%; left: 0; right: 0; background: white;
-    border-radius: 18px; margin-top: 8px; box-shadow: 0 15px 30px rgba(0, 0, 0, 0.12);
-    z-index: 100; max-height: 200px; overflow-y: auto; border: 1px solid #f1f5f9; padding: 8px;
-}
-.search-suggestions li { padding: 12px 16px; cursor: pointer; font-size: 14px; border-radius: 12px; }
-.search-suggestions li:hover { background-color: #fdf2f8; color: var(--primary-pink); }
 
-.error-msg { color: #ef4444; font-size: 13px; text-align: center; padding: 10px; background: #fef2f2; border-radius: 12px; margin-top: 10px; }
-.add-btn { background: #1e293b; color: white; border-radius: 14px; padding: 0 18px; border: none; cursor: pointer; }
+.action-button-main:hover { transform: translateY(-2px); }
+.action-button-main:active { transform: scale(0.98); }
+
+.btn-cancel {
+    flex: 1;
+    background: #f1f5f9;
+    color: var(--text-sub);
+    border: none;
+    border-radius: 20px;
+    font-weight: 700;
+    cursor: pointer;
+}
