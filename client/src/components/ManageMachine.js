@@ -22,7 +22,7 @@ function ManageMachine() {
   const fetchMachines = async () => {
     try {
       // หรือใช้ fetch ก็ได้: const res = await fetch(API_URL);
-      const response = await axios.get("http://localhost:3001/api/machine");
+      const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/machine`);
       setMachines(response.data);
     } catch (error) {
       console.error("Error fetching data:", error);
