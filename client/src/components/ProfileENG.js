@@ -1,26 +1,13 @@
-import React from "react"; // ลบปีกกาว่างออก
-import { Link, useNavigate, Outlet, useLocation } from "react-router-dom";
+import React from "react";
+import { Link, Outlet, useLocation } from "react-router-dom"; // ลบ useNavigate ออกเพราะไม่ได้ใช้แล้ว
 import { 
-    FaUserCircle, FaChevronRight, FaKey, FaEdit, FaSignOutAlt 
-} from "react-icons/fa"; // เพิ่ม FaSignOutAlt
+    FaUserCircle, FaChevronRight, FaKey, FaEdit 
+} from "react-icons/fa"; 
 import "./ProfileENG.css"; 
 
-function ProfileENG({ user, handleLogout }) { // ตัด refreshUser ออกหากไม่ได้ใช้ในหน้านี้
-    const navigate = useNavigate();
+function ProfileENG({ user }) { 
     const location = useLocation(); 
-    
     const userData = user; 
-    
-    const localHandleLogout = () => {
-        if (window.confirm("ต้องการออกจากระบบใช่หรือไม่?")) {
-            if (handleLogout) {
-                handleLogout(); 
-            } else {
-                localStorage.removeItem("token");
-                navigate("/login", { replace: true });
-            }
-        }
-    };
     
     if (!userData) {
           return <div className="loading-text">กำลังโหลดข้อมูลโปรไฟล์...</div>;
@@ -41,7 +28,6 @@ function ProfileENG({ user, handleLogout }) { // ตัด refreshUser ออก
                     <div className="profile-card-detailed">
                         <div className="profile-header-bg"></div>
                         <div className="profile-avatar-large">
-                            {/* แสดงรูปโปรไฟล์ถ้ามี ถ้าไม่มีให้ใช้ Icon ปกติ */}
                             {user?.profile_img ? (
                                 <img 
                                     src={`${process.env.REACT_APP_API_URL}/profile-img/${user.profile_img}`} 
@@ -78,18 +64,6 @@ function ProfileENG({ user, handleLogout }) { // ตัด refreshUser ออก
                                 </div>
                                 <FaChevronRight className="arrow-icon" />
                             </Link>
-                            
-                            {/* เพิ่มปุ่มออกจากระบบเพื่อให้ localHandleLogout ได้ใช้งาน */}
-                            <div className="action-item logout-item" onClick={localHandleLogout} style={{ cursor: 'pointer' }}>
-                                <div className="action-icon-box red" style={{ backgroundColor: '#fee2e2', color: '#ef4444' }}>
-                                    <FaSignOutAlt />
-                                </div>
-                                <div className="action-text">
-                                    <span>ออกจากระบบ</span>
-                                    <small>จบการทำงานของเซสชันนี้</small>
-                                </div>
-                                <FaChevronRight className="arrow-icon" />
-                            </div>
                         </div>
                     </div>
                 </div>
