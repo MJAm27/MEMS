@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react"; // เพิ่ม useCallback
 import "./ManageTransaction.css";
 import { FaPlus, FaSearch, FaEye, FaTimes, FaTrash } from "react-icons/fa";
 import axios from "axios";
@@ -8,7 +8,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL;
 function ManageTransaction() {
   // State หลัก
   const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // แก้ไขการประกาศที่นี่
   const [searchTerm, setSearchTerm] = useState("");
 
   // State สำหรับ Modal และ Form
@@ -25,57 +25,60 @@ function ManageTransaction() {
   });
 
   // Form Data (Items - รายการในตะกร้า)
-  const [cartItems, setCartItems] = useState([]); // รายการที่กดเพิ่มไว้
-  const [currentItem, setCurrentItem] = useState({ equipment_id: "", quantity: 1 }); // รายการที่กำลังเลือก
+  const [cartItems, setCartItems] = useState([]); 
+  const [currentItem, setCurrentItem] = useState({ equipment_id: "", quantity: 1 });
 
   // State สำหรับดูรายละเอียด (View Detail)
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
 
-  useEffect(() => {
-    fetchTransactions();
-    fetchOptions();
-  }, []);
-
-  // โหลดข้อมูลประวัติ
-  const fetchTransactions = async () => {
-    try {
-      const res = await axios.get(`${API_BASE_URL}/api/transactions`);
-      setTransactions(res.data);
-      setLoading(false);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  // โหลดตัวเลือกต่างๆ (User, Machine, Type)
-  const fetchOptions = async () => {
+  // โหลดตัวเลือกต่างๆ (User, Machine, Type) - ครอบด้วย useCallback
+  const fetchOptions = useCallback(async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/api/transaction-options`);
       setOptions(res.data);
     } catch (error) {
-      console.error(error);
+      console.error("Error fetching options:", error);
     }
-  };
+  }, []);
 
-  // ฟังก์ชันเพิ่มของลงตะกร้า (ยังไม่บันทึกลง DB)
+  // โหลดข้อมูลประวัติ - ครอบด้วย useCallback
+  const fetchTransactions = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get(`${API_BASE_URL}/api/transactions`);
+      setTransactions(res.data);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTransactions();
+    fetchOptions();
+  }, [fetchTransactions, fetchOptions]); // ใส่ Dependency ให้ครบตามที่ ESLint ต้องการ
+
+  // ฟังก์ชันเพิ่มของลงตะกร้า
   const handleAddItemToCart = () => {
     if (!currentItem.equipment_id || currentItem.quantity <= 0) {
       alert("กรุณาเลือกอุปกรณ์และระบุจำนวนให้ถูกต้อง");
       return;
     }
     
-    // หาข้อมูลชื่ออุปกรณ์มาแสดง
-    const eqInfo = options.equipments.find(e => e.equipment_id == currentItem.equipment_id);
+    // เปลี่ยน == เป็น === เพื่อความปลอดภัยและลบ Warning
+    const eqInfo = options.equipments.find(e => String(e.equipment_id) === String(currentItem.equipment_id));
     
-    const newItem = {
-      ...currentItem,
-      equipment_name: eqInfo.equipment_name,
-      model_size: eqInfo.model_size
-    };
-
-    setCartItems([...cartItems, newItem]);
-    setCurrentItem({ equipment_id: "", quantity: 1 }); // Reset ช่องเลือก
+    if (eqInfo) {
+        const newItem = {
+          ...currentItem,
+          equipment_name: eqInfo.equipment_name,
+          model_size: eqInfo.model_size
+        };
+        setCartItems([...cartItems, newItem]);
+        setCurrentItem({ equipment_id: "", quantity: 1 }); 
+    }
   };
 
   // ลบของออกจากตะกร้า
@@ -106,8 +109,7 @@ function ManageTransaction() {
       await axios.post(`${API_BASE_URL}/api/transactions`, payload);
       alert("บันทึกรายการสำเร็จ!");
       setShowModal(false);
-      fetchTransactions(); // โหลดใหม่
-      // Reset Form
+      fetchTransactions(); 
       setHeaderData({ transaction_type_id: "", user_id: "", machine_SN: "", notes: "" });
       setCartItems([]);
     } catch (error) {
@@ -141,6 +143,11 @@ function ManageTransaction() {
     t.transaction_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (t.fullname && t.fullname.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  // เพิ่มส่วนแสดงผลขณะกำลังโหลดข้อมูล
+  if (loading) {
+    return <div className="loading-container">กำลังโหลดข้อมูลประวัติ...</div>;
+  }
 
   return (
     <div className="manage-transaction-container fade-in">
@@ -180,25 +187,29 @@ function ManageTransaction() {
             </tr>
           </thead>
           <tbody>
-            {filteredData.map((item) => (
-              <tr key={item.transaction_id}>
-                <td className="text-primary fw-bold">{item.transaction_id}</td>
-                <td>{new Date(item.transaction_date).toLocaleString('th-TH')}</td>
-                <td>
-                    <span className={`badge ${item.transaction_type_name?.includes('เบิก') ? 'bg-warning' : 'bg-success'}`}>
-                        {item.transaction_type_name}
-                    </span>
-                </td>
-                <td>{item.fullname}</td>
-                <td>{item.machine_name || "-"}</td>
-                <td style={{textAlign:'center'}}>{item.item_count}</td>
-                <td style={{textAlign:'center'}}>
-                  <button className="action-btn view-btn" onClick={() => handleViewDetail(item)}>
-                    <FaEye />
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {filteredData.length > 0 ? (
+              filteredData.map((item) => (
+                <tr key={item.transaction_id}>
+                  <td className="text-primary fw-bold">{item.transaction_id}</td>
+                  <td>{new Date(item.transaction_date).toLocaleString('th-TH')}</td>
+                  <td>
+                      <span className={`badge ${item.transaction_type_name?.includes('เบิก') ? 'bg-warning' : 'bg-success'}`}>
+                          {item.transaction_type_name}
+                      </span>
+                  </td>
+                  <td>{item.fullname}</td>
+                  <td>{item.machine_name || "-"}</td>
+                  <td style={{textAlign:'center'}}>{item.item_count}</td>
+                  <td style={{textAlign:'center'}}>
+                    <button className="action-btn view-btn" onClick={() => handleViewDetail(item)}>
+                      <FaEye />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+                <tr><td colSpan="7" style={{textAlign:'center', padding: '20px'}}>ไม่พบข้อมูลที่ค้นหา</td></tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -206,7 +217,7 @@ function ManageTransaction() {
       {/* MODAL */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal-content transaction-modal"> {/* เพิ่ม class พิเศษเพื่อให้กว้างขึ้น */}
+          <div className="modal-content transaction-modal">
             <div className="modal-header">
               <h3>{viewMode ? "รายละเอียดรายการ" : "สร้างรายการใหม่"}</h3>
               <button className="close-btn" onClick={() => setShowModal(false)}><FaTimes /></button>
@@ -214,11 +225,10 @@ function ManageTransaction() {
             
             <div className="modal-body">
                 {viewMode ? (
-                    // --- View Mode ---
                     <div>
                         <div className="info-grid">
                             <p><strong>ID:</strong> {selectedTransaction?.transaction_id}</p>
-                            <p><strong>วันที่:</strong> {new Date(selectedTransaction?.date).toLocaleString()}</p>
+                            <p><strong>วันที่:</strong> {new Date(selectedTransaction?.transaction_date).toLocaleString()}</p>
                             <p><strong>ประเภท:</strong> {selectedTransaction?.transaction_type_name}</p>
                             <p><strong>ผู้ทำรายการ:</strong> {selectedTransaction?.fullname}</p>
                             <p><strong>ครุภัณฑ์:</strong> {selectedTransaction?.machine_name || "-"}</p>
@@ -245,9 +255,7 @@ function ManageTransaction() {
                         </table>
                     </div>
                 ) : (
-                    // --- Add Mode ---
                     <form onSubmit={handleSubmit}>
-                        {/* Section 1: Header Info */}
                         <div className="section-box">
                             <h4>1. ข้อมูลทั่วไป</h4>
                             <div className="form-grid">
@@ -298,7 +306,6 @@ function ManageTransaction() {
                             </div>
                         </div>
 
-                        {/* Section 2: Add Items */}
                         <div className="section-box">
                             <h4>2. เพิ่มรายการอะไหล่</h4>
                             <div className="add-item-row">
@@ -329,7 +336,6 @@ function ManageTransaction() {
                                 </button>
                             </div>
 
-                            {/* Mini Table List */}
                             <div className="mini-table-container">
                                 <table className="mini-table">
                                     <thead>
