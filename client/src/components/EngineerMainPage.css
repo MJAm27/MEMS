@@ -112,6 +112,7 @@ body {
 .main-header {
     height: var(--header-height);
     background: rgba(255, 255, 255, 0.8);
+    -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     display: flex;
     align-items: center;
@@ -293,11 +294,11 @@ body {
 .secondary-action {
     background-color: white;
     color: #343a40;
-    border: 2px solid #ced4da;
+    border: 2px solid #e2e8f0;
 }
 
 .secondary-action:hover {
-    background-color: #f8f9fa;
+    background-color: #fff0f6;
     border-color: var(--primary-color);
     color: var(--primary-color);
     transform: translateY(-5px);

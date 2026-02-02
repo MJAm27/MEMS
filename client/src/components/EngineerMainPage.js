@@ -112,6 +112,13 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                         qtyToReturn: item.borrow_qty
                     }, { headers: { Authorization: `Bearer ${token}` } });
                 }
+
+                // ส่วนที่เพิ่มล้างค่าในช่อง input
+                setFinalizeData(prev => {
+                    const newData = { ...prev };
+                    delete newData[item.borrow_id]; // ลบข้อมูลของ ID นี้ทิ้งไป
+                    return newData;
+                });
             alert("ดำเนินการสำเร็จ");
             fetchPendingBorrows(); // โหลดรายการที่เหลือใหม่
         } catch (err) { alert("เกิดข้อผิดพลาด"); }
@@ -184,8 +191,7 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
             </div>
 
             <div className="main-actions-container">
-                {/* ปรับเป็น primary-action สำหรับปุ่มหลัก และ secondary-action สำหรับปุ่มรอง */}
-                <button className="action-button primary-action" onClick={() => navigate("/dashboard/engineer/withdraw")}>
+                <button className="action-button secondary-action" onClick={() => navigate("/dashboard/engineer/withdraw")}>
                     <FaBoxOpen className="action-icon" /> <span>เบิกอะไหล่</span>
                 </button>
                 
