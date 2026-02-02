@@ -145,7 +145,7 @@ function Setup2FA() {
                     </>
                 )}
 
-                <button className="nextButton" style={{ marginTop: "10px" }} onClick={() => navigate('/login')}>
+                <button className="nextButton"onClick={() => navigate('/login')}>
                     กลับไปหน้าเข้าสู่ระบบ
                 </button>
 
