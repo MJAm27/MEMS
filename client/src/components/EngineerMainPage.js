@@ -4,7 +4,7 @@ import axios from "axios";
 import {
     FaBars, FaHome, FaSearch, FaHistory, FaSignOutAlt,
     FaBoxOpen, FaReply, FaHandHolding, FaUserEdit, FaCheckCircle,
-    FaExclamationTriangle // เพิ่มตัวนี้กลับเข้าไปครับ
+    FaExclamationTriangle
 } from "react-icons/fa";
 import "./EngineerMainPage.css";
 
@@ -54,29 +54,7 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
         }));
     };
 
-    const handleConfirmUsage = async (item) => {
-        const input = finalizeData[item.borrow_id];
-        if (!input?.machineSN) return alert("กรุณากรอกเลขครุภัณฑ์ที่นำอะไหล่ไปใช้");
-
-        const usedQty = parseInt(input.usedQty || item.borrow_qty);
-        if (usedQty > item.borrow_qty) return alert(`จำนวนที่ใช้จริง ห้ามเกินจำนวนที่เบิกไป`);
-
-        try {
-            const token = localStorage.getItem('token');
-            await axios.post(`${API_BASE}/api/borrow/finalize`, {
-                transactionId: item.borrow_id,
-                machineSN: input.machineSN,
-                usedQty: usedQty,
-                totalBorrowed: item.borrow_qty,
-                lotId: item.lot_id
-            }, { headers: { Authorization: `Bearer ${token}` } });
-
-            alert("บันทึกการใช้งานเรียบร้อยแล้ว");
-            fetchPendingBorrows(); 
-        } catch (err) {
-            alert("เกิดข้อผิดพลาด: " + (err.response?.data?.error || err.message));
-        }
-    };
+    // --- ลบฟังก์ชัน handleConfirmUsage ที่ไม่ได้ใช้ออกเพื่อให้ Warning หายไป ---
 
     const localHandleLogout = () => {
         localStorage.removeItem("token");
@@ -85,7 +63,6 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
 
     const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
-    // เพิ่มฟังก์ชันสำหรับจัดการ Action แยกประเภท
     const handleProcessBorrow = async (item, actionType) => {
         const input = finalizeData[item.borrow_id];
         const qtyInput = parseInt(input?.usedQty || 0);
@@ -94,37 +71,36 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
             const token = localStorage.getItem('token');
             if (actionType === 'USE') {
                 if (!input?.machineSN || qtyInput <= 0) return alert("กรุณากรอกเลขครุภัณฑ์และจำนวน");
-                // เรียก API ตัดยอดบางส่วน
+                
                 await axios.post(`${API_BASE}/api/borrow/finalize-partial`, {
                     transactionId: item.borrow_id,
                     machineSN: input.machineSN,
                     usedQty: qtyInput,
                     lotId: item.lot_id
                 }, { headers: { Authorization: `Bearer ${token}` } });
-                } else {
-                    // --- กรณี: คืนคลังทั้งหมด ---
-                    if (!window.confirm(`ยืนยันการคืนอะไหล่จำนวน ${item.borrow_qty} ชิ้น เข้าสู่คลัง?`)) return;
+            } else {
+                if (!window.confirm(`ยืนยันการคืนอะไหล่จำนวน ${item.borrow_qty} ชิ้น เข้าสู่คลัง?`)) return;
 
-                    await axios.post(`${API_BASE}/api/borrow/return-all`, {
-                        transactionId: item.borrow_id,
-                        lotId: item.lot_id,
-                        equipmentId: item.equipment_id, // เพิ่มเพื่อให้บันทึกลงประวัติได้ถูกต้อง
-                        qtyToReturn: item.borrow_qty
-                    }, { headers: { Authorization: `Bearer ${token}` } });
-                }
+                await axios.post(`${API_BASE}/api/borrow/return-all`, {
+                    transactionId: item.borrow_id,
+                    lotId: item.lot_id,
+                    equipmentId: item.equipment_id,
+                    qtyToReturn: item.borrow_qty
+                }, { headers: { Authorization: `Bearer ${token}` } });
+            }
 
-                // ส่วนที่เพิ่มล้างค่าในช่อง input
-                setFinalizeData(prev => {
-                    const newData = { ...prev };
-                    delete newData[item.borrow_id]; // ลบข้อมูลของ ID นี้ทิ้งไป
-                    return newData;
-                });
+            setFinalizeData(prev => {
+                const newData = { ...prev };
+                delete newData[item.borrow_id];
+                return newData;
+            });
             alert("ดำเนินการสำเร็จ");
-            fetchPendingBorrows(); // โหลดรายการที่เหลือใหม่
-        } catch (err) { alert("เกิดข้อผิดพลาด"); }
+            fetchPendingBorrows();
+        } catch (err) { 
+            alert("เกิดข้อผิดพลาด: " + (err.response?.data?.error || err.message)); 
+        }
     };
 
-    // ปรับปรุง UI ส่วนรายการค้างจ่าย
     const pendingBorrowListUI = (
         <div className="pending-container fade-in">
             <div className="section-title">
@@ -182,7 +158,7 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
             )}
         </div>
     );
-    // --- 2. ส่วนของ HomeContent ที่เรียกใช้ UI ผ่านปีกกา { } ---
+
     const HomeContent = (
         <div className="engineer-home-wrapper">
             <div className="welcome-banner fade-in">
@@ -194,16 +170,13 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                 <button className="action-button secondary-action" onClick={() => navigate("/dashboard/engineer/withdraw")}>
                     <FaBoxOpen className="action-icon" /> <span>เบิกอะไหล่</span>
                 </button>
-                
                 <button className="action-button secondary-action" onClick={() => navigate("/dashboard/engineer/return")}>
                     <FaReply className="action-icon" /> <span>คืนอะไหล่</span>
                 </button>
-                
                 <button className="action-button secondary-action" onClick={() => navigate("/dashboard/engineer/borrow")}>
                     <FaHandHolding className="action-icon" /> <span>เบิกอะไหล่ล่วงหน้า</span>
                 </button>
             </div>
-
             {pendingBorrowListUI} 
         </div>
     );
@@ -245,15 +218,15 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                 <div className="content-body">
                     <Routes>
                         <Route index element={HomeContent} />
-                        <Route path="engineer/home" element={HomeContent} />
-                        <Route path="engineer/withdraw" element={<WithdrawPage user={user} />} />
-                        <Route path="engineer/return" element={<ReturnPartPage user={user} />} />
-                        <Route path="engineer/history" element={<HistoryPage user={user} />} />
-                        <Route path="engineer/borrow" element={<BorrowPage user={user} />} />
-                        <Route path="engineer/profile" element={<ProfileENG user={user} handleLogout={handleLogout} refreshUser={refreshUser} />}>
+                        <Route path="home" element={HomeContent} />
+                        <Route path="withdraw" element={<WithdrawPage user={user} />} />
+                        <Route path="return" element={<ReturnPartPage user={user} />} />
+                        <Route path="history" element={<HistoryPage user={user} />} />
+                        <Route path="borrow" element={<BorrowPage user={user} />} />
+                        <Route path="profile" element={<ProfileENG user={user} handleLogout={handleLogout} refreshUser={refreshUser} />}>
                             <Route path="edit" element={<ProfileEditENG user={user} refreshUser={refreshUser} />} />
                         </Route>
-                        <Route path="engineer/search" element={<h2>หน้าค้นหาอะไหล่</h2>} />
+                        <Route path="search" element={<h2>หน้าค้นหาอะไหล่</h2>} />
                         <Route path="*" element={<h2>ไม่พบหน้าที่คุณต้องการ</h2>} />
                     </Routes>
                 </div>
