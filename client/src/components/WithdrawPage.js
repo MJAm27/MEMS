@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FaLockOpen, FaCheckCircle, FaPlus, FaCamera, FaTrash } from 'react-icons/fa';
+import { FaLockOpen, FaCheckCircle, FaPlus, FaCamera, FaTrash, FaUser } from 'react-icons/fa'; // เพิ่ม FaUser
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import axios from 'axios';
 import './WithdrawPage.css';
@@ -7,7 +7,9 @@ import './WithdrawPage.css';
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 function WithdrawPage({ user }) { 
+    // แก้ไข: เตรียมข้อมูลผู้ใช้
     const activeUser = user || { fullname: 'ผู้ใช้งาน', employeeId: 'N/A' };
+    
     const [currentStep, setCurrentStep] = useState(1);
     const [assetId, setAssetId] = useState('');
     const [currentPartId, setCurrentPartId] = useState('');
@@ -74,11 +76,10 @@ function WithdrawPage({ user }) {
                     return prev.map(item => item.lotId === partInfo.lotId 
                         ? { ...item, quantity: item.quantity + quantity } : item);
                 }
-                // ✅ ต้องมั่นใจว่าบันทึกทั้ง lotId และ partId ลงในตะกร้า
                 return [...prev, { 
                     ...partInfo, 
                     lotId: partInfo.lotId, 
-                    partId: partInfo.partId || partInfo.equipment_id, // ค่านี้นำไปใช้บันทึกลง equipment_list
+                    partId: partInfo.partId || partInfo.equipment_id, 
                     quantity: quantity 
                 }];
             });
@@ -123,7 +124,7 @@ function WithdrawPage({ user }) {
                 machine_SN: assetId, 
                 cartItems: cartItems.map(item => ({
                     lotId: item.lotId,
-                    partId: item.partId , // ป้องกันกรณีชื่อตัวแปรไม่ตรง
+                    partId: item.partId , 
                     quantity: item.quantity
                 }))
             };
@@ -152,7 +153,6 @@ function WithdrawPage({ user }) {
                             {currentStep > step ? <FaCheckCircle /> : step}
                         </div>
                     </div>
-                    {/* เพิ่มเส้นเชื่อมระหว่างสเต็ป ยกเว้นสเต็ปสุดท้าย */}
                     {step < 3 && (
                         <div className={`step-line ${currentStep > step ? 'active' : ''}`}></div>
                     )}
@@ -280,6 +280,11 @@ function WithdrawPage({ user }) {
 
     return (
         <div className="withdraw-page-container">
+            {/* แก้ไข: เพิ่มส่วนแสดงข้อมูล User เพื่อใช้งานตัวแปร activeUser */}
+            <div className="user-badge-info">
+                <FaUser size={12} /> {activeUser.fullname} ({activeUser.employeeId})
+            </div>
+
             <div className="withdraw-title-section">
                 <h2>เบิกอะไหล่</h2>
                 {renderStepIndicator()}
@@ -292,6 +297,7 @@ function WithdrawPage({ user }) {
                     <div className="success-animation text-center py-6">
                         <FaCheckCircle size={70} className="check-icon text-green-500 mx-auto mb-4" />
                         <h3 className="font-bold text-xl">สำเร็จเรียบร้อย!</h3>
+                        <p className="text-gray-400 text-sm">บันทึกรายการโดย: {activeUser.fullname}</p>
                         <button onClick={() => window.location.reload()} className="action-button-main mt-6">กลับหน้าหลัก</button>
                     </div>
                 )}
