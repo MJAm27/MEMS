@@ -3,7 +3,7 @@ import "./ManageUser.css";
 import { FaPlus, FaSearch, FaEdit, FaTrash, FaTimes } from "react-icons/fa";
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:3001";
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 function ManageUser() {
   const [users, setUsers] = useState([]);

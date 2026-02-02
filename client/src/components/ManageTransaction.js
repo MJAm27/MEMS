@@ -3,7 +3,7 @@ import "./ManageTransaction.css";
 import { FaPlus, FaSearch, FaEye, FaTimes, FaTrash } from "react-icons/fa";
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:3001"; // ปรับตามจริง
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 function ManageTransaction() {
   // State หลัก

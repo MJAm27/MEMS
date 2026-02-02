@@ -4,7 +4,7 @@ import { FaPlus, FaSearch, FaEdit, FaTrash, FaTimes } from "react-icons/fa";
 import axios from "axios";
 
 // กำหนด URL ของ API (ปรับตาม Port ที่คุณใช้จริง)
-const API_BASE_URL = "http://localhost:3001";
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 function ManageSupplier() {
   const [suppliers, setSuppliers] = useState([]);
