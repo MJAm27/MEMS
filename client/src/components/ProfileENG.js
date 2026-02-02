@@ -1,11 +1,11 @@
-import React, {} from "react";
+import React from "react"; // ลบปีกกาว่างออก
 import { Link, useNavigate, Outlet, useLocation } from "react-router-dom";
 import { 
-    FaUserCircle, FaChevronRight, FaKey, FaEdit 
-} from "react-icons/fa";
+    FaUserCircle, FaChevronRight, FaKey, FaEdit, FaSignOutAlt 
+} from "react-icons/fa"; // เพิ่ม FaSignOutAlt
 import "./ProfileENG.css"; 
 
-function ProfileENG({ user, handleLogout, refreshUser }) {
+function ProfileENG({ user, handleLogout }) { // ตัด refreshUser ออกหากไม่ได้ใช้ในหน้านี้
     const navigate = useNavigate();
     const location = useLocation(); 
     
@@ -23,13 +23,12 @@ function ProfileENG({ user, handleLogout, refreshUser }) {
     };
     
     if (!userData) {
-          return <div>กำลังโหลดข้อมูลโปรไฟล์...</div>;
+          return <div className="loading-text">กำลังโหลดข้อมูลโปรไฟล์...</div>;
     }
 
     const displayUserId = user?.user_id ?? "N/A";
     const displayFullname = userData.fullname || "ผู้ใช้งาน";
     const displayRole = userData.role || "R-ENG";
-
 
     const isSubPage = location.pathname.includes("edit") || location.pathname.includes("change-password");
 
@@ -42,7 +41,17 @@ function ProfileENG({ user, handleLogout, refreshUser }) {
                     <div className="profile-card-detailed">
                         <div className="profile-header-bg"></div>
                         <div className="profile-avatar-large">
-                            <FaUserCircle />
+                            {/* แสดงรูปโปรไฟล์ถ้ามี ถ้าไม่มีให้ใช้ Icon ปกติ */}
+                            {user?.profile_img ? (
+                                <img 
+                                    src={`${process.env.REACT_APP_API_URL}/profile-img/${user.profile_img}`} 
+                                    alt="Profile" 
+                                    className="img-fluid rounded-circle"
+                                    style={{ width: '100px', height: '100px', objectFit: 'cover' }}
+                                />
+                            ) : (
+                                <FaUserCircle />
+                            )}
                         </div>
                         
                         <div className="profile-details">
@@ -70,7 +79,17 @@ function ProfileENG({ user, handleLogout, refreshUser }) {
                                 <FaChevronRight className="arrow-icon" />
                             </Link>
                             
-                            
+                            {/* เพิ่มปุ่มออกจากระบบเพื่อให้ localHandleLogout ได้ใช้งาน */}
+                            <div className="action-item logout-item" onClick={localHandleLogout} style={{ cursor: 'pointer' }}>
+                                <div className="action-icon-box red" style={{ backgroundColor: '#fee2e2', color: '#ef4444' }}>
+                                    <FaSignOutAlt />
+                                </div>
+                                <div className="action-text">
+                                    <span>ออกจากระบบ</span>
+                                    <small>จบการทำงานของเซสชันนี้</small>
+                                </div>
+                                <FaChevronRight className="arrow-icon" />
+                            </div>
                         </div>
                     </div>
                 </div>
