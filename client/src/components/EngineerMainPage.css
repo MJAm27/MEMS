@@ -98,3 +98,105 @@ body {
     }
     .action-button { width: 100%; max-width: 300px; height: 150px; }
 }
+
+/* ==================== Pending Borrow Section ==================== */
+.pending-container {
+    width: 100%;
+    max-width: 1000px;
+    margin-top: 40px;
+    padding: 20px;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-dark);
+    margin-bottom: 20px;
+    border-left: 5px solid var(--primary-color);
+    padding-left: 15px;
+}
+
+.pending-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+}
+
+.pending-card {
+    background: white;
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    border: 1px solid #f0f0f0;
+    transition: var(--transition);
+}
+
+.pending-card:hover {
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.pending-info strong {
+    font-size: 1.1rem;
+    color: var(--primary-color);
+    display: block;
+    margin-bottom: 5px;
+}
+
+.finalize-form {
+    margin-top: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.finalize-form input {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-family: 'Kanit';
+}
+
+.action-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+/* ปุ่มบันทึกการใช้ (สีเขียว) */
+.btn-use-part {
+    grid-column: span 1;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    transition: 0.2s;
+}
+
+.btn-use-part:hover { background-color: #218838; }
+
+/* ปุ่มคืนคลัง (สีส้ม/ชมพู) */
+.btn-return-part {
+    grid-column: span 1;
+    background-color: #ffc107;
+    color: #333;
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    transition: 0.2s;
+}
+
+.btn-return-part:hover { background-color: #e0a800; }
