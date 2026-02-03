@@ -234,6 +234,7 @@ body {
     color: #dc3545;
     border: 1px solid #ffcccc;
     padding: 8px 15px;
+    margin: 15px;
     border-radius: 20px;
     cursor: pointer;
     display: flex;
