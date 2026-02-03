@@ -63,7 +63,7 @@ function ReturnPartPage() {
         let scanner = null;
         if (isScanning) {
             scanner = new Html5QrcodeScanner("reader", {
-                fps: 10, qrbox: { width: 250, height: 250 },
+                fps: 10, qrbox: { width: 350, height: 150 },
                 aspectRatio: 1.0
             });
             scanner.render((decodedText) => {
