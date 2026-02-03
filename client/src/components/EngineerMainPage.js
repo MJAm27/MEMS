@@ -49,8 +49,11 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
 
     const handleInputChange = (borrowId, field, value) => {
         setFinalizeData(prev => ({
-            ...prev,
-            [borrowId]: { ...prev[borrowId], [field]: value }
+            ...prev, // เก็บค่าของรายการอื่นไว้
+            [borrowId]: { 
+                ...(prev[borrowId] || {}), // เก็บค่า field อื่นของรายการนี้ไว้ (เช่น พิมพ์ SN อยู่ แต่ usedQty มีค่าอยู่แล้ว)
+                [field]: value      // อัปเดตเฉพาะ field ที่พิมพ์
+            }
         }));
     };
 
@@ -63,42 +66,63 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
 
     const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
-    const handleProcessBorrow = async (item, actionType) => {
-        const input = finalizeData[item.borrow_id];
-        const qtyInput = parseInt(input?.usedQty || 0);
+    const handleProcessBorrow = async (item, actionType, uniqueKey) => {
+        // 1. ดึงข้อมูลจาก State โดยใช้ uniqueKey เพื่อให้ได้ข้อมูลของช่อง Input นั้นๆ อย่างถูกต้อง
+        const input = finalizeData[uniqueKey] || {}; 
+        const snInput = input.machineSN ? input.machineSN.trim() : "";
+        const qtyInput = parseInt(input.usedQty || 0);
 
         try {
             const token = localStorage.getItem('token');
+            
             if (actionType === 'USE') {
-                if (!input?.machineSN || qtyInput <= 0) return alert("กรุณากรอกเลขครุภัณฑ์และจำนวน");
-                if (qtyInput > item.borrow_qty) return alert("จำนวนที่ใช้จริง ห้ามเกินจำนวนที่เบิกไป");
+                // --- กรณี: บันทึกการใช้งานจริง ---
+                // ตรวจสอบความถูกต้องของข้อมูลก่อนส่ง
+                if (!snInput || qtyInput <= 0) {
+                    return alert("กรุณากรอกเลขครุภัณฑ์และจำนวนที่ใช้จริงให้ถูกต้อง");
+                }
+                if (qtyInput > item.borrow_qty) {
+                    return alert(`จำนวนที่ใช้จริง (${qtyInput}) ห้ามเกินจำนวนที่มีอยู่ในมือ (${item.borrow_qty})`);
+                }
 
+                // ส่งข้อมูลไป API เพื่อบันทึกประวัติการใช้และตัดยอดในมือ
                 await axios.post(`${API_BASE}/api/borrow/finalize-partial`, {
-                    transactionId: item.borrow_id,
-                    machineSN: input.machineSN,
-                    usedQty: qtyInput,
-                    lotId: item.lot_id
+                    transactionId: item.borrow_id,  // ID ใบเบิกหลัก
+                    equipmentId: item.equipment_id, // ระบุชนิดอะไหล่
+                    machineSN: snInput,             // เลขครุภัณฑ์ที่นำไปใช้
+                    usedQty: qtyInput,              // จำนวนที่ใช้จริง
+                    lotId: item.lot_id              // รหัส Lot ของอะไหล่
                 }, { headers: { Authorization: `Bearer ${token}` } });
-            } else {
-                if (!window.confirm(`ยืนยันการคืนอะไหล่จำนวน ${item.borrow_qty} ชิ้น เข้าสู่คลัง?`)) return;
 
+            } else {
+                // --- กรณี: คืนคลังทั้งหมด (เฉพาะรายการนี้) ---
+                if (!window.confirm(`ยืนยันการคืนอะไหล่ ${item.equipment_name} จำนวน ${item.borrow_qty} ชิ้น เข้าสู่คลัง?`)) {
+                    return;
+                }
+
+                // ส่งข้อมูลไป API เพื่อบันทึกประวัติการคืนและล้างยอดในมือเฉพาะรายการนี้
                 await axios.post(`${API_BASE}/api/borrow/return-all`, {
                     transactionId: item.borrow_id,
-                    lotId: item.lot_id,
                     equipmentId: item.equipment_id,
+                    lotId: item.lot_id,
                     qtyToReturn: item.borrow_qty
                 }, { headers: { Authorization: `Bearer ${token}` } });
             }
 
+            // 2. ล้างข้อมูลในช่อง Input เฉพาะของ uniqueKey นี้ออกจาก State หลังจากสำเร็จ
             setFinalizeData(prev => {
                 const newData = { ...prev };
-                delete newData[item.borrow_id];
+                delete newData[uniqueKey];
                 return newData;
             });
 
-            alert("ดำเนินการสำเร็จ");
+            alert("ดำเนินการสำเร็จและบันทึกประวัติเรียบร้อยแล้ว");
+            
+            // 3. รีเฟรชรายการค้างสรุปใหม่จาก Server เพื่ออัปเดตยอดคงเหลือล่าสุดบนหน้าจอ
             fetchPendingBorrows(); 
+            
         } catch (err) { 
+            // แสดง Error จาก Backend (เช่น เลขครุภัณฑ์ไม่มีอยู่จริง หรือปัญหา Database)
             alert("เกิดข้อผิดพลาด: " + (err.response?.data?.error || err.message)); 
         }
     };
@@ -116,14 +140,16 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                 </div>
             ) : (
                 <div className="pending-grid">
-                    {pendingItems.map(item => (
-                        <div key={item.borrow_id} className="pending-card">
+                {pendingItems.map((item, index) => {
+                    // สร้าง Unique ID สำหรับใช้งานภายใน UI (กันเหนียวกรณี borrow_id ซ้ำ)
+                    const uniqueKey = `${item.borrow_id}-${index}`;
+                    
+                    return (
+                        <div key={uniqueKey} className="pending-card">
                             <div className="pending-info">
                                 <strong>{item.equipment_name}</strong>
-                                <p style={{ margin: '5px 0', fontSize: '0.9rem' }}>
-                                    คงเหลือในมือ: <b style={{ color: '#e91e63', fontSize: '1.2rem' }}>{item.borrow_qty}</b> ชิ้น
-                                </p>
-                                <small className="text-muted">วันที่เบิก: {new Date(item.borrow_date).toLocaleDateString('th-TH')}</small>
+                                <p>คงเหลือในมือ: <b style={{ color: '#e91e63' }}>{item.borrow_qty}</b> ชิ้น</p>
+                                <small>วันที่เบิก: {new Date(item.borrow_date).toLocaleDateString('th-TH')}</small>
                             </div>
 
                             <div className="finalize-form">
@@ -131,8 +157,9 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                                 <input 
                                     type="text" 
                                     placeholder="เช่น C-001..."
-                                    value={finalizeData[item.borrow_id]?.machineSN || ''} 
-                                    onChange={(e) => handleInputChange(item.borrow_id, 'machineSN', e.target.value)}
+                                    // ใช้ uniqueKey เป็นที่เก็บข้อมูล เพื่อให้แยกกล่องกันแน่นอน 100%
+                                    value={finalizeData[uniqueKey]?.machineSN || ''} 
+                                    onChange={(e) => handleInputChange(uniqueKey, 'machineSN', e.target.value)}
                                 />
                                 
                                 <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>จำนวนที่ใช้จริง:</label>
@@ -142,21 +169,26 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                                         placeholder="จำนวน..."
                                         min="1"
                                         max={item.borrow_qty}
-                                        value={finalizeData[item.borrow_id]?.usedQty || ''}
-                                        onChange={(e) => handleInputChange(item.borrow_id, 'usedQty', e.target.value)}
+                                        value={finalizeData[uniqueKey]?.usedQty || ''}
+                                        onChange={(e) => handleInputChange(uniqueKey, 'usedQty', e.target.value)}
                                     />
-                                    <button className="btn-use-part" onClick={() => handleProcessBorrow(item, 'USE')}>
+                                    <button className="btn-use-part" onClick={() => handleProcessBorrow(item, 'USE', uniqueKey)}>
                                         <FaCheckCircle /> บันทึกการใช้
                                     </button>
                                 </div>
 
-                                <button className="btn-return-part" onClick={() => handleProcessBorrow(item, 'RETURN')} style={{ marginTop: '5px', width: '100%' }}>
+                                <button 
+                                    className="btn-return-part" 
+                                    onClick={() => handleProcessBorrow(item, 'RETURN', uniqueKey)} 
+                                    style={{ marginTop: '5px', width: '100%' }}
+                                >
                                     <FaReply /> คืนคลังทั้งหมด ({item.borrow_qty} ชิ้น)
                                 </button>
                             </div>
                         </div>
-                    ))}
-                </div>
+                    );
+                })}
+            </div>
             )}
         </div>
     );

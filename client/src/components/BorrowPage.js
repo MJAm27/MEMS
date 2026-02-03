@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { FaCheckCircle, FaCamera, FaLockOpen, FaPlus, FaMinus, FaTrash } from "react-icons/fa"; 
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import axios from "axios";
-import './BorrowPage.css'; // ใช้สไตล์ร่วมหรือเลียนแบบ ReturnPartPage.css
+import './BorrowPage.css'; 
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -179,10 +179,10 @@ function BorrowPage({ user }) {
                                                 <span className="name">{item.partName}</span>
                                                 <span className="lot text-xs text-gray-400">Lot: {item.lotId}</span>
                                             </div>
-                                            <div className="qty-control flex items-center gap-2">
-                                                <button onClick={() => updateQty(index, -1)} className="p-1"><FaMinus size={12}/></button>
-                                                <span className="font-bold">{item.quantity}</span>
-                                                <button onClick={() => updateQty(index, 1)} className="p-1"><FaPlus size={12}/></button>
+                                            <div className="qty-control">
+                                                <button onClick={() => updateQty(index, -1)}><FaMinus size={10}/></button>
+                                                <span className="qty-number">{item.quantity}</span>
+                                                <button onClick={() => updateQty(index, 1)}><FaPlus size={10}/></button>
                                             </div>
                                             <button className="del-btn text-red-400 ml-2" onClick={() => setBorrowItems(borrowItems.filter((_, i) => i !== index))}>
                                                 <FaTrash size={14} />
