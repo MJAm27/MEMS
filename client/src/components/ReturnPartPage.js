@@ -4,8 +4,7 @@ import { Html5QrcodeScanner } from 'html5-qrcode';
 import axios from "axios";
 import './ReturnPartPage.css'; 
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001';
-
+const API_BASE = process.env.REACT_APP_API_URL;
 function ReturnPartPage() {
     const [currentStep, setCurrentStep] = useState(1); 
     const [returnDate, setReturnDate] = useState(new Date().toISOString().slice(0, 10));
@@ -63,7 +62,7 @@ function ReturnPartPage() {
         let scanner = null;
         if (isScanning) {
             scanner = new Html5QrcodeScanner("reader", {
-                fps: 10, qrbox: { width: 250, height: 250 },
+                fps: 10, qrbox: { width: 350, height: 150 },
                 aspectRatio: 1.0
             });
             scanner.render((decodedText) => {

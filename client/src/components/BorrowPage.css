@@ -1,0 +1,117 @@
+/* การจัดวางการ์ดไอเทม */
+.part-item-card {
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+    padding: 15px;
+    border-radius: 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid #f0f0f0;
+    transition: all 0.2s ease;
+}
+
+.part-item-card img {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    object-fit: cover;
+    margin-right: 15px;
+    background: #f8f9fa;
+}
+
+.item-info {
+    flex-grow: 1;
+}
+
+.item-info .name {
+    font-weight: 600;
+    color: #334155;
+    display: block;
+    font-size: 1rem;
+}
+
+/* ส่วนควบคุมจำนวน (Qty Control) */
+.qty-control {
+    display: flex;
+    flex-direction: column; /* วางปุ่ม + - แนวตั้งเหมือนรูปตัวอย่าง */
+    align-items: center;
+    background: #f1f5f9;
+    padding: 5px;
+    border-radius: 12px;
+    margin: 0 15px;
+}
+
+.qty-control button {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: none;
+    background: white;
+    color: #334155;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: all 0.2s;
+}
+
+.qty-control button:hover {
+    background: #e2e8f0;
+}
+
+.qty-control button:active {
+    transform: scale(0.9);
+}
+
+.qty-control .qty-number {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #1e293b;
+    margin: 4px 0;
+    min-width: 30px;
+    text-align: center;
+}
+
+/* ปุ่มถังขยะ */
+.del-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    border: 1px solid #fee2e2;
+    background: #fff5f5;
+    color: #ef4444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.del-btn:hover {
+    background: #ef4444;
+    color: white;
+    border-color: #ef4444;
+}
+
+/* ปุ่มตรวจสอบรายการ (ด้านล่าง) */
+.main-action-btn.primary {
+    background: linear-gradient(135deg, #ff4d94 0%, #d946ef 100%);
+    color: white;
+    border: none;
+    padding: 16px;
+    border-radius: 50px; /* ทรงมนยาวแบบในรูป */
+    font-size: 1.1rem;
+    font-weight: 600;
+    width: 100%;
+    cursor: pointer;
+    box-shadow: 0 10px 20px rgba(255, 77, 148, 0.3);
+    margin-top: 20px;
+    transition: transform 0.2s;
+}
+
+.main-action-btn.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(255, 77, 148, 0.4);
+}

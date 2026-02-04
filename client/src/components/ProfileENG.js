@@ -1,35 +1,21 @@
-import React, {} from "react";
-import { Link, useNavigate, Outlet, useLocation } from "react-router-dom";
+import React from "react";
+import { Link, Outlet, useLocation } from "react-router-dom"; // ลบ useNavigate ออกเพราะไม่ได้ใช้แล้ว
 import { 
     FaUserCircle, FaChevronRight, FaKey, FaEdit 
-} from "react-icons/fa";
+} from "react-icons/fa"; 
 import "./ProfileENG.css"; 
 
-function ProfileENG({ user, handleLogout, refreshUser }) {
-    const navigate = useNavigate();
+function ProfileENG({ user }) { 
     const location = useLocation(); 
-    
     const userData = user; 
     
-    const localHandleLogout = () => {
-        if (window.confirm("ต้องการออกจากระบบใช่หรือไม่?")) {
-            if (handleLogout) {
-                handleLogout(); 
-            } else {
-                localStorage.removeItem("token");
-                navigate("/login", { replace: true });
-            }
-        }
-    };
-    
     if (!userData) {
-          return <div>กำลังโหลดข้อมูลโปรไฟล์...</div>;
+          return <div className="loading-text">กำลังโหลดข้อมูลโปรไฟล์...</div>;
     }
 
     const displayUserId = user?.user_id ?? "N/A";
     const displayFullname = userData.fullname || "ผู้ใช้งาน";
     const displayRole = userData.role || "R-ENG";
-
 
     const isSubPage = location.pathname.includes("edit") || location.pathname.includes("change-password");
 
@@ -42,7 +28,16 @@ function ProfileENG({ user, handleLogout, refreshUser }) {
                     <div className="profile-card-detailed">
                         <div className="profile-header-bg"></div>
                         <div className="profile-avatar-large">
-                            <FaUserCircle />
+                            {user?.profile_img ? (
+                                <img 
+                                    src={`${process.env.REACT_APP_API_URL}/profile-img/${user.profile_img}`} 
+                                    alt="Profile" 
+                                    className="img-fluid rounded-circle"
+                                    style={{ width: '100px', height: '100px', objectFit: 'cover' }}
+                                />
+                            ) : (
+                                <FaUserCircle />
+                            )}
                         </div>
                         
                         <div className="profile-details">
@@ -69,8 +64,6 @@ function ProfileENG({ user, handleLogout, refreshUser }) {
                                 </div>
                                 <FaChevronRight className="arrow-icon" />
                             </Link>
-                            
-                            
                         </div>
                     </div>
                 </div>
