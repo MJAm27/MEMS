@@ -4,8 +4,7 @@ import { Html5QrcodeScanner } from 'html5-qrcode';
 import axios from "axios";
 import './ReturnPartPage.css'; 
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001';
-
+const API_BASE = process.env.REACT_APP_API_URL;
 function ReturnPartPage() {
     const [currentStep, setCurrentStep] = useState(1); 
     const [returnDate, setReturnDate] = useState(new Date().toISOString().slice(0, 10));

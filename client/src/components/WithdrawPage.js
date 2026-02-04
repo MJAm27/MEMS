@@ -4,7 +4,7 @@ import { Html5QrcodeScanner } from 'html5-qrcode';
 import axios from 'axios';
 import './WithdrawPage.css';
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+const API_BASE = process.env.REACT_APP_API_URL;
 
 function WithdrawPage({ user }) { 
     const activeUser = user || { fullname: 'ผู้ใช้งาน', employeeId: 'N/A' };
