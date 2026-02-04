@@ -3,11 +3,13 @@ module.exports = {
         name: "mems-client",
         cwd: "./client",
         script: "npm",
-        args: "start"
+        args: "server -s build -l 3000"
     }, {
         name: "mems-server",
         cwd: "./server",
-        script: "npm",
-        args: "start"
+        script: "index.js",
+        env:{
+            NODE_ENV: "production"
+        }
     }]
 }
