@@ -61,7 +61,6 @@ function InventoryBalanceReportChart({ isPreview = false }) {
         display: !isPreview, 
         text: "รายงานปริมาณคงเหลือสินค้า",
         font: { size: 20 },
-        padding: { bottom: 20 },
       },
       tooltip: {
         enabled: !isPreview, 
@@ -94,7 +93,7 @@ function InventoryBalanceReportChart({ isPreview = false }) {
     : `${Math.max(400, chartData.labels.length * 40)}px`;
 
   return (
-    <div style={{ height: chartHeight, width: "100%", paddingRight: "10px" }}>
+    <div style={{ height: chartHeight, width: "100%",  }}>
       <Bar data={chartData} options={options} />
     </div>
   );

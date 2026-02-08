@@ -7,8 +7,9 @@ import DashboardPage from './components/DashboardPage';
 import RegisterPage from './components/RegisterPage';
 
 import InventoryBalanceReportChart from './components/InventoryBalanceReportChart';
+import EquipmentUsageReportChart from './components/EquipmentUsageReportChart';
+import EquipmentAgeReportChart from './components/EquipmentAgeReportChart';
 import UserList from './components/UserList';
-import EditUser from './components/EditUser';
 import ProfileEditENG from './components/Profile';
 
 
@@ -25,12 +26,11 @@ import ProfileEditENG from './components/Profile';
                     <Route path="/dashboard/*" element={<DashboardPage />} /> 
                     <Route path="/profileEditENG" element={<ProfileEditENG />} /> 
                     <Route path="/report/inventory-balance" element={<InventoryBalanceReportChart />} />
-
-
-                    <Route path='/inventoryBalanceReportChart' element={<InventoryBalanceReportChart />}/>
+                    <Route path="/report/equipment-usage" element={<EquipmentUsageReportChart />} />
+                    <Route path="/report/equipment-age" element={<EquipmentAgeReportChart />} />
 
                     <Route path='/userList' element={<UserList />}/>
-                    <Route path='/editUser' element={<EditUser />}/>
+                    
 
                     
                 </Routes>

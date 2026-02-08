@@ -795,7 +795,7 @@ app.get("/api/inventoryBalanceReportChart", async (req, res) => {
             SELECT
             et.equipment_type_id,
             et.equipment_name,
-            COALESCE(SUM(l.current_quantity), 0) AS current_quantity,
+            COALESCE(SUM(l.current_quantity), 0) AS quantity,
             COALESCE(SUM(e.alert_quantity), 0) AS alert_quantity
             FROM equipment_type et
             LEFT JOIN equipment e
@@ -1743,6 +1743,45 @@ app.get('/api/history/full', authenticateToken, async (req, res) => {
         const [rows] = await pool.query(sql);
         res.json(rows);
     } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/reports/equipment-usage', async (req, res) => {
+    try {
+        const sql = `
+            SELECT et.equipment_name, SUM(el.quantity) as total_usage
+            FROM equipment_list el
+            JOIN equipment e ON el.equipment_id = e.equipment_id
+            JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
+            GROUP BY et.equipment_name
+            ORDER BY total_usage DESC
+        `;
+        const [rows] = await pool.query(sql);
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/reports/equipment-age', async (req, res) => {
+    try {
+        // คำนวณหาอายุเฉลี่ย (วันที่ปัจจุบัน - วันที่นำเข้า) เฉพาะ Lot ที่ยังมีของเหลือ (quantity > 0)
+        const sql = `
+            SELECT 
+                et.equipment_name,
+                AVG(DATEDIFF(NOW(), l.import_date)) as avg_age_days
+            FROM lot l
+            JOIN equipment e ON l.equipment_id = e.equipment_id
+            JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
+            WHERE l.current_quantity > 0
+            GROUP BY et.equipment_name
+            ORDER BY avg_age_days DESC
+        `;
+        const [rows] = await pool.query(sql);
+        res.json(rows);
+    } catch (error) {
+        console.error(error);
         res.status(500).json({ error: error.message });
     }
 });

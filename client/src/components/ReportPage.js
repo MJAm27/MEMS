@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom"; 
 import InventoryBalanceReportChart from "./InventoryBalanceReportChart"; 
+import EquipmentUsageReportChart from "./EquipmentUsageReportChart";
+import EquipmentAgeReportChart from "./EquipmentAgeReportChart";
 import "./ReportPage.css";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
@@ -62,19 +64,15 @@ function ReportPage() {
       <div className="report-usage-grid">
         <div className="usage-card">
           <span>เบิกรายวัน</span>
-          <strong>{usage.borrow.daily}</strong>
         </div>
         <div className="usage-card">
           <span>เบิกรายเดือน</span>
-          <strong>{usage.borrow.monthly}</strong>
         </div>
         <div className="usage-card">
           <span>คืนรายวัน</span>
-          <strong>{usage.return.daily}</strong>
         </div>
         <div className="usage-card">
           <span>คืนรายเดือน</span>
-          <strong>{usage.return.monthly}</strong>
         </div>
       </div>
 
@@ -97,19 +95,30 @@ function ReportPage() {
             </div>
         </div>
 
-        {/* กราฟที่ 2 (Placeholder) */}
-        <div className="chart-widget-card placeholder">
-            <div className="empty-state">Coming Soon: กราฟยอดเบิกจ่าย</div>
+        <div 
+            className="chart-widget-card clickable" 
+            onClick={() => navigate('/report/equipment-usage')} 
+        >
+            <div className="widget-header">
+                <h4>ยอดการใช้อะไหล่สูงสุด</h4>
+                <span className="view-more">ดูทั้งหมด &gt;</span>
+            </div>
+            <div className="widget-body">
+                <EquipmentUsageReportChart isPreview={true} />
+            </div>
         </div>
 
-        {/* กราฟที่ 3 (Placeholder) */}
-        <div className="chart-widget-card placeholder">
-            <div className="empty-state">Coming Soon: กราฟมูลค่าคลัง</div>
-        </div>
-
-        {/* กราฟที่ 4 (Placeholder) */}
-        <div className="chart-widget-card placeholder">
-             <div className="empty-state">Coming Soon: กราฟของเสีย</div>
+        <div 
+            className="chart-widget-card clickable"
+            onClick={() => navigate('/report/equipment-age')}
+        >
+            <div className="widget-header">
+                <h4>อายุอะไหล่คงคลังเฉลี่ย</h4> {/* เปลี่ยนชื่อหัวข้อ */}
+                <span className="view-more">ดูทั้งหมด &gt;</span>
+            </div>
+            <div className="widget-body">
+                <EquipmentAgeReportChart isPreview={true} />
+            </div>
         </div>
 
       </div>
