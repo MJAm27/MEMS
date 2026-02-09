@@ -135,29 +135,26 @@ app.get('/api/open', authenticateToken, async (req, res) => {
     const ACTION_TYPE_ID = 'A-001'; // 'เปิดประตู'
 
     try {
-         // await commandServo('open'); // 🚨 เปิดใช้เมื่อเชื่อมต่อ ESP จริง
+        await commandServo('open'); // 🚨 เปิดใช้เมื่อเชื่อมต่อ ESP จริง
         await logActionToDB(req.user.userId, ACTION_TYPE_ID);
         res.status(200).send({ message: 'Servo Opened and action logged.' });
 
     } catch (error) {
-        res.status(500).send({ error: error.message });
+        // หากติดต่อ ESP ไม่ได้ ให้แจ้งเตือนแต่ยังอนุญาตให้ทำรายการต่อ (หรือจะ Block ก็ได้แล้วแต่คุณ)
+        console.error("Open Servo Error:", error.message);
+        res.status(500).send({ error: 'ไม่สามารถติดต่อตู้เพื่อเปิดกล่องได้' });
     }
 });
 
 // 📌 API: สำหรับ "ปิด" Servo
-app.get('/api/close', authenticateToken, async (req, res) => {
-    const ACTION_TYPE_ID = 'A-002'; // 'ปิดประตู'
-
+app.post('/api/close-box', authenticateToken, async (req, res) => {
     try {
-        // await commandServo('close'); // 🚨 เปิดใช้เมื่อเชื่อมต่อ ESP จริง
-        await logActionToDB(req.user.userId, ACTION_TYPE_ID);
-         res.status(200).send({ message: 'Servo Closed and action logged.' });
-
+        await commandServo('close');
+        res.status(200).send({ message: 'Box Closed' });
     } catch (error) {
-    res.status(500).send({ error: error.message });
+        res.status(500).send({ error: 'ไม่สามารถสั่งปิดประตูได้' });
     }
 });
-
 // --- API Endpoints สำหรับ Withdrawal (เชื่อมต่อ DB) ---
 
 // 1. API: Fetch Part Info (POST /api/withdraw/partInfo)

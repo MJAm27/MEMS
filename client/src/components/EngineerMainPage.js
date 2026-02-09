@@ -222,7 +222,7 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
     return (
         <div className={`layout-wrapper ${sidebarOpen ? "sidebar-open" : "sidebar-closed"}`}>
             <aside className="sidebar-container" style={{ left: sidebarOpen ? 0 : "-260px", transition: "0.3s" }}>
-                <div className="sidebar-header"><div className="brand"><h2>MEMS</h2></div></div>
+                <div className="sidebar-header"><div className="brand"><h2>MEMS ENGINEER</h2></div></div>
                 <nav className="sidebar-nav">
                     <button className="nav-link" onClick={() => navigate("/dashboard/engineer/home")}><FaHome /> <span>หน้าหลัก</span></button>
                     <button className="nav-link" onClick={() => navigate("/dashboard/engineer/search")}><FaSearch /> <span>ค้นหาอะไหล่</span></button>

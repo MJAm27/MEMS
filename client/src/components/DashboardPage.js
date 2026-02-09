@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import EngineerMainPage from './EngineerMainPage';
 import AdminMainPage from './AdminMainPage';
+import ManagerMainPage from './ManagerMainPage';
 
 function getPayloadFromToken(token) {
     try {
@@ -15,20 +16,6 @@ function getPayloadFromToken(token) {
         return null;
     }
 }
-
-const ManagerDashboard = ({ user, handleLogout, refreshUser }) => (
-    <div className="p-4 bg-white shadow-lg rounded-lg">
-        <h1 className="text-2xl font-bold text-blue-700">หน้าสำหรับ Manager ({user?.email})</h1>
-        <p className="text-gray-600 mt-2">เนื้อหาของ Manager...</p>
-        <button 
-            onClick={handleLogout}
-            className="mt-4 px-4 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition duration-200"
-        >
-            Logout
-        </button>
-    </div>
-);
-
 
 function DashboardPage() {
     const [userPayload, setUserPayload] = useState(null); 
@@ -130,7 +117,7 @@ function DashboardPage() {
             case 'R-ADM':
                 return <AdminMainPage user={userPayload} handleLogout={handleLogout} refreshUser={refreshUser} />;
             case 'R-MGR':
-                return <ManagerDashboard user={userPayload} handleLogout={handleLogout} refreshUser={refreshUser} />;
+                return <ManagerMainPage user={userPayload} handleLogout={handleLogout} refreshUser={refreshUser} />;
             default:
                 return (
                     <div className="p-4 bg-red-100 border-l-4 border-red-500 text-red-700">

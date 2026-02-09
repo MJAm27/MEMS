@@ -2,15 +2,20 @@
 
 :root {
     --primary-pink: #ff4d94;
-    --primary-gradient: linear-gradient(135deg, #ff4d94 0%, #d946ef 100%);
+    --primary-gradient: linear-gradient(135deg, #ff4d94 0%, #ff71ac 100%);
+    --confirm-blue: #2563eb;
+    --confirm-gradient: linear-gradient(135deg, #2563eb 0%, #60a5fa 100%);
+    --dark-bg: #1e293b;
+    --dark-gradient: linear-gradient(135deg, #1e293b 0%, #475569 100%);
     --bg-gray: #f8fafc;
     --card-bg: #ffffff;
     --text-main: #1e293b;
     --text-sub: #64748b;
-    --shadow-soft: 0 10px 25px rgba(0, 0, 0, 0.05);
-    --shadow-strong: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
+/* 1. Layout & Core Components */
 .withdraw-page-container {
     font-family: 'Prompt', sans-serif;
     min-height: 100vh;
@@ -18,126 +23,190 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    background-color: var(--bg-gray);
 }
 
-.withdraw-title-section h2 {
-    color: var(--primary-pink);
-    font-weight: 800;
-    font-size: 26px;
-    margin-bottom: 25px;
-    text-align: center;
-}
-
-/* Step Progress Bar */
-.step-progress-bar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 30px;
-}
-
-.step-item { display: flex; align-items: center; }
-
-.step-circle {
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    background-color: #e2e8f0;
-    color: #94a3b8;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 800;
-    transition: all 0.3s ease;
-    border: 3px solid #fff;
-    box-shadow: 0 0 0 1px #e2e8f0;
-}
-
-.step-item.active .step-circle {
-    background-color: var(--primary-pink);
-    color: white;
-    transform: scale(1.1);
-    box-shadow: 0 0 15px rgba(255, 77, 148, 0.3);
-}
-
-.step-line {
-    height: 4px;
-    width: 50px;
-    background-color: #e2e8f0;
-    margin: 0 8px;
-    border-radius: 2px;
-}
-
-.step-line.active { background-color: var(--primary-pink); }
-
-/* Main Card */
 .withdraw-card {
     background: var(--card-bg);
     width: 100%;
     max-width: 460px;
     border-radius: 30px;
-    padding: 35px;
-    box-shadow: var(--shadow-strong);
-    border: 1px solid rgba(255, 255, 255, 0.8);
+    padding: 40px 30px;
+    box-shadow: var(--shadow-md);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-sizing: border-box;
 }
 
-/* Inputs & Forms */
+/* 2. Step Progress Bar */
+.step-progress-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 35px;
+}
+
+.step-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px; /* ทรงเหลี่ยมมนดูทันสมัยกว่าวงกลม */
+    background-color: #fff;
+    color: #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 2px solid #f1f5f9;
+}
+
+.step-item.active .step-circle {
+    background-color: var(--primary-pink);
+    color: white;
+    border-color: var(--primary-pink);
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(255, 77, 148, 0.3);
+}
+
+.step-line {
+    height: 3px;
+    width: 35px;
+    background-color: #f1f5f9;
+    margin: 0 10px;
+    border-radius: 10px;
+}
+
+.step-line.active { background-color: var(--primary-pink); }
+
+/* 3. Inputs */
 .withdraw-input {
     width: 100%;
-    padding: 14px 20px;
+    padding: 16px 20px;
     font-size: 16px;
-    border-radius: 15px;
+    border-radius: 16px;
     border: 2px solid #f1f5f9;
     background-color: #f8fafc;
-    transition: all 0.3s ease;
-    box-sizing: border-box;
+    transition: all 0.2s;
     outline: none;
 }
 
 .withdraw-input:focus {
     border-color: var(--primary-pink);
     background-color: #fff;
-    box-shadow: 0 0 0 4px rgba(255, 77, 148, 0.1);
+    box-shadow: 0 0 0 4px rgba(255, 77, 148, 0.05);
 }
 
-/* Items List */
+/* 4. **Buttons System (ตกแต่งใหม่)** */
+.btn-action {
+    width: 100%;
+    padding: 16px 24px;
+    border-radius: 18px;
+    font-size: 17px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    color: white;
+    letter-spacing: 0.3px;
+}
+
+/* ปุ่มเปิดประตู */
+.btn-open-gate {
+    background: var(--primary-gradient);
+    box-shadow: 0 6px 15px rgba(255, 77, 148, 0.25);
+}
+
+/* ปุ่มยืนยัน/บันทึก */
+.btn-confirm-save {
+    background: var(--confirm-gradient);
+    box-shadow: 0 6px 15px rgba(37, 99, 235, 0.2);
+}
+
+/* ปุ่มล็อกตู้ */
+.btn-close-lock {
+    background: var(--dark-gradient);
+    box-shadow: 0 6px 15px rgba(30, 41, 59, 0.2);
+}
+
+.btn-action:hover:not(:disabled) {
+    transform: translateY(-2px);
+    filter: brightness(1.05);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.btn-action:active:not(:disabled) {
+    transform: translateY(1px);
+    filter: brightness(0.95);
+}
+
+.btn-secondary {
+    background: #f1f5f9;
+    color: #475569;
+    padding: 16px 24px;
+    border-radius: 18px;
+    font-weight: 600;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+    background: #e2e8f0;
+}
+
+/* ปุ่มแสกนบาร์โค้ด (ปุ่มรอง) */
+.main-action-btn.secondary {
+    background: #fff;
+    color: var(--text-main);
+    border: 2px solid #e2e8f0;
+    box-shadow: var(--shadow-sm);
+}
+
+.main-action-btn.secondary:hover {
+    border-color: var(--primary-pink);
+    color: var(--primary-pink);
+}
+
+/* 5. Components */
 .cart-item-card {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 15px;
+    justify-content: space-between;
+    padding: 16px;
     background: #fff;
     border: 1px solid #f1f5f9;
-    border-radius: 22px;
+    border-radius: 20px;
     margin-bottom: 12px;
-    transition: 0.2s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 
-.cart-item-image { width: 55px; height: 55px; border-radius: 14px; object-fit: cover; }
-
-/* Buttons */
-.action-button-main {
-    width: 100%;
-    padding: 18px;
-    border-radius: 20px;
-    font-weight: 700;
-    background: var(--primary-gradient);
-    color: white;
-    border: none;
-    cursor: pointer;
-    transition: 0.3s;
-    box-shadow: 0 10px 15px -3px rgba(236, 72, 153, 0.3);
+/* สรุปรายการใน Step 4 */
+.summary-box {
+    background: #eff6ff;
+    padding: 20px;
+    border-radius: 24px;
+    border: 1px solid #dbeafe;
 }
 
-.action-button-main:hover { transform: translateY(-2px); }
-.action-button-main:active { transform: scale(0.98); }
+/* 6. Animations */
+.loader {
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 0.8s linear infinite;
+}
 
-.btn-cancel {
-    flex: 1;
-    background: #f1f5f9;
-    color: var(--text-sub);
-    border: none;
-    border-radius: 20px;
-    font-weight: 700;
-    cursor: pointer;
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.animate-fadeIn {
+    animation: fadeIn 0.4s ease-out forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
 }

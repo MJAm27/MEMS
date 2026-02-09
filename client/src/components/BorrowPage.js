@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { FaCheckCircle, FaCamera, FaLockOpen, FaPlus, FaMinus, FaTrash } from "react-icons/fa"; 
+import { FaCheckCircle, FaCamera, FaLockOpen, FaPlus, FaMinus, FaTrash, FaLock } from "react-icons/fa"; 
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import axios from "axios";
-import './BorrowPage.css'; 
+import './BorrowPage.css';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -15,7 +15,7 @@ function BorrowPage({ user }) {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    // ขั้นตอนที่ 1: สั่งเปิดประตูตู้ผ่าน API
+    // ขั้นตอนที่ 1: สั่งเปิดประตูตู้
     const handleOpenDoor = async () => {
         setLoading(true);
         setError('');
@@ -26,7 +26,23 @@ function BorrowPage({ user }) {
             });
             setCurrentStep(2); 
         } catch (err) {
-            setError(err.response?.data?.error || 'ไม่สามารถเชื่อมต่อกับกล่องกุญแจได้');
+            setError('ไม่สามารถเชื่อมต่อเพื่อเปิดตู้ได้');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // ขั้นตอนที่ 5: สั่งปิดประตูตู้ (Servo Close)
+    const handleCloseDoor = async () => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            await axios.post(`${API_BASE}/api/close-box`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            window.location.href = "/dashboard/engineer/home"; // กลับหน้าหลัก
+        } catch (err) {
+            setError('คำสั่งปิดประตูขัดข้อง กรุณาลองอีกครั้ง');
         } finally {
             setLoading(false);
         }
@@ -83,7 +99,6 @@ function BorrowPage({ user }) {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            // ส่งไป API สำหรับบันทึกรายการ Pending เพื่อไปโชว์ที่หน้าหลัก
             await axios.post(`${API_BASE}/api/borrow/pending`, {
                 userId: user.user_id,
                 borrowDate: borrowDate,
@@ -94,9 +109,9 @@ function BorrowPage({ user }) {
                 }))
             }, { headers: { Authorization: `Bearer ${token}` } });
             
-            setCurrentStep(4);
+            setCurrentStep(5); // ไปที่ขั้นตอนปิดตู้
         } catch (err) {
-            setError(err.response?.data?.error || 'เกิดข้อผิดพลาดในการบันทึกรายการยืม');
+            setError('เกิดข้อผิดพลาดในการบันทึกรายการ');
         } finally {
             setLoading(false);
         }
@@ -109,32 +124,31 @@ function BorrowPage({ user }) {
     };
 
     return (
-        <div className="return-page-container"> {/* ใช้ Class เดิมจาก CSS เพื่อความคงเส้นคงวา */}
+        <div className="return-page-container">
             <div className="return-header-section">
                 <h2>เบิกอะไหล่ล่วงหน้า</h2>
                 <div className="step-progress-bar">
-                    {[1, 2, 3].map((s) => (
+                    {[1, 2, 3, 5].map((s) => (
                         <div key={s} className={`step-item ${currentStep >= s ? 'active' : ''}`}>
-                            <div className="step-number">{currentStep > s ? <FaCheckCircle /> : s}</div>
-                            {s < 3 && <div className="step-line"></div>}
+                            <div className="step-number">{currentStep > s ? <FaCheckCircle /> : (s === 5 ? 4 : s)}</div>
+                            {s < 5 && <div className="step-line"></div>}
                         </div>
                     ))}
                 </div>
             </div>
 
             <div className="return-card">
-                {/* Step 1: เปิดประตูตู้ */}
                 {currentStep === 1 && (
                     <div className="step-content animate-fade text-center">
                         <div className="status-icon-wrapper"><FaLockOpen size={50} color="#ff4d94" /></div>
-                        <h3 className="step-title">ขั้นตอนที่ 1: ปลดล็อคตู้</h3>
-                        <p className="step-desc">กดปุ่มเพื่อเปิดกล่องกุญแจและเริ่มการหยิบอะไหล่</p>
+                        <h3 className="step-title">1. เปิดประตูกล่อง</h3>
+                        <p className="step-desc">กดยืนยันเพื่อปลดล็อกประตูกล่องและเริ่มการหยิบอะไหล่</p>
                         <div className="info-box mt-4 text-left">
                             <label>วันที่เบิกยืม</label>
                             <input type="date" value={borrowDate} onChange={(e) => setBorrowDate(e.target.value)} />
                         </div>
                         <button onClick={handleOpenDoor} disabled={loading} className="main-action-btn primary mt-4">
-                            {loading ? 'กำลังสื่อสารกับตู้...' : 'เปิดประตูตู้ตอนนี้'}
+                            {loading ? 'กำลังประมวลผล...' : 'เปิดประตูตู้'}
                         </button>
                     </div>
                 )}
@@ -224,6 +238,19 @@ function BorrowPage({ user }) {
                         <h3 className="font-bold text-xl text-gray-800">บันทึกรายการยืมสำเร็จ!</h3>
                         <p className="text-gray-500 text-sm mt-2">กรุณาไปที่หน้าหลักเพื่อระบุเลขครุภัณฑ์หลังใช้งานเสร็จ</p>
                         <button onClick={() => window.location.href = "/dashboard/engineer/home"} className="main-action-btn primary mt-8">ไปที่หน้าหลัก</button>
+                    </div>
+                )}
+
+                {currentStep === 5 && (
+                    <div className="step-content animate-fade text-center py-6">
+                        <div className="success-badge bg-green-100 text-green-700 p-4 rounded-2xl mb-6 flex items-center gap-3 justify-center">
+                            <FaCheckCircle size={24} /> <p className="font-bold">บันทึกรายการสำเร็จ!</p>
+                        </div>
+                        <h3 className="font-bold text-xl text-gray-800">5. สั่งปิดประตู</h3>
+                        <p className="text-gray-500 mb-8">กรุณานำอะไหล่ออก ตรวจสอบสิ่งกีดขวาง <br/>แล้วกดยืนยันเพื่อล็อกตู้</p>
+                        <button onClick={handleCloseDoor} disabled={loading} className="main-action-btn primary bg-black">
+                            <FaLock className="mr-2" /> {loading ? 'กำลังปิดตู้...' : 'สั่งปิดประตูกล่อง'}
+                        </button>
                     </div>
                 )}
             </div>

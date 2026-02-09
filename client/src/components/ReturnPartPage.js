@@ -1,19 +1,21 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { FaCheckCircle, FaCamera, FaLockOpen, FaPlus, FaMinus, FaTrash } from "react-icons/fa"; 
+import { FaCheckCircle, FaCamera, FaLockOpen, FaPlus, FaMinus, FaTrash, FaLock } from "react-icons/fa"; 
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import axios from "axios";
 import './ReturnPartPage.css'; 
 
-const API_BASE = process.env.REACT_APP_API_URL;
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
 function ReturnPartPage() {
     const [currentStep, setCurrentStep] = useState(1); 
     const [returnDate, setReturnDate] = useState(new Date().toISOString().slice(0, 10));
     const [returnItems, setReturnItems] = useState([]);
     const [isScanning, setIsScanning] = useState(false);
-    const [manualPartId, setManualPartId] = useState(''); // เก็บค่ารหัสที่กรอกเอง
+    const [manualPartId, setManualPartId] = useState(''); 
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
+    // ขั้นตอนที่ 1: สั่งเปิดประตูผ่าน API
     const handleOpenDoor = async () => {
         setLoading(true);
         setError('');
@@ -24,7 +26,24 @@ function ReturnPartPage() {
             });
             setCurrentStep(2); 
         } catch (err) {
-            setError(err.response?.data?.error || 'ไม่สามารถเชื่อมต่อกับกล่องกุญแจได้');
+            setError(err.response?.data?.error || 'ไม่สามารถเชื่อมต่อกับกล่องกุญแจเพื่อเปิดได้');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // ขั้นตอนที่ 5: สั่งปิดประตูผ่าน API (Servo Close)
+    const handleCloseDoor = async () => {
+        setLoading(true);
+        setError('');
+        try {
+            const token = localStorage.getItem('token');
+            await axios.post(`${API_BASE}/api/close-box`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            window.location.reload(); // สำเร็จแล้วโหลดหน้าใหม่เพื่อเริ่มรายการถัดไป
+        } catch (err) {
+            setError('คำสั่งปิดประตูขัดข้อง กรุณาลองใหม่อีกครั้ง');
         } finally {
             setLoading(false);
         }
@@ -51,7 +70,7 @@ function ReturnPartPage() {
                     quantity: quantity 
                 }];
             });
-            setManualPartId(''); // ล้างช่องกรอกข้อมูลหลังเพิ่มสำเร็จ
+            setManualPartId(''); 
             setIsScanning(false);
         } catch (err) {
             setError('ไม่พบข้อมูลอะไหล่รหัสนี้ในระบบ');
@@ -87,9 +106,9 @@ function ReturnPartPage() {
                 }))
             }, { headers: { Authorization: `Bearer ${token}` } });
             
-            setCurrentStep(4);
+            setCurrentStep(5); // บันทึกสำเร็จแล้วไปหน้าสั่งปิดประตูกล่อง
         } catch (err) {
-            setError(err.response?.data?.error || 'เกิดข้อผิดพลาดในการบันทึก');
+            setError(err.response?.data?.error || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล');
         } finally {
             setLoading(false);
         }
@@ -106,10 +125,12 @@ function ReturnPartPage() {
             <div className="return-header-section">
                 <h2>คืนอะไหล่</h2>
                 <div className="step-progress-bar">
-                    {[1, 2, 3].map((s) => (
+                    {[1, 2, 3, 5].map((s) => (
                         <div key={s} className={`step-item ${currentStep >= s ? 'active' : ''}`}>
-                            <div className="step-number">{currentStep > s ? <FaCheckCircle /> : s}</div>
-                            {s < 3 && <div className="step-line"></div>}
+                            <div className="step-number">
+                                {currentStep > s ? <FaCheckCircle /> : (s === 5 ? 4 : s)}
+                            </div>
+                            {s < 5 && <div className="step-line"></div>}
                         </div>
                     ))}
                 </div>
@@ -118,10 +139,10 @@ function ReturnPartPage() {
             <div className="return-card">
                 {/* Step 1: เปิดประตู */}
                 {currentStep === 1 && (
-                    <div className="step-content animate-fade text-center">
-                        <div className="status-icon-wrapper"><FaLockOpen size={50} color="#ff4d94" /></div>
-                        <h3 className="step-title">ขั้นตอนที่ 1: เปิดประตูกล่อง</h3>
-                        <p className="step-desc">กรุณากดปุ่มเพื่อเปิดกล่องและเตรียมการคืน</p>
+                    <div className="step-content animate-fade text-center py-6">
+                        <div className="status-icon-wrapper mb-4"><FaLockOpen size={50} color="#ff4d94" /></div>
+                        <h3 className="step-title font-bold text-xl">1. เปิดประตูกล่อง</h3>
+                        <p className="step-desc text-gray-400 mb-6">กรุณากดปุ่มเพื่อเปิดกล่องและเตรียมการคืนอะไหล่</p>
                         <div className="info-box mt-4 text-left">
                             <label>วันที่คืน</label>
                             <input type="date" value={returnDate} onChange={(e) => setReturnDate(e.target.value)} />
@@ -148,7 +169,6 @@ function ReturnPartPage() {
                             )}
                         </div>
 
-                        {/* เพิ่มช่องกรอกรหัสเอง */}
                         <div className="manual-input-group flex gap-2 mb-4">
                             <input 
                                 type="text" 
@@ -160,18 +180,18 @@ function ReturnPartPage() {
                             <button onClick={() => handleAddItem()} className="add-btn"><FaPlus /></button>
                         </div>
 
-                        {error && <p className="error-text mb-4">{error}</p>}
+                        {error && <p className="error-text text-red-500 mb-4">{error}</p>}
 
                         {returnItems.length > 0 && (
                             <div className="mt-6">
-                                <h4 className="section-label">รายการที่จะคืน:</h4>
+                                <h4 className="section-label mb-3">รายการที่จะคืน:</h4>
                                 <div className="items-list max-h-64 overflow-y-auto mb-4">
                                     {returnItems.map((item, index) => (
                                         <div key={index} className="part-item-card">
                                             <img src={item.imageUrl} alt="" onError={(e) => e.target.src="https://via.placeholder.com/60"} />
                                             <div className="item-info">
-                                                <span className="name">{item.partName}</span>
-                                                <span className="lot text-xs text-gray-400">Lot: {item.lotId}</span>
+                                                <span className="name font-semibold">{item.partName}</span>
+                                                <span className="lot text-xs text-gray-400 block">Lot: {item.lotId}</span>
                                             </div>
                                             <div className="qty-control flex items-center gap-2">
                                                 <button onClick={() => updateQty(index, -1)} className="p-1"><FaMinus size={12}/></button>
@@ -193,7 +213,7 @@ function ReturnPartPage() {
                 {/* Step 3: ยืนยันรายการ */}
                 {currentStep === 3 && (
                     <div className="step-content animate-fade">
-                        <h3 className="confirm-title text-center font-bold mb-4">ยืนยันการคืนอะไหล่</h3>
+                        <h3 className="confirm-title text-center font-bold mb-4 text-xl">ยืนยันการคืนอะไหล่</h3>
                         <div className="summary-box bg-gray-50 p-4 rounded-xl border border-dashed border-gray-300">
                             {returnItems.map((item, i) => (
                                 <div key={i} className="flex justify-between border-b border-gray-200 py-2 text-sm last:border-0">
@@ -211,13 +231,28 @@ function ReturnPartPage() {
                     </div>
                 )}
 
-                {/* Step 4: สำเร็จ */}
-                {currentStep === 4 && (
-                    <div className="success-screen text-center py-6 animate-bounce-in">
-                        <FaCheckCircle size={70} className="text-green-500 mb-4 mx-auto" />
-                        <h3 className="font-bold text-xl text-gray-800">คืนอะไหล่สำเร็จ!</h3>
-                        <p className="text-gray-500 text-sm mt-2">อะไหล่ถูกบันทึกกลับเข้าสต็อกแล้ว</p>
-                        <button onClick={() => window.location.reload()} className="main-action-btn primary mt-8">กลับหน้าหลัก</button>
+                {/* Step 5: ปิดตู้ */}
+                {currentStep === 5 && (
+                    <div className="step-content animate-fade text-center py-6">
+                        <div className="success-badge bg-green-100 text-green-700 p-4 rounded-2xl mb-8 flex items-center gap-3 justify-center">
+                            <FaCheckCircle size={24} /> <p className="font-bold">บันทึกข้อมูลสำเร็จ!</p>
+                        </div>
+                        <h3 className="font-bold text-2xl mb-3">5. สั่งปิดประตู</h3>
+                        <p className="text-gray-500 mb-8 leading-relaxed">กรุณาวางอะไหล่ในตู้ ตรวจสอบสิ่งกีดขวาง <br/>แล้วกดยืนยันเพื่อล็อกตู้</p>
+                        
+                        <div className="bg-orange-50 p-4 rounded-xl mb-8 border border-orange-100 text-orange-700 text-xs font-bold text-left flex items-start gap-2">
+                            <span>⚠️</span> <p>ตรวจสอบนิ้วมือและสิ่งของ <br/>ก่อนประตูปิดสนิท</p>
+                        </div>
+
+                        <button 
+                            onClick={handleCloseDoor} 
+                            disabled={loading} 
+                            className="main-action-btn primary bg-black flex items-center justify-center gap-2"
+                            style={{ backgroundColor: '#111827' }}
+                        >
+                             <FaLock /> {loading ? 'กำลังสั่งปิดตู้...' : 'สั่งปิดประตูกล่อง'}
+                        </button>
+                        {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
                     </div>
                 )}
             </div>
