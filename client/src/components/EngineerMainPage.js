@@ -15,6 +15,7 @@ import ReturnPartPage from './ReturnPartPage';
 import WithdrawPage from './WithdrawPage';
 import HistoryPage from "./HistoryPage";
 import BorrowPage from "./BorrowPage";
+import ChangePasswordENG from './ChangePasswordENG';
 
 const API_BASE = process.env.REACT_APP_API_URL;
 function EngineerMainPage({ user, handleLogout, refreshUser }) {
@@ -270,6 +271,7 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                         {/* Profile และ Sub-route สำหรับแก้ไข */}
                         <Route path="engineer/profile" element={<ProfileENG user={user} handleLogout={handleLogout} refreshUser={refreshUser} />}>
                             <Route path="edit" element={<ProfileEditENG user={user} refreshUser={refreshUser} />} />
+                            <Route path="change-passwordENG" element={<ChangePasswordENG />} />
                         </Route>
                         
                         <Route path="engineer/search" element={<h2>หน้าค้นหาอะไหล่</h2>} />

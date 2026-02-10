@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
-    FaUserCircle, FaSave, FaCamera, FaArrowLeft 
+    FaUserCircle, FaSave, FaCamera
 } from "react-icons/fa";
 import "./ProfileENG.css"; 
 import "./ProfileEditENG.css"; 
@@ -115,9 +115,7 @@ function ProfileEditENG({ user, refreshUser }) {
         <div className="profile-center-container fade-in">
             <div className="edit-card-container">
                 <div className="edit-header">
-                    <button onClick={handleBack} className="action-item btn-back" style={{ border:'none', background:'none', cursor:'pointer', display:'flex', alignItems:'center', gap:'5px', color:'#ff4d94', fontWeight:'bold' }}> 
-                        <FaArrowLeft /> ย้อนกลับ
-                    </button>
+                    
                     <h2>แก้ไขข้อมูลส่วนตัว</h2>
                 </div>
 

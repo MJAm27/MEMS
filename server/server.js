@@ -45,6 +45,8 @@ const dbConfig = {
     connectionLimit: 10,
     queueLimit: 0,
     connectTimeout: 20000, 
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 10000
 };
 const pool = mysql.createPool(dbConfig);
 const db = pool; 
@@ -69,17 +71,11 @@ function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
-    if (token == null) {
-        return res.sendStatus(401); 
-    }
+    if (token == null) return res.sendStatus(401); 
 
     jwt.verify(token, JWT_SECRET, (err, userPayload) => {
-        if (err) {
-            console.error("JWT Verification Error:", err.message);
-            return res.sendStatus(403); 
-        }
-        
-        req.user = userPayload; 
+        if (err) return res.sendStatus(403); 
+        req.user = userPayload; // payload ประกอบด้วย userId
         next(); 
     });
 }
@@ -549,40 +545,22 @@ app.post('/api/borrow/return-all', authenticateToken, async (req, res) => {
  */
 app.post("/api/login", async (req, res) => {
     const { email, password } = req.body;
-
     try {
-        // ใช้ pool.execute แทนการสร้าง connection ใหม่
         const [users] = await pool.execute("SELECT * FROM users WHERE email = ?", [email]);
-
-        if (users.length === 0) {
-            return res.status(401).json({ message: "Email หรือ Password ไม่ถูกต้อง" });
-        }
+        if (users.length === 0) return res.status(401).json({ message: "Email หรือ Password ไม่ถูกต้อง" });
 
         const user = users[0];
-        const isPasswordMatch = await bcrypt.compare(password, user.password_hash);
+        const isPasswordMatch = await bcrypt.compare(password, user.password_hash); //
         
-        if (!isPasswordMatch) {
-            return res.status(401).json({ message: "Email หรือ Password ไม่ถูกต้อง" });
-        }
+        if (!isPasswordMatch) return res.status(401).json({ message: "Email หรือ Password ไม่ถูกต้อง" });
         
-        // ✅ เปิดใช้การตรวจสอบ 2FA/Setup 2FA
         if (user.totp_secret) {
-            // ต้องยืนยัน 2FA
-            res.json({ 
-                status: "2fa_required", 
-                userId: user.user_id 
-            });
+            res.json({ status: "2fa_required", userId: user.user_id });
         } else {
-            // ถ้ายังไม่มี 2FA ให้แจ้งว่าต้องตั้งค่าก่อน
-            res.json({ 
-                status: "2fa_setup_required", 
-                userId: user.user_id 
-            });
+            res.json({ status: "2fa_setup_required", userId: user.user_id });
         }
-        
     } catch (error) {
-        console.error("Login Error:", error);
-        res.status(500).json({ message: "Server Error", error: error.message });
+        res.status(500).json({ message: "Server Error" });
     }
 });
 
@@ -666,54 +644,33 @@ app.post("/api/setup-2fa", async (req, res) => {
  */
 app.post("/api/verify-2fa", async (req, res) => {
     const { userId, token } = req.body;
-
     try {
-        // 1. ดึง Secret และ Role name
         const [users] = await pool.execute(
             "SELECT U.*, R.role_name FROM users U JOIN role R ON U.role_id = R.role_id WHERE U.user_id = ?", 
             [userId]
         );
-        
-        if (users.length === 0) {
-            return res.status(404).json({ message: "ไม่พบผู้ใช้งาน" });
-        }
+        if (users.length === 0) return res.status(404).json({ message: "ไม่พบผู้ใช้งาน" });
         
         const user = users[0];
-        const { totp_secret, role_name } = user;
-
-        // 2. ตรวจสอบรหัส 6 หลัก
         const verified = speakeasy.totp.verify({
-            secret: totp_secret,
+            secret: user.totp_secret,
             encoding: 'base32',
             token: token,
-            window: 1 // อนุญาตให้รหัสถูกหรือผิดไป 1 ช่วงเวลา (30 วินาที)
+            window: 1 
         });
 
         if (verified) {
-            // 3. สร้าง JWT (Token ล็อกอิน)
             const loginToken = jwt.sign(
-                { 
-                    userId: user.user_id, 
-                    email: user.email,
-                    role: user.role_id,
-                    fullname: user.fullname
-                },
+                { userId: user.user_id, email: user.email, role: user.role_id, fullname: user.fullname },
                 JWT_SECRET,
                 { expiresIn: '8h' }
             );
-            
-            res.json({ 
-                message: "ล็อกอินสำเร็จ", 
-                token: loginToken,
-                role: user.role_name
-            });
+            res.json({ message: "ล็อกอินสำเร็จ", token: loginToken, role: user.role_name });
         } else {
             res.status(401).json({ message: "รหัส 6 หลักไม่ถูกต้อง" });
         }
-        
     } catch (error) {
-        console.error("Verify 2FA Error:", error);
-        res.status(500).json({ message: "Server Error", error: error.message });
+        res.status(500).json({ message: "Server Error" });
     }
 });
 
@@ -755,32 +712,16 @@ app.get("/api/auth/me", authenticateToken, async (req, res) => {
  * Endpoint 6: Update User Profile (Protected)
  */
 app.put("/api/profile-edit", authenticateToken, async (req, res) => {
-    const userIdFromToken = req.user.userId;
-    // รับ profile_img เพิ่มเติมจาก Frontend
+    const userIdFromToken = req.user.userId; 
     const { fullname, email, phone_number, position, profile_img } = req.body;
-
     try {
-        // เพิ่มคอลัมน์ profile_img ลงในคำสั่ง UPDATE
-        const sql = `
-            UPDATE users 
-            SET fullname = ?, email = ?, phone_number = ?, position = ?, profile_img = ? 
-            WHERE user_id = ?
-        `;
-        
-        await pool.execute(sql, [
-            fullname, 
-            email, 
-            phone_number, 
-            position, 
-            profile_img || null, // ถ้าไม่มีการอัปโหลดรูปใหม่ ให้ส่งเป็นค่าว่างหรือ NULL
-            userIdFromToken
-        ]);
-
+        await pool.execute(
+            "UPDATE users SET fullname = ?, email = ?, phone_number = ?, position = ?, profile_img = ? WHERE user_id = ?",
+            [fullname, email, phone_number, position, profile_img || null, userIdFromToken]
+        );
         res.json({ message: "Profile updated successfully!" });
-
     } catch (error) {
-        console.error("Update Profile Error:", error);
-        res.status(500).json({ message: "Server Error", error: error.message });
+        res.status(500).json({ message: "Server Error" });
     }
 });
 
@@ -1588,6 +1529,52 @@ app.delete("/api/users/:id", async (req, res) => {
     } catch (err) {
         // ระวังเรื่อง Foreign Key constraint ถ้า user เคยทำ transaction อาจจะลบไม่ได้
         res.status(500).send({ message: "ไม่สามารถลบได้ เนื่องจากผู้ใช้นี้มีประวัติการใช้งานในระบบ" });
+    }
+});
+
+// เปลี่ยน รหัสผ่าน (แก้ไขชื่อคอลัมน์ให้ตรงกับฐานข้อมูลจริง)
+app.put('/api/change-passwordENG', authenticateToken, async (req, res) => {
+    const { oldPassword, newPassword } = req.body;
+    // แก้ไขจาก user_id เป็น userId ให้ตรงกับ Payload ใน Token
+    const userId = req.user.userId || req.user.user_id; 
+    if(!userId){
+        return res.status(400).json({ message: "ไม่พบข้อมูลผู้ใช้งาน" });
+    }
+    try {
+        // 1. แก้ไขชื่อคอลัมน์เป็น password_hash ให้ตรงกับฐานข้อมูล
+        const [users] = await pool.execute(
+            'SELECT password_hash FROM users WHERE user_id = ?', 
+            [userId]
+        );
+
+        if (users.length === 0) {
+            return res.status(404).json({ message: "ไม่พบผู้ใช้งาน" });
+        }
+
+        const user = users[0];
+
+        // 2. ใช้ password_hash ในการเปรียบเทียบ
+        const isMatch = await bcrypt.compare(oldPassword, user.password_hash);
+        
+        if (!isMatch) {
+            return res.status(400).json({ message: "รหัสผ่านปัจจุบันไม่ถูกต้อง" });
+        }
+
+        // 3. เข้ารหัสรหัสผ่านใหม่
+        const salt = await bcrypt.genSalt(10);
+        const hashedNewPassword = await bcrypt.hash(newPassword, salt);
+
+        // 4. อัปเดตกลับไปยังคอลัมน์ password_hash
+        await pool.execute(
+            'UPDATE users SET password_hash = ? WHERE user_id = ?', 
+            [hashedNewPassword, userId]
+        );
+
+        res.json({ message: "เปลี่ยนรหัสผ่านสำเร็จ" });
+
+    } catch (error) {
+        console.error("Change Password Error:", error);
+        res.status(500).json({ message: "เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์", error: error.code });
     }
 });
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, Outlet, useLocation } from "react-router-dom"; // ลบ useNavigate ออกเพราะไม่ได้ใช้แล้ว
+import { Link, Outlet, useLocation } from "react-router-dom"; 
 import { 
     FaUserCircle, FaChevronRight, FaKey, FaEdit 
 } from "react-icons/fa"; 
@@ -7,46 +7,49 @@ import "./ProfileENG.css";
 
 function ProfileENG({ user }) { 
     const location = useLocation(); 
-    const userData = user; 
     
-    if (!userData) {
+    // 1. ตรวจสอบว่ามีข้อมูลผู้ใช้หรือไม่
+    if (!user) {
           return <div className="loading-text">กำลังโหลดข้อมูลโปรไฟล์...</div>;
     }
 
-    const displayUserId = user?.user_id ?? "N/A";
-    const displayFullname = userData.fullname || "ผู้ใช้งาน";
-    const displayRole = userData.role || "R-ENG";
+    const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3001";
+    const displayUserId = user.user_id ?? "N/A";
+    const displayFullname = user.fullname || "ผู้ใช้งาน";
+    const displayRole = user.role_name || user.role || "R-ENG";
 
+    // 2. เช็คว่าปัจจุบันอยู่ที่หน้าย่อย (edit หรือ change-password) หรือไม่
     const isSubPage = location.pathname.includes("edit") || location.pathname.includes("change-password");
 
     return (
         <>
-            <Outlet />
-            
-            {!isSubPage && (
+            {/* 3. ใช้เงื่อนไขแยกการแสดงผลเด็ดขาด */}
+            {isSubPage ? (
+                /* ถ้าเป็นหน้าย่อย ให้แสดงเฉพาะ Outlet (เพื่อแสดง ProfileEdit หรือ ChangePassword) */
+                <Outlet />
+            ) : (
+                /* ถ้าเป็นหน้าหลัก ให้แสดงหน้าโปรไฟล์ปกติ */
                 <div className="profile-center-container fade-in">
                     <div className="profile-card-detailed">
                         <div className="profile-header-bg"></div>
-                        <div className="profile-avatar-large">
-                            {user?.profile_img ? (
+                        
+                        <div className="profile-avatar-section">
+                            {user.profile_img ? (
                                 <img 
-                                    src={`${process.env.REACT_APP_API_URL}/profile-img/${user.profile_img}`} 
+                                    src={`${API_URL}/profile-img/${user.profile_img}`} 
                                     alt="Profile" 
-                                    className="img-fluid rounded-circle"
-                                    style={{ width: '100px', height: '100px', objectFit: 'cover' }}
+                                    className="profile-img-large" 
                                 />
                             ) : (
-                                <FaUserCircle />
+                                <FaUserCircle className="profile-icon-placeholder" />
                             )}
-                        </div>
-                        
-                        <div className="profile-details">
-                            <h2>{displayFullname}</h2>
-                            <p className="detail-badge">{displayRole}</p>
-                            <p className="detail-text">ID: <strong>{displayUserId}</strong></p>
+                            <h2 className="profile-name">{displayFullname}</h2>
+                            <span className="profile-badge">{displayRole}</span>
+                            <p className="detail-text">รหัสพนักงาน: <strong>{displayUserId}</strong></p>
                         </div>
 
                         <div className="profile-actions-list">
+                            {/* ลิงก์ไปหน้าแก้ไขข้อมูล */}
                             <Link to="edit" className="action-item"> 
                                 <div className="action-icon-box pink"><FaEdit /></div>
                                 <div className="action-text">
@@ -56,7 +59,8 @@ function ProfileENG({ user }) {
                                 <FaChevronRight className="arrow-icon" />
                             </Link>
 
-                            <Link to="change-password" className="action-item">
+                            {/* ลิงก์ไปหน้าเปลี่ยนรหัสผ่าน */}
+                            <Link to="change-passwordENG" className="action-item">
                                 <div className="action-icon-box purple"><FaKey /></div>
                                 <div className="action-text">
                                     <span>เปลี่ยนรหัสผ่าน</span>
