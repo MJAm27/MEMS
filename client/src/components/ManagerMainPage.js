@@ -59,9 +59,18 @@ function ManagerMainPage({ user, handleLogout }) {
 
     const localHandleLogout = () => {
         if (window.confirm("ต้องการออกจากระบบใช่หรือไม่?")) {
-            handleLogout();
+            // ตรวจสอบว่า handleLogout มีตัวตนและเป็นฟังก์ชันจริงๆ หรือไม่
+            if (typeof handleLogout === "function") {
+                handleLogout();
+            } else {
+                console.error("Error: handleLogout prop is missing!");
+                // แผนสำรอง: ลบ token เองถ้าฟังก์ชันไม่ถูกส่งมา
+                localStorage.removeItem('token');
+                window.location.href = "/login";
+            }
         }
     };
+
 
     return (
         <div className={`layout-wrapper ${sidebarOpen ? "sidebar-open" : "sidebar-closed"}`}>
