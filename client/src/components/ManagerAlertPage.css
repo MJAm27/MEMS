@@ -1,0 +1,37 @@
+.alert-page { padding: 25px; background: #f8f9fa; min-height: 100vh; }
+
+.alert-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+
+.stat-item { padding: 10px 20px; border-radius: 10px; color: white; display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.stat-item.expire { background: #f39c12; }
+.stat-item.low { background: #e74c3c; }
+.stat-item.expensive { background: #3498db; }
+
+.filter-panel { display: flex; justify-content: space-between; margin-bottom: 25px; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+
+.type-selector { display: flex; gap: 10px; }
+.type-selector button { padding: 8px 16px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 20px; cursor: pointer; transition: 0.3s; }
+.type-selector button.active { background: #1a5276; color: white; border-color: #1a5276; }
+
+.search-box { display: flex; align-items: center; gap: 10px; border: 1px solid #ddd; padding: 5px 15px; border-radius: 20px; width: 300px; }
+.search-box input { border: none; outline: none; width: 100%; }
+
+.alert-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
+
+.alert-card { background: white; border-radius: 15px; display: flex; padding: 20px; gap: 15px; border-left: 8px solid #ccc; box-shadow: 0 4px 12px rgba(0,0,0,0.08); transition: 0.3s; }
+.alert-card:hover { transform: translateY(-5px); }
+.alert-card.expire { border-left-color: #f39c12; }
+.alert-card.low-stock { border-left-color: #e74c3c; }
+.alert-card.expensive { border-left-color: #3498db; }
+
+.card-icon { font-size: 30px; color: #7f8c8d; }
+.alert-card.expire .card-icon { color: #f39c12; }
+.alert-card.low-stock .card-icon { color: #e74c3c; }
+.alert-card.expensive .card-icon { color: #3498db; }
+
+.card-content h3 { margin: 0 0 10px 0; color: #2c3e50; font-size: 18px; }
+.card-content .desc { font-size: 14px; color: #7f8c8d; margin-bottom: 15px; }
+
+.card-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 10px; }
+.card-footer span { font-size: 13px; color: #95a5a6; }
+.btn-detail { background: #f1f2f6; border: none; padding: 5px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 5px; color: #1a5276; }
