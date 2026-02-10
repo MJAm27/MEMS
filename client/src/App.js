@@ -11,6 +11,8 @@ import EquipmentUsageReportChart from './components/EquipmentUsageReportChart';
 import EquipmentAgeReportChart from './components/EquipmentAgeReportChart';
 import UserList from './components/UserList';
 import ProfileEditENG from './components/Profile';
+import ManagerMainPage from './components/ManagerMainPage';
+
 
 
     function App() {
@@ -22,7 +24,7 @@ import ProfileEditENG from './components/Profile';
                     <Route path="/register" element={<RegisterPage />} /> 
                     <Route path="/verify" element={<VerifyPage />} />
                     <Route path="/setup-2fa" element={<Setup2FAPage />} />
-                    
+                    <Route path="/dashboard/manager/*" element={<ManagerMainPage />} />
                     <Route path="/dashboard/*" element={<DashboardPage />} /> 
                     <Route path="/profileEditENG" element={<ProfileEditENG />} /> 
                     <Route path="/report/inventory-balance" element={<InventoryBalanceReportChart />} />
@@ -30,7 +32,6 @@ import ProfileEditENG from './components/Profile';
                     <Route path="/report/equipment-age" element={<EquipmentAgeReportChart />} />
 
                     <Route path='/userList' element={<UserList />}/>
-                    
 
                     
                 </Routes>

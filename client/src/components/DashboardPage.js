@@ -1,9 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
+// Import ส่วนประกอบหน้าหลักของแต่ละบทบาท
 import EngineerMainPage from './EngineerMainPage';
 import AdminMainPage from './AdminMainPage';
 import ManagerMainPage from './ManagerMainPage';
 
+/**
+ * ฟังก์ชันสำหรับถอดรหัส Token เพื่อดูข้อมูล Payload (เช่น role)
+ */
 function getPayloadFromToken(token) {
     try {
         const base64Url = token.split('.')[1];
@@ -11,8 +17,7 @@ function getPayloadFromToken(token) {
         const jsonPayload = window.atob(base64);
         return JSON.parse(jsonPayload); 
     } catch (e) {
-        console.error('Error decoding token payload:', e);
-        console.warn('Failed to decode token. Token structure might be incorrect or expired or JSON is invalid.');
+        console.error('Error decoding token:', e);
         return null;
     }
 }
@@ -20,13 +25,20 @@ function getPayloadFromToken(token) {
 function DashboardPage() {
     const [userPayload, setUserPayload] = useState(null); 
     const navigate = useNavigate();
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
+    /**
+     * ฟังก์ชันออกจากระบบ
+     */
     const handleLogout = useCallback(() => {
         localStorage.removeItem('token');
         setUserPayload(null); 
         navigate('/login', { replace: true }); 
     }, [navigate]); 
 
+    /**
+     * ฟังก์ชันดึงข้อมูลผู้ใช้ปัจจุบันจาก Server
+     */
     const fetchAndSetUser = useCallback(async (token) => {
         if (!token) {
             handleLogout();
@@ -34,99 +46,74 @@ function DashboardPage() {
         }
 
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/me`, {
+            const response = await axios.get(`${API_URL}/api/auth/me`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             
-            if (!response.ok) throw new Error("Token expired or invalid.");
+            const freshData = response.data;
+            const tokenPayload = getPayloadFromToken(token);
             
-            const freshData = await response.json();
-            
+            // ผสมข้อมูลจาก API และ Role จาก Token
             const newUserPayload = { 
                 ...freshData, 
-                // ดึง role จาก token payload ก่อน ถ้าไม่มี ให้ใช้ role จาก freshData
-                role: getPayloadFromToken(token)?.role || freshData.role 
+                role: tokenPayload?.role || freshData.role 
             };
             
             setUserPayload(newUserPayload); 
             
         } catch (error) {
-            console.error("Failed to fetch fresh user data:", error);
+            console.error("Failed to fetch user data:", error);
             handleLogout(); 
         }
-    }, [handleLogout]);
-
-
-    const refreshUser = useCallback(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            fetchAndSetUser(token);
-        } else {
-            handleLogout();
-        }
-    }, [fetchAndSetUser, handleLogout]);
-
+    }, [handleLogout, API_URL]);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (!token) {
             handleLogout(); 
-            return;
+        } else {
+            fetchAndSetUser(token); 
         }
-        
-        fetchAndSetUser(token); 
+    }, [handleLogout, fetchAndSetUser]);
 
-    }, [handleLogout, fetchAndSetUser]); 
-
-    // --- Logic การ Normalize Role ถูกต้อง ---
-    // ตรวจสอบ userPayload ก่อนเข้าถึง property
-    const userRole = userPayload?.role;
-    const normalizedRole = userRole ? userRole.toUpperCase() : null;
-
-    // กำหนด Role ที่จะใช้ในการ Render/Switch Case
-    const renderRole = normalizedRole === 'ENGINEER' ? 'R-ENG' : (
-                       normalizedRole === 'ADMIN' ? 'R-ADM' : (
-                       normalizedRole === 'MANAGER' ? 'R-MGR' : userRole)); 
-    // ----------------------------------------
-    
-    // ตรวจสอบความถูกต้องของ Role หลังโหลดข้อมูล
-    useEffect(() => {
-        // ใช้ normalizedRole ในการตรวจสอบเพื่อรองรับทั้ง 'R-ENG' และ 'ENGINEER'
-        if (userPayload && normalizedRole && !['R-ENG', 'R-ADM', 'R-MGR', 'ENGINEER', 'ADMIN', 'MANAGER'].includes(normalizedRole)) {
-            console.warn(`Unknown role detected: ${userPayload.role}. Logging out.`);
-            handleLogout(); 
-        }
-    }, [userPayload, normalizedRole, handleLogout]);
-
-
+    /**
+     * Logic การตัดสินใจเลือกหน้า Dashboard ตามบทบาท (Role)
+     * แก้ไข: เพิ่มการดักจับค่า "MANAGER" และ "R-MGR" ให้แม่นยำขึ้น
+     */
     const renderDashboardByRole = () => {
         if (!userPayload) {
             return (
                 <div className="flex items-center justify-center h-screen bg-gray-50">
-                    <p className="text-xl text-gray-600">กำลังโหลดข้อมูลผู้ใช้...</p>
+                    <p className="text-xl text-gray-600">กำลังยืนยันตัวตน...</p>
                 </div>
             );
         }
 
-        // ใช้ renderRole ที่ถูก Normalize แล้ว
-        console.log('Rendering dashboard for role:', renderRole);
+        const rawRole = userPayload.role ? userPayload.role.toUpperCase() : "";
 
-        switch (renderRole) { 
-            case 'R-ENG': 
-                return <EngineerMainPage user={userPayload} handleLogout={handleLogout} refreshUser={refreshUser} />; 
-            case 'R-ADM':
-                return <AdminMainPage user={userPayload} handleLogout={handleLogout} refreshUser={refreshUser} />;
-            case 'R-MGR':
-                return <ManagerMainPage user={userPayload} handleLogout={handleLogout} refreshUser={refreshUser} />;
-            default:
-                return (
-                    <div className="p-4 bg-red-100 border-l-4 border-red-500 text-red-700">
-                        {/* แสดง role ดั้งเดิมในข้อความ Error */}
-                        <p>Error: ไม่พบ Role ที่ถูกต้อง ({userRole}) โปรดติดต่อผู้ดูแลระบบ</p>
-                        <button onClick={handleLogout} className="mt-2 text-sm underline">ออกจากระบบ</button>
-                    </div>
-                );
+        // ตรวจสอบเงื่อนไขเพื่อส่งไปยังหน้า ManagerMainPage
+        if (rawRole === 'MANAGER' || rawRole === 'R-MGR' || rawRole === 'MGR') {
+            return <ManagerMainPage user={userPayload} handleLogout={handleLogout} />;
+        } 
+        
+        // ตรวจสอบเงื่อนไขสำหรับ Admin
+        if (rawRole === 'ADMIN' || rawRole === 'R-ADM' || rawRole === 'ADM') {
+            return <AdminMainPage user={userPayload} handleLogout={handleLogout} />;
         }
+
+        // ตรวจสอบเงื่อนไขสำหรับ Engineer
+        if (rawRole === 'ENGINEER' || rawRole === 'R-ENG' || rawRole === 'ENG') {
+            return <EngineerMainPage user={userPayload} handleLogout={handleLogout} />;
+        }
+
+        // กรณีไม่พบ Role ที่กำหนด
+        return (
+            <div className="p-8 text-center">
+                <h2 className="text-red-600 font-bold">ไม่พบสิทธิ์การใช้งานที่ถูกต้อง</h2>
+                <p>Role ปัจจุบันของคุณคือ: {userPayload.role}</p>
+                <button onClick={handleLogout} className="mt-4 bg-gray-200 px-4 py-2 rounded">ออกจากระบบ</button>
+            </div>
+        );
     };
 
     return renderDashboardByRole();
