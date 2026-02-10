@@ -263,7 +263,7 @@ function ManagerReportPage() {
                                 <th>ประเภท</th>
                                 <th>ผู้ทำรายการ</th>
                                 <th>รายการอะไหล่</th>
-                                <th>เครื่องจักร (SN)</th>
+                                <th>รหัสครุภัณฑ์ (SN)</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -274,7 +274,8 @@ function ManagerReportPage() {
                                     <tr key={idx}>
                                         <td><div className="td-time"><span>{new Date(row.date).toLocaleDateString('th-TH')}</span><small>{row.time}</small></div></td>
                                         <td><span className={`badge-type ${row.transaction_type_id}`}>{row.type_name}</span></td>
-                                        <td><div className="td-user"><FaUser size={10} /> {row.fullname}</div></td>
+                                        {/* แก้ไขส่วนการแสดงชื่อผู้ทำรายการ */}
+                                        <td><div className="td-user"><FaUser size={10} /> {row.fullname || row.username || "ไม่ระบุชื่อ"}</div></td>
                                         <td>{items.map((it, i) => <div key={i} className="item-row">{it.name} <b>x{it.qty}</b></div>)}</td>
                                         <td><code className="sn-text">{row.machine_SN || "-"}</code></td>
                                     </tr>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
 import { Bar } from "react-chartjs-2";
-import { FaHandHolding, FaReply, FaUsers, FaChartLine, FaCalendarDay } from "react-icons/fa";
+import { FaHandHolding, FaReply, FaUsers, FaChartLine, FaCalendarDay,FaUser } from "react-icons/fa";
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from "chart.js";
 
 // สำคัญ: ต้อง Import ไฟล์นี้เพื่อให้หน้าตาสวยงาม
@@ -81,17 +81,19 @@ function ManagerDashboard() {
                     <table className="report-table">
                         <thead><tr><th>เวลา</th><th>ผู้ทำรายการ</th><th>ประเภท</th><th>รายการ</th></tr></thead>
                         <tbody>
-                            {todayData.map((row, idx) => {
+                            {todayData.length > 0 ? todayData.map((row, idx) => {
                                 let items = [];
-                                try { items = JSON.parse(row.items_json); } catch(e) { items = row.items_json || []; }
+                                try { items = typeof row.items_json === 'string' ? JSON.parse(row.items_json) : (row.items_json || []); } catch(e) { items = []; }
                                 return (
                                     <tr key={idx}>
-                                        <td>{row.time}</td><td>{row.fullname}</td>
+                                        <td>{row.time}</td>
+                                        {/* แก้ไขส่วนการแสดงชื่อผู้ทำรายการ */}
+                                        <td><div className="td-user"><FaUser size={10} /> {row.fullname || row.username || "ไม่ระบุชื่อ"}</div></td>
                                         <td><span className={`badge-type ${row.transaction_type_id}`}>{row.type_name}</span></td>
                                         <td>{items.map((it, i) => <div key={i} className="item-row">{it.name} <b>x{it.qty}</b></div>)}</td>
                                     </tr>
                                 );
-                            })}
+                            }) : <tr><td colSpan="4" style={{textAlign:'center', padding:'20px'}}>ยังไม่มีการทำรายการในวันนี้</td></tr>}
                         </tbody>
                     </table>
                 </div>

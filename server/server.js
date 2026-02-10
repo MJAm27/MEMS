@@ -1715,7 +1715,7 @@ app.get('/api/history/full', authenticateToken, async (req, res) => {
                 t.date, 
                 t.time,
                 t.machine_SN,
-                -- แก้ไขส่วนนี้: ดึงชื่อจาก equipment_type และจำนวนจาก equipment_list
+                u.fullname, -- 1. เพิ่มการดึงชื่อผู้ทำรายการตรงนี้
                 (
                     SELECT JSON_ARRAYAGG(
                         JSON_OBJECT(
@@ -1728,12 +1728,11 @@ app.get('/api/history/full', authenticateToken, async (req, res) => {
                     JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
                     WHERE el.transaction_id = t.transaction_id
                 ) as items_json,
-                -- ดึงเวลาเปิดจาก accesslogs (Action A-001)
                 (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-001' LIMIT 1) as open_time,
-                -- ดึงเวลาปิดจาก accesslogs (Action A-002)
                 (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-002' LIMIT 1) as close_time
             FROM transactions t
             LEFT JOIN transactions_type tt ON t.transaction_type_id = tt.transaction_type_id
+            LEFT JOIN users u ON t.user_id = u.user_id -- 2. เพิ่มการเชื่อมตาราง users ตรงนี้
             GROUP BY t.transaction_id
             ORDER BY t.date DESC, t.time DESC
         `;
