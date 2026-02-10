@@ -16,7 +16,7 @@ import WithdrawPage from './WithdrawPage';
 import HistoryPage from "./HistoryPage";
 import BorrowPage from "./BorrowPage";
 import ChangePasswordENG from './ChangePasswordENG';
-
+import SearchPartPageENG from './SearchPartPageENG';
 const API_BASE = process.env.REACT_APP_API_URL;
 function EngineerMainPage({ user, handleLogout, refreshUser }) {
     const navigate = useNavigate();
@@ -274,7 +274,7 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                             <Route path="change-passwordENG" element={<ChangePasswordENG />} />
                         </Route>
                         
-                        <Route path="engineer/search" element={<h2>หน้าค้นหาอะไหล่</h2>} />
+                        <Route path="engineer/search" element={< SearchPartPageENG/>} />
                         
                         {/* กรณีไม่พบหน้า */}
                         <Route path="*" element={<h2>ไม่พบหน้าที่คุณต้องการ</h2>} />

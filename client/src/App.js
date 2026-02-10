@@ -9,6 +9,7 @@ import DashboardPage from './components/DashboardPage';
 import ChangePasswordENG from './components/ChangePasswordENG';
 import ProfileENG from './components/ProfileENG'; 
 import ProfileEditENG from './components/ProfileEditENG';
+import SearchPartPageENG from './components/SearchPartPageENG';
 
 function App() {
     const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || null);
@@ -68,6 +69,7 @@ window.addEventListener('error', debounce(resizeObserverErr));
                     <Route path="edit" element={<ProfileEditENG user={user} refreshUser={refreshUser} />} />
                     <Route path="change-passwordENG" element={<ChangePasswordENG />} />
                 </Route>
+                <Route path="SearchPartPage" element={<SearchPartPageENG />} />
             </Routes>
         </BrowserRouter>
     );
