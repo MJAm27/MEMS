@@ -15,8 +15,8 @@ function ProfileENG({ user }) {
 
     const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3001";
     const displayUserId = user.user_id ?? "N/A";
-    const displayFullname = user.fullname || "ผู้ใช้งาน";
-    const displayRole = user.role_name || user.role || "R-ENG";
+    const displayFullname = user.fullname ;
+    const displayRole = user.role_name || user.role;
 
     // 2. เช็คว่าปัจจุบันอยู่ที่หน้าย่อย (edit หรือ change-password) หรือไม่
     const isSubPage = location.pathname.includes("edit") || location.pathname.includes("change-password");
