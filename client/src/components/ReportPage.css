@@ -12,7 +12,7 @@
     gap: 20px;
 }
 
-.summary-card {
+.report-summary-grid .summary-card {
     background: #ffffff;
     border-radius: 14px;
     padding: 25px;
@@ -22,6 +22,9 @@
     font-weight: 600;
     color: #343a40;
     transition: all 0.25s ease;
+
+    display: flex;
+    flex-direction: column;
 }
 
 .summary-card strong {
