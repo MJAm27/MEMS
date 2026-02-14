@@ -24,6 +24,10 @@ import ManageUser from "./ManageUser";
 import ManageSupplier from "./ManageSupplier";
 import ReportPage from "./ReportPage";
 import AlertPage from "./AlertPage";
+import ProfileENG from './ProfileENG';
+import ProfileEditENG from './ProfileEditENG';
+import ChangePasswordENG from './ChangePasswordENG';
+
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
@@ -251,13 +255,16 @@ function AdminMainPage({ user, handleLogout }) {
 
                         <Route path="/admin/report" element={<ReportPage />} />
                         
-                        <Route path="/admin/profile" element={<h2>โปรไฟล์ผู้ดูแลระบบ</h2>} />
                         <Route path="/admin/machine" element={<ManageMachine />} />
                         <Route path="/admin/equipment" element={<ManageEquipment />} />
                         <Route path="/admin/transactions" element={<ManageTransaction />} />
                         <Route path="/admin/user" element={<ManageUser />} />
                         <Route path="/admin/supplier" element={<ManageSupplier />} />
                         <Route path="/admin/alert" element={<AlertPage />} />
+                        <Route path="/admin/profile" element={<ProfileENG user={user}/>} />
+                        <Route path="/admin/profile/edit" element={<ProfileEditENG user={user}/>} />
+                        <Route path="/admin/profile/change-passwordENG" element={<ChangePasswordENG user={user}/>} />
+
 
                         <Route path="*" element={<h2>ไม่พบหน้าที่คุณต้องการ</h2>} />
                     </Routes>
