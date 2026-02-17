@@ -41,7 +41,7 @@ function ProfileENG({ user }) {
                                     className="profile-img-large" 
                                 />
                             ) : (
-                                <FaUserCircle className="profile-icon-placeholder" />
+                                <FaUserCircle className="profile-icon-placeholder" style={{width:"100px" ,height:"100px", marginTop:"10px"}} />
                             )}
                             <h2 className="profile-name">{displayFullname}</h2>
                             <span className="profile-badge">{displayRole}</span>

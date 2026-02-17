@@ -40,10 +40,6 @@ function ProfileEditENG({ user, refreshUser }) {
         setInitialLoad(false);
     }, [user]);
 
-    const handleBack = () => {
-        navigate('/dashboard/engineer/profile'); 
-    };
-
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
@@ -97,10 +93,19 @@ function ProfileEditENG({ user, refreshUser }) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || 'Failed to update profile');
             }
+            
 
             alert("บันทึกข้อมูลสำเร็จ!");
-            if (refreshUser) refreshUser(); 
-            navigate('/dashboard/engineer/profile'); 
+            // if (refreshUser) refreshUser(); 
+            const role = user?.role_id || user?.role;
+            console.log(role);
+            if (role === 'R-ADM') {
+                navigate('/dashboard/admin/profile');
+            } else if (role === 'R-MGR') {
+                navigate('/dashboard/manager/profile');
+            } else {
+                navigate('/dashboard/engineer/profile');
+            }
 
         } catch (err) {
             alert("เกิดข้อผิดพลาด: " + err.message);
@@ -125,7 +130,7 @@ function ProfileEditENG({ user, refreshUser }) {
                         {previewUrl ? (
                             <img src={previewUrl} alt="Profile" className="avatar-preview-img" />
                         ) : (
-                            <FaUserCircle className="avatar-icon" />
+                            <FaUserCircle className="avatar-icon" style={{width:"100px" ,height:"100px", marginTop:"10px"}} />
                         )}
                         <label htmlFor="file-input" className="camera-badge">
                             <FaCamera />
@@ -198,7 +203,7 @@ function ProfileEditENG({ user, refreshUser }) {
                     </div>
 
                     <div className="form-actions">
-                        <button type="button" onClick={handleBack} className="btn-cancel">
+                        <button type="button" onClick={() => navigate(-1)} className="btn-cancel">
                             ยกเลิก
                         </button>
                         <button type="submit" className="btn-save" disabled={loading || uploading}>

@@ -6,7 +6,7 @@ import {
 import "./ProfileENG.css"; 
 import "./ProfileEditENG.css"; 
 
-function ProfileEditENG({ user, handleLogout, refreshUser }) { 
+function ProfileEditNG({ user, handleLogout, refreshUser }) { 
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [initialLoad, setInitialLoad] = useState(true); 
@@ -162,4 +162,4 @@ function ProfileEditENG({ user, handleLogout, refreshUser }) {
     );
 }
 
-export default ProfileEditENG;
+export default ProfileEditNG;

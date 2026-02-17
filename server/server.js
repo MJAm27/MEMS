@@ -706,11 +706,6 @@ app.get("/api/auth/me", authenticateToken, async (req, res) => {
 });
 
 
-
-
-/**
- * Endpoint 6: Update User Profile (Protected)
- */
 app.put("/api/profile-edit", authenticateToken, async (req, res) => {
     const userIdFromToken = req.user.userId; 
     const { fullname, email, phone_number, position, profile_img } = req.body;
@@ -1082,13 +1077,13 @@ app.get("/api/alerts/low-stock", async (req, res) => {
 // =======================================================
 
 // 1. เปิดให้เข้าถึงรูปภาพในโฟลเดอร์ uploads ได้ผ่าน URL
-app.use('/profile-img', express.static(path.join(__dirname, 'uploads_profile')));
+app.use('/profile-img', express.static(path.join(__dirname, 'uploads')));
 
 // 2. ตั้งค่า Multer สำหรับ Save ไฟล์
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         // มั่นใจว่าชื่อโฟลเดอร์ตรงกับที่คุณสร้างไว้จริง
-        cb(null, 'uploads_profile/'); 
+        cb(null, 'uploads/'); 
     },
     filename: (req, file, cb) => {
         cb(null, 'profile-' + Date.now() + path.extname(file.originalname));
@@ -1101,7 +1096,7 @@ app.post("/api/upload", upload.single('image'), (req, res) => {
     if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
     }
-    // สร้าง URL เพื่อส่งกลับไปให้ Frontend มาแก้ตรงนี้ด้วยจ้าาา เสียวรูปไม่ขึ้น
+    
     res.json({ filename: req.file.filename });
 });
 
@@ -1620,7 +1615,7 @@ app.post('/api/withdraw/partInfo', async (req, res) => {
             stockInLot: item.stock_in_lot,
             totalStock: item.total_stock,
             imageUrl: item.img && item.img !== 'NULL' 
-                ? `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/uploads/${item.img}` 
+                ? `${process.env.REACT_APP_API_URL}/uploads/${item.img}` 
                 : 'https://via.placeholder.com/100'
         });
     } catch (error) {
