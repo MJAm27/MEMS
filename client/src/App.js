@@ -10,6 +10,9 @@ import ChangePasswordENG from './components/ChangePasswordENG';
 import ProfileENG from './components/ProfileENG'; 
 import ProfileEditENG from './components/ProfileEditENG';
 import SearchPartPageENG from './components/SearchPartPageENG';
+import InventoryBalanceReportChart from './components/InventoryBalanceReportChart';
+import EquipmentUsageReportChart from './components/EquipmentUsageReportChart';
+import EquipmentAgeReportChart from './components/EquipmentAgeReportChart';
 
 function App() {
     const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || null);
@@ -70,6 +73,9 @@ window.addEventListener('error', debounce(resizeObserverErr));
                     <Route path="change-passwordENG" element={<ChangePasswordENG />} />
                 </Route>
                 <Route path="SearchPartPage" element={<SearchPartPageENG />} />
+                <Route path="/report/inventory-balance" element={<InventoryBalanceReportChart />} />
+                    <Route path="/report/equipment-usage" element={<EquipmentUsageReportChart />} />
+                    <Route path="/report/equipment-age" element={<EquipmentAgeReportChart />} />
             </Routes>
         </BrowserRouter>
     );
