@@ -1,40 +1,92 @@
-/* การจัดวางการ์ดไอเทม */
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+    --primary-pink: #ff4d94;
+    --primary-gradient: linear-gradient(135deg, #ff4d94 0%, #ff71ac 100%);
+    --bg-gray: #f8fafc;
+    --card-bg: #ffffff;
+    --radius-lg: 30px;
+}
+
+.return-page-container {
+    font-family: 'Prompt', sans-serif;
+    min-height: 100vh;
+    padding: 30px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: var(--bg-gray);
+}
+
+/* Stepper - Sync with Withdraw System */
+.step-progress-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 35px;
+}
+
+.step-item { display: flex; align-items: center; }
+
+.step-number {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background-color: #fff;
+    color: #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    border: 2px solid #f1f5f9;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.step-item.active .step-number {
+    background-color: var(--primary-pink);
+    color: white;
+    border-color: var(--primary-pink);
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(255, 77, 148, 0.3);
+}
+
+.step-line {
+    height: 3px;
+    width: 35px;
+    background-color: #f1f5f9;
+    margin: 0 10px;
+    border-radius: 10px;
+}
+
+.step-item.active .step-line { background-color: var(--primary-pink); }
+
+/* Card Design */
+.return-card {
+    background: var(--card-bg);
+    width: 100%;
+    max-width: 460px;
+    border-radius: var(--radius-lg);
+    padding: 40px 30px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+}
+
+/* Item Card */
 .part-item-card {
     display: flex;
     align-items: center;
     background: #ffffff;
-    padding: 15px;
+    padding: 16px;
     border-radius: 20px;
-    margin-bottom: 15px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    border: 1px solid #f0f0f0;
-    transition: all 0.2s ease;
+    margin-bottom: 12px;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 
-.part-item-card img {
-    width: 60px;
-    height: 60px;
-    border-radius: 12px;
-    object-fit: cover;
-    margin-right: 15px;
-    background: #f8f9fa;
-}
-
-.item-info {
-    flex-grow: 1;
-}
-
-.item-info .name {
-    font-weight: 600;
-    color: #334155;
-    display: block;
-    font-size: 1rem;
-}
-
-/* ส่วนควบคุมจำนวน (Qty Control) */
+/* Qty Control */
 .qty-control {
     display: flex;
-    flex-direction: column; /* วางปุ่ม + - แนวตั้งเหมือนรูปตัวอย่าง */
+    flex-direction: column;
     align-items: center;
     background: #f1f5f9;
     padding: 5px;
@@ -48,70 +100,26 @@
     border-radius: 8px;
     border: none;
     background: white;
-    color: #334155;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     cursor: pointer;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    transition: all 0.2s;
 }
 
-.qty-control button:hover {
-    background: #e2e8f0;
-}
-
-.qty-control button:active {
-    transform: scale(0.9);
-}
-
-.qty-control .qty-number {
-    font-weight: 700;
-    font-size: 1.1rem;
-    color: #1e293b;
-    margin: 4px 0;
-    min-width: 30px;
-    text-align: center;
-}
-
-/* ปุ่มถังขยะ */
-.del-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    border: 1px solid #fee2e2;
-    background: #fff5f5;
-    color: #ef4444;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.del-btn:hover {
-    background: #ef4444;
-    color: white;
-    border-color: #ef4444;
-}
-
-/* ปุ่มตรวจสอบรายการ (ด้านล่าง) */
+/* Primary Button */
 .main-action-btn.primary {
-    background: linear-gradient(135deg, #ff4d94 0%, #d946ef 100%);
+    background: var(--primary-gradient);
     color: white;
-    border: none;
     padding: 16px;
-    border-radius: 50px; /* ทรงมนยาวแบบในรูป */
-    font-size: 1.1rem;
+    border-radius: 50px;
+    font-size: 17px;
     font-weight: 600;
     width: 100%;
+    border: none;
     cursor: pointer;
-    box-shadow: 0 10px 20px rgba(255, 77, 148, 0.3);
-    margin-top: 20px;
-    transition: transform 0.2s;
+    box-shadow: 0 6px 15px rgba(255, 77, 148, 0.25);
+    transition: all 0.2s;
 }
 
 .main-action-btn.primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 24px rgba(255, 77, 148, 0.4);
+    filter: brightness(1.05);
 }
