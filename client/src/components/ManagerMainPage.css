@@ -1,115 +1,46 @@
-/* ==================== Manager Theme Variables ==================== */
-:root {
-    --manager-primary: #1a5276; /* สีน้ำเงินเข้ม ดูน่าเชื่อถือสำหรับผู้บริหาร */
-    --manager-secondary: #2ecc71; /* สีเขียวสำหรับสถานะปกติ/รายงานสรุป */
-    --manager-bg: #f0f2f5;
-    --manager-card-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    --transition-fast: 0.25s ease;
-}
-
-/* ==================== Dashboard Cards ==================== */
-/* อ้างอิงจากระบบรายงานสรุปใน Use Case */
-.manager-stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-    margin-bottom: 30px;
-}
-
-.stat-card {
-    background: white;
-    border-radius: 15px;
-    padding: 25px;
+.nav-left-section {
     display: flex;
     align-items: center;
     gap: 20px;
-    box-shadow: var(--manager-card-shadow);
-    transition: var(--transition-fast);
-    border-bottom: 4px solid transparent;
 }
 
-.stat-card:hover {
-    transform: translateY(-5px);
-}
-
-.stat-card.alert { border-color: #e74c3c; } /* สำหรับอะไหล่ใกล้หมด */
-.stat-card.expire { border-color: #f1c40f; } /* สำหรับอะไหล่ใกล้หมดอายุ */
-.stat-card.success { border-color: #2ecc71; }
-
-.stat-icon {
-    font-size: 2.5rem;
-    padding: 15px;
-    border-radius: 12px;
-    background: var(--manager-bg);
-    color: var(--manager-primary);
-}
-
-.stat-info h3 {
-    margin: 0;
-    font-size: 1.8rem;
-    font-weight: 700;
-}
-
-.stat-info p {
-    margin: 0;
-    color: #666;
-    font-size: 0.95rem;
-}
-
-/* ==================== Report Sections ==================== */
-/* สำหรับ InventoryBalanceReportChart.js */
-.manager-chart-container {
-    background: white;
-    padding: 25px;
-    border-radius: 15px;
-    box-shadow: var(--manager-card-shadow);
-    margin-top: 20px;
-}
-
-.chart-header {
+.daily-filter-container {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 15px;
+    background: #f1f5f9;
+    padding: 8px 15px;
+    border-radius: 50px;
+    gap: 10px;
+    border: 1px solid #e2e8f0;
 }
 
-/* ==================== Notification List ==================== */
-/* อ้างอิงจากระบบแจ้งเตือนใน Use Case */
-.manager-alert-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+.calendar-icon {
+    color: #ff4d94;
+    font-size: 0.9rem;
 }
 
-.alert-item {
-    background: #fff;
-    border-left: 5px solid #e74c3c;
-    padding: 15px 20px;
-    border-radius: 8px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-}
-
-.alert-item.urgent {
-    background: #fdf2f2;
-}
-
-.alert-meta {
+.filter-text {
     font-size: 0.85rem;
-    color: #e74c3c;
     font-weight: 600;
+    color: #64748b;
 }
 
-/* ==================== Animations ==================== */
-.fade-in {
-    animation: managerFadeIn 0.5s ease-out forwards;
+.daily-date-input {
+    border: none;
+    background: transparent;
+    font-family: 'Prompt', sans-serif;
+    color: #1e293b;
+    font-weight: 700;
+    outline: none;
+    cursor: pointer;
 }
 
-@keyframes managerFadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+/* ปรับสี Notification Badge ให้เด่นขึ้น */
+.notification-badge-inline {
+    background: #ef4444;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    margin-left: auto;
 }

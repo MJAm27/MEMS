@@ -126,32 +126,64 @@ function generateTransactionId(prefix = 'TX') {
 
 // --- API Endpoints สำหรับ ESP8266 ---
 
-// 📌 API: สำหรับ "เปิด" Servo
+// 📌 API สำหรับหน้าเว็บทดสอบ (Test Panel)
 app.get('/api/open', authenticateToken, async (req, res) => {
-    const ACTION_TYPE_ID = 'A-001'; // 'เปิดประตู'
-
+    const ACTION_TYPE_ID = 'A-001'; 
     try {
-        await commandServo('open'); // 🚨 เปิดใช้เมื่อเชื่อมต่อ ESP จริง
+        await commandServo(0); // 🔥 เปิด = 0 องศา
         await logActionToDB(req.user.userId, ACTION_TYPE_ID);
-        res.status(200).send({ message: 'Servo Opened and action logged.' });
-
+        res.status(200).send({ message: 'Servo Opened (0°)' });
     } catch (error) {
-        // หากติดต่อ ESP ไม่ได้ ให้แจ้งเตือนแต่ยังอนุญาตให้ทำรายการต่อ (หรือจะ Block ก็ได้แล้วแต่คุณ)
-        console.error("Open Servo Error:", error.message);
-        res.status(500).send({ error: 'ไม่สามารถติดต่อตู้เพื่อเปิดกล่องได้' });
+        res.status(500).send({ error: 'ไม่สามารถติดต่อตู้เพื่อเปิดได้' });
     }
 });
 
-// 📌 API: สำหรับ "ปิด" Servo
+
+// 📌 API: สำหรับ "เปิด" Servo
 app.post('/api/close-box', authenticateToken, async (req, res) => {
+    const ACTION_TYPE_ID = 'A-002';
     try {
-        await commandServo('close');
-        res.status(200).send({ message: 'Box Closed' });
+        await commandServo(180); // 🔥 ปิด = 180 องศา
+        await logActionToDB(req.user.userId, ACTION_TYPE_ID);
+        res.status(200).send({ message: 'Box Closed (180°)' });
     } catch (error) {
         res.status(500).send({ error: 'ไม่สามารถสั่งปิดประตูได้' });
     }
 });
+
+
 // --- API Endpoints สำหรับ Withdrawal (เชื่อมต่อ DB) ---
+
+// รวบรวมข้อมูลอะไหล่พร้อมรายละเอียดล็อตล่าสุดและจำนวนรวม
+app.get('/api/manager/equipment-details', authenticateToken, async (req, res) => {
+    try {
+        const sql = `
+            SELECT 
+                et.equipment_type_id,
+                et.equipment_name,
+                et.unit,
+                e.equipment_id,
+                e.alert_quantity,
+                -- นับจำนวนล็อตที่มีรายการนี้อยู่จริง
+                COUNT(l.lot_id) AS total_lots,
+                -- รวมจำนวนคงเหลือจากทุกล็อต
+                COALESCE(SUM(l.current_quantity), 0) AS total_stock,
+                -- หาราคาสูงสุดและต่ำสุดในคลัง
+                MIN(l.price) AS min_price,
+                MAX(l.price) AS max_price
+            FROM equipment_type et
+            JOIN equipment e ON et.equipment_type_id = e.equipment_type_id
+            LEFT JOIN lot l ON e.equipment_id = l.equipment_id
+            GROUP BY et.equipment_type_id, e.equipment_id
+            ORDER BY et.equipment_type_id ASC
+        `;
+        const [rows] = await pool.query(sql);
+        res.json(rows);
+    } catch (error) {
+        console.error("SQL Error:", error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // 1. API: Fetch Part Info (POST /api/withdraw/partInfo)
 app.post('/api/withdraw/partInfo', async (req, res) => {
@@ -723,32 +755,47 @@ app.put("/api/profile-edit", authenticateToken, async (req, res) => {
 
 app.get("/api/inventoryBalanceReportChart", async (req, res) => {
     try {
-        // ✅ SQL Query ใช้ Backticks แล้ว
         const sql = `
             SELECT
-            et.equipment_type_id,
-            et.equipment_name,
-            COALESCE(SUM(l.current_quantity), 0) AS quantity,
-            COALESCE(SUM(e.alert_quantity), 0) AS alert_quantity
+                et.equipment_type_id,
+                et.equipment_name,
+                -- 1. คงเหลือ: ผลรวม current_quantity จากทุก Lot ของอุปกรณ์นี้
+                COALESCE(SUM(l.current_quantity), 0) AS quantity, 
+                
+                -- 2. ทั้งหมด: คงเหลือปัจจุบัน + ผลรวมจำนวนที่เคยถูกบันทึกใน equipment_list โดยอิงตาม lot_id
+                COALESCE(SUM(l.current_quantity), 0) + COALESCE((
+                    SELECT SUM(el.quantity)
+                    FROM equipment_list el
+                    WHERE el.lot_id IN (SELECT lot_id FROM lot WHERE equipment_id = e.equipment_id)
+                ), 0) AS total_quantity,
+                
+                -- 3. เกณฑ์การเตือนสต็อกต่ำ
+                COALESCE(e.alert_quantity, 0) AS alert_quantity,
+                
+                -- 4. จำนวนที่ใช้ไปแล้วจริง (Used) สำหรับแสดงในกราฟสีเทา
+                COALESCE((
+                    SELECT SUM(el.quantity)
+                    FROM equipment_list el
+                    JOIN transactions t ON el.transaction_id = t.transaction_id
+                    WHERE el.equipment_id = e.equipment_id 
+                    AND t.transaction_type_id = 'T-WTH'
+                    AND t.is_pending = 0
+                ), 0) AS used_quantity
+
             FROM equipment_type et
-            LEFT JOIN equipment e
-            ON e.equipment_type_id = et.equipment_type_id
-            LEFT JOIN lot l
-            ON l.equipment_id = e.equipment_id
-            GROUP BY
-            et.equipment_type_id,
-            et.equipment_name;
+            LEFT JOIN equipment e ON e.equipment_type_id = et.equipment_type_id
+            LEFT JOIN lot l ON l.equipment_id = e.equipment_id
+            GROUP BY et.equipment_type_id, et.equipment_name, e.equipment_id;
         `;
 
         const [rows] = await pool.query(sql);
         res.json(rows);
 
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err });
+        console.error("Report Chart Error:", err);
+        res.status(500).json({ error: err.message });
     }
 });
-
 // ================== ALERTS ==================
 
 // 1. อะไหล่ที่ใกล้หมดอายุ (เช็คจาก Lot, < 100 วัน)
@@ -855,27 +902,76 @@ app.get('/api/search/machines', async (req, res) => {
 });
 
 // ค้นหาอะไหล่ (Parts)
-app.get('/api/search/parts', async (req, res) => {
-    const { term } = req.query;
+app.get('/api/history/full', authenticateToken, async (req, res) => {
+    // 1. รับค่า startDate และ endDate จาก Query Parameters
+    const { startDate, endDate } = req.query; 
+    let whereClause = "";
+    let params = [];
+
+    // 2. กำหนดเงื่อนไข WHERE และเตรียมค่า Parameter
+    if (startDate && endDate) {
+        whereClause = "WHERE t.date BETWEEN ? AND ?";
+        params = [startDate, endDate];
+    }
+
     try {
+        // 3. นำ whereClause ไปวางไว้ก่อนส่วน GROUP BY และ ORDER BY
         const sql = `
             SELECT 
-                e.equipment_id, 
-                et.equipment_name, 
-                e.model_size,
-                l.lot_id 
-            FROM equipment e 
-            JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id 
-            LEFT JOIN lot l ON e.equipment_id = l.equipment_id
-            WHERE e.equipment_id LIKE ? 
-               OR et.equipment_name LIKE ? 
-               OR l.lot_id LIKE ? 
-            GROUP BY e.equipment_id -- ป้องกันข้อมูลซ้ำถ้ามีหลาย Lot
-            LIMIT 10`;
-        const [rows] = await pool.query(sql, [`%${term}%`, `%${term}%`, `%${term}%`]);
-        res.json(rows);
+                t.transaction_id, 
+                tt.transaction_type_name AS type_name,
+                t.transaction_type_id,
+                t.date, 
+                t.time,
+                t.machine_SN,
+                u.fullname,
+                (
+                    SELECT JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'name', et_sub.equipment_name,
+                            'qty', el_sub.quantity
+                        )
+                    )
+                    FROM equipment_list el_sub
+                    JOIN equipment e_sub ON el_sub.equipment_id = e_sub.equipment_id
+                    JOIN equipment_type et_sub ON e_sub.equipment_type_id = et_sub.equipment_type_id
+                    WHERE el_sub.transaction_id = t.transaction_id
+                ) AS items_json,
+                (
+                    SELECT al.time FROM accesslogs al
+                    WHERE al.user_id = t.user_id 
+                      AND al.date = t.date 
+                      AND al.action_type_id = 'A-001'
+                      AND al.time <= t.time
+                    ORDER BY al.time DESC LIMIT 1
+                ) AS open_time,
+                (
+                    SELECT al.time FROM accesslogs al
+                    WHERE al.user_id = t.user_id 
+                      AND al.date = t.date 
+                      AND al.action_type_id = 'A-002'
+                      AND (al.transaction_id = t.transaction_id OR al.time >= t.time)
+                    ORDER BY al.time ASC LIMIT 1
+                ) AS close_time
+            FROM transactions t
+            LEFT JOIN transactions_type tt ON t.transaction_type_id = tt.transaction_type_id
+            LEFT JOIN users u ON t.user_id = u.user_id
+            ${whereClause} 
+            GROUP BY t.transaction_id
+            ORDER BY t.date DESC, t.time DESC
+        `;
+
+        // 4. ส่ง params เข้าไปใน pool.query เพื่อป้องกัน SQL Injection
+        const [rows] = await pool.query(sql, params);
+
+        const formattedRows = rows.map(row => ({
+            ...row,
+            items_json: typeof row.items_json === 'string' ? JSON.parse(row.items_json) : (row.items_json || [])
+        }));
+
+        res.json(formattedRows);
     } catch (error) {
-        console.error("Search API Error:", error);
+        console.error("❌ SQL Error in /api/history/full:", error.message);
         res.status(500).json({ error: error.message });
     }
 });
@@ -954,29 +1050,24 @@ app.get("/api/report/summary", async (req, res) => {
 // ================== REPORT USAGE ==================
 app.get("/api/report/usage", async (req, res) => {
     try {
+        // รับค่าวันที่จาก Frontend ถ้าไม่มีให้ใช้ CURDATE() (วันที่ปัจจุบัน)
+        const targetDate = req.query.date || new Date().toISOString().split('T')[0];
+
         const sql = `
             SELECT
                 tt.transaction_type_name,
-                SUM(
-                    CASE WHEN DATE(t.date) = CURDATE()
-                    THEN el.quantity ELSE 0 END
-                ) AS daily_total,
-
-                SUM(
-                    CASE WHEN MONTH(t.date) = MONTH(CURDATE())
-                    AND YEAR(t.date) = YEAR(CURDATE())
-                    THEN el.quantity ELSE 0 END
-                ) AS monthly_total
+                -- นับจำนวนเฉพาะวันที่ระบุ
+                SUM(CASE WHEN DATE(t.date) = ? THEN el.quantity ELSE 0 END) AS selected_date_total,
+                -- นับจำนวนของเดือนนั้นๆ (คงเดิมไว้เพื่อสถิติ)
+                SUM(CASE WHEN MONTH(t.date) = MONTH(?) AND YEAR(t.date) = YEAR(?) THEN el.quantity ELSE 0 END) AS monthly_total
             FROM transactions t
-            JOIN transactions_type tt
-                ON tt.transaction_type_id = t.transaction_type_id
-            JOIN equipment_list el
-                ON el.transaction_id = t.transaction_id
-            WHERE tt.transaction_type_name IN ('เบิก', 'คืน')
+            JOIN transactions_type tt ON tt.transaction_type_id = t.transaction_type_id
+            JOIN equipment_list el ON el.transaction_id = t.transaction_id
+            WHERE tt.transaction_type_name IN ('เบิกอะไหล่', 'คืนอะไหล่')
             GROUP BY tt.transaction_type_name
         `;
 
-        const [rows] = await db.query(sql);
+        const [rows] = await db.query(sql, [targetDate, targetDate, targetDate]);
 
         const result = {
             borrow: { daily: 0, monthly: 0 },
@@ -984,18 +1075,18 @@ app.get("/api/report/usage", async (req, res) => {
         };
 
         rows.forEach(row => {
-            if (row.transaction_type_name === "เบิก") {
-                result.borrow.daily = row.daily_total;
+            // ปรับชื่อให้ตรงกับ transaction_type_name ในฐานข้อมูล
+            if (row.transaction_type_name === "เบิกอะไหล่") {
+                result.borrow.daily = row.selected_date_total;
                 result.borrow.monthly = row.monthly_total;
             }
-            if (row.transaction_type_name === "คืน") {
-                result.return.daily = row.daily_total;
+            if (row.transaction_type_name === "คืนอะไหล่") {
+                result.return.daily = row.selected_date_total;
                 result.return.monthly = row.monthly_total;
             }
         });
 
         res.json(result);
-
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to load usage report" });
@@ -1692,12 +1783,13 @@ app.get('/api/history/full', authenticateToken, async (req, res) => {
         const sql = `
             SELECT 
                 t.transaction_id, 
-                tt.transaction_type_name as type_name,
+                tt.transaction_type_name AS type_name,
                 t.transaction_type_id,
                 t.date, 
                 t.time,
                 t.machine_SN,
-                u.fullname, -- 1. เพิ่มการดึงชื่อผู้ทำรายการตรงนี้
+                u.fullname,
+                /* 1. ดึงรายการอะไหล่เป็น JSON */
                 (
                     SELECT JSON_ARRAYAGG(
                         JSON_OBJECT(
@@ -1709,14 +1801,32 @@ app.get('/api/history/full', authenticateToken, async (req, res) => {
                     JOIN equipment e ON el.equipment_id = e.equipment_id
                     JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
                     WHERE el.transaction_id = t.transaction_id
-                ) as items_json,
-                (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-001' LIMIT 1) as open_time,
-                (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-002' LIMIT 1) as close_time
-            FROM transactions t
-            LEFT JOIN transactions_type tt ON t.transaction_type_id = tt.transaction_type_id
-            LEFT JOIN users u ON t.user_id = u.user_id -- 2. เพิ่มการเชื่อมตาราง users ตรงนี้
-            GROUP BY t.transaction_id
-            ORDER BY t.date DESC, t.time DESC
+                ) AS items_json,
+                /* 2. ดึงเวลาเปิดตู้ (A-001): หาเวลาที่ User คนนี้เปิดตู้ในวันที่ทำรายการ และเป็นเวลาที่ "ก่อนหน้า" แต่ใกล้เคียงเวลาบันทึกรายการที่สุด */
+                (
+                    SELECT time FROM accesslogs 
+                    WHERE user_id = t.user_id 
+                    AND date = t.date 
+                    AND action_type_id = 'A-001'
+                    AND time <= t.time
+                    ORDER BY time DESC 
+                    LIMIT 1
+                ) AS open_time,
+                /* 3. ดึงเวลาปิดตู้ (A-002): หาเวลาที่บันทึกปิดตู้โดยใช้ transaction_id (ถ้ามี) หรือเวลาที่ "หลังจาก" บันทึกรายการที่ใกล้ที่สุด */
+                (
+                    SELECT time FROM accesslogs 
+                    WHERE user_id = t.user_id 
+                    AND date = t.date 
+                    AND action_type_id = 'A-002'
+                    AND (transaction_id = t.transaction_id OR time >= t.time)
+                    ORDER BY time ASC 
+                    LIMIT 1
+                ) AS close_time
+                FROM transactions t
+                LEFT JOIN transactions_type tt ON t.transaction_type_id = tt.transaction_type_id
+                LEFT JOIN users u ON t.user_id = u.user_id
+                GROUP BY t.transaction_id
+                ORDER BY t.date DESC, t.time DESC;
         `;
         const [rows] = await pool.query(sql);
         res.json(rows);

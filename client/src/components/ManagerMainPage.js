@@ -2,23 +2,17 @@ import React, { useState, useLayoutEffect, useCallback, useEffect } from "react"
 import { useNavigate, Routes, Route, Navigate } from "react-router-dom"; 
 import axios from "axios";
 import {
-    FaBars, 
-    FaHome, 
-    FaChartBar, 
-    FaBell, 
-    FaHistory, 
-    FaSignOutAlt, 
-    FaUserCircle 
+    FaBars, FaHome, FaChartBar, FaBell, FaHistory, 
+    FaSignOutAlt, FaUserCircle, FaCalendarDay ,FaBoxOpen
 } from "react-icons/fa";
 
-// Import CSS สำหรับ Manager
 import "./ManagerMainPage.css"; 
 
-// Import หน้าย่อยที่รวม Logic กราฟและรายงานไว้แล้ว
 import ManagerDashboard from "./ManagerDashboard";
 import ManagerAlertPage from "./ManagerAlertPage";
 import ManagerReportPage from "./ManagerReportPage";
-import HistoryPage from "./HistoryPage"; // ใช้คอมโพเนนต์ประวัติร่วมกับ Engineer ได้
+import HistoryPage from "./HistoryPage";
+import ManagerEquipmentPage from "./ManagerEquipmentPage";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:3001";
 
@@ -26,15 +20,16 @@ function ManagerMainPage({ user, handleLogout }) {
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
     const [alertCount, setAlertCount] = useState(0);
+    
+    // --- ส่วนที่เพิ่ม: การจัดการวันที่รายวัน ---
+    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
-    // ตรวจสอบขนาดหน้าจออัตโนมัติสำหรับการเปิด/ปิด Sidebar
     useLayoutEffect(() => {
         const handleResize = () => setSidebarOpen(window.innerWidth > 768);
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // ดึงจำนวนแจ้งเตือนรวมเพื่อแสดงที่ Sidebar ตามระบบแจ้งเตือนใน Use Case
     const fetchAlertCount = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
@@ -50,7 +45,6 @@ function ManagerMainPage({ user, handleLogout }) {
 
     useEffect(() => {
         fetchAlertCount();
-        // ตั้งเวลาตรวจสอบการแจ้งเตือนทุก 1 นาที
         const interval = setInterval(fetchAlertCount, 60000); 
         return () => clearInterval(interval);
     }, [fetchAlertCount]);
@@ -59,23 +53,18 @@ function ManagerMainPage({ user, handleLogout }) {
 
     const localHandleLogout = () => {
         if (window.confirm("ต้องการออกจากระบบใช่หรือไม่?")) {
-            // ตรวจสอบว่า handleLogout มีตัวตนและเป็นฟังก์ชันจริงๆ หรือไม่
             if (typeof handleLogout === "function") {
                 handleLogout();
             } else {
-                console.error("Error: handleLogout prop is missing!");
-                // แผนสำรอง: ลบ token เองถ้าฟังก์ชันไม่ถูกส่งมา
                 localStorage.removeItem('token');
                 window.location.href = "/login";
             }
         }
     };
 
-
     return (
         <div className={`layout-wrapper ${sidebarOpen ? "sidebar-open" : "sidebar-closed"}`}>
             
-            {/* Sidebar: เมนูสำหรับ Manager ตาม Use Case Diagram */}
             <aside className="sidebar-container">
                 <div className="sidebar-header">
                     <div className="manager-logo">
@@ -84,17 +73,12 @@ function ManagerMainPage({ user, handleLogout }) {
                 </div>
                 
                 <nav className="sidebar-nav">
-                    {/* แก้ไข URL ให้เป็น Absolute Path เพื่อป้องกันปัญหา URL ซ้อนกัน (/home/home/home) */}
                     <button className="nav-link" onClick={() => navigate("/dashboard/manager/home")}>
                         <FaHome /> <span>แผงควบคุมหลัก</span>
                     </button>
-                    
-                    {/* Use Case: ระบบรายงานสรุป */}
                     <button className="nav-link" onClick={() => navigate("/dashboard/manager/reports")}>
                         <FaChartBar /> <span>รายงานสรุปคลัง</span>
                     </button>
-
-                    {/* Use Case: ระบบแจ้งเตือน */}
                     <button className="nav-link" onClick={() => navigate("/dashboard/manager/alerts")}>
                         <div className="nav-link-content">
                             <FaBell /> 
@@ -102,8 +86,9 @@ function ManagerMainPage({ user, handleLogout }) {
                             {alertCount > 0 && <span className="notification-badge-inline">{alertCount}</span>}
                         </div>
                     </button>
-
-                    {/* Use Case: แสดงสรุปการเบิกคืนแบบละเอียด */}
+                    <button className="nav-link" onClick={() => navigate("/dashboard/manager/equipment")}>
+                        <FaBoxOpen /> <span>ข้อมูลอะไหล่ทั้งหมด</span>
+                    </button>
                     <button className="nav-link" onClick={() => navigate("/dashboard/manager/history")}>
                         <FaHistory /> <span>ประวัติการใช้งาน</span>
                     </button>
@@ -114,12 +99,25 @@ function ManagerMainPage({ user, handleLogout }) {
                 </button>
             </aside>
 
-            {/* Main Content Area */}
             <main className="main-content-wrapper">
                 <header className="top-navbar">
-                    <button className="sidebar-toggle-btn" onClick={toggleSidebar}>
-                        <FaBars />
-                    </button>
+                    <div className="nav-left-section">
+                        <button className="sidebar-toggle-btn" onClick={toggleSidebar}>
+                            <FaBars />
+                        </button>
+                        
+                        {/* --- เพิ่มส่วน Daily Filter ใน Navbar --- */}
+                        <div className="daily-filter-container">
+                            <FaCalendarDay className="calendar-icon" />
+                            <span className="filter-text">มุมมองรายวัน:</span>
+                            <input 
+                                type="date" 
+                                value={selectedDate} 
+                                onChange={(e) => setSelectedDate(e.target.value)}
+                                className="daily-date-input"
+                            />
+                        </div>
+                    </div>
                     
                     <div className="nav-right">
                         <div className="user-profile-display">
@@ -135,14 +133,13 @@ function ManagerMainPage({ user, handleLogout }) {
                 </header>
 
                 <div className="content-body">
-                    {/* จัดการเส้นทางภายใน (Sub-routes) ให้สอดคล้องกับ URL */}
                     <Routes>
-                        <Route path="home" element={<ManagerDashboard />} />
-                        <Route path="reports" element={<ManagerReportPage />} />
+                        {/* ส่ง selectedDate ไปให้หน้าลูกเพื่อกรองข้อมูลรายวัน */}
+                        <Route path="home" element={<ManagerDashboard viewDate={selectedDate} />} />
+                        <Route path="reports" element={<ManagerReportPage viewDate={selectedDate} />} />
                         <Route path="alerts" element={<ManagerAlertPage />} />
-                        <Route path="history" element={<HistoryPage user={user} />} />
-                        
-                        {/* ตั้งค่า Default Route ให้ไปที่หน้าหลักของผู้จัดการ */}
+                        <Route path="history" element={<HistoryPage user={user} viewDate={selectedDate} />} />
+                        <Route path="equipment" element={<ManagerEquipmentPage />} />
                         <Route index element={<Navigate to="home" replace />} />
                         <Route path="*" element={<h2 className="text-center mt-10">ไม่พบหน้าที่คุณต้องการ</h2>} />
                     </Routes>
