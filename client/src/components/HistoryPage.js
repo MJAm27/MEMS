@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaHistory, FaFilter, FaBoxOpen, FaReply, FaClock } from 'react-icons/fa';
+import { FaHistory, FaFilter, FaBoxOpen, FaReply} from 'react-icons/fa';
 import './HistoryPage.css';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001';
@@ -40,32 +40,33 @@ function HistoryPage({ user }) {
             <div className="history-header">
                 <div className="title-section">
                     <FaHistory className="title-icon" />
-                    <h2>ประวัติการทำรายการ</h2>
+                    <h2>ประวัติรายการ</h2>
                 </div>
                 
                 <div className="filter-group">
                     <FaFilter className="filter-icon" />
                     <select value={filter} onChange={(e) => setFilter(e.target.value)} className="history-select">
                         <option value="ALL">ทั้งหมด</option>
-                        <option value="T-WTH">รายการเบิกอะไหล่</option>
-                        <option value="T-RTN">รายการคืนอะไหล่</option>
+                        <option value="T-WTH">รายการเบิก</option>
+                        <option value="T-RTN">รายการคืน</option>
                     </select>
                 </div>
             </div>
 
-            <div className="history-card">
+            {/* --- ส่วนแสดงผลแบบ Desktop (ตาราง) --- */}
+            <div className="history-card desktop-view">
                 <div className="table-responsive">
                     <table className="history-table">
                         <thead>
                             <tr>
-                                <th>วัน/เวลา รายการ</th>
+                                <th>วัน/เวลา</th>
                                 <th>ประเภท</th>
                                 <th>รายการอะไหล่</th>
                                 <th className="text-center">จำนวน</th>
                                 <th>เลขครุภัณฑ์</th>
-                                <th><FaClock /> เวลาเปิด-ปิดตู้</th>
+                                <th>เวลาเปิด-ปิด</th>
                             </tr>
-                        </thead>
+                    </thead>
                         <tbody>
                             {filteredData.length > 0 ? filteredData.map((row, index) => {
                                 // --- ส่วนสำคัญ: แปลงข้อมูลรายการอะไหล่จาก JSON ---
@@ -134,6 +135,43 @@ function HistoryPage({ user }) {
                         </tbody>
                     </table>
                 </div>
+            </div>
+
+            {/* --- ส่วนแสดงผลแบบ Mobile (Card List) --- */}
+            <div className="mobile-view">
+                {filteredData.map((row, index) => {
+                    let items = [];
+                    try { items = typeof row.items_json === 'string' ? JSON.parse(row.items_json) : (row.items_json || []); } catch (e) { items = []; }
+                    
+                    return (
+                        <div key={index} className={`history-mobile-card border-left-${row.transaction_type_id}`}>
+                            <div className="card-mobile-header">
+                                <span className="mobile-date">{new Date(row.date).toLocaleDateString('th-TH')} | {row.time}</span>
+                                <span className={`type-badge ${row.transaction_type_id}`}>
+                                    {row.transaction_type_id === 'T-WTH' ? 'เบิก' : 'คืน'}
+                                </span>
+                            </div>
+                            
+                            <div className="card-mobile-body">
+                                <div className="mobile-item-list">
+                                    {items.map((item, i) => (
+                                        <div key={i} className="mobile-item-row">
+                                            <span className="item-name">{item.name}</span>
+                                            <span className="item-qty">x {item.qty}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="mobile-meta">
+                                    <strong>ครุภัณฑ์:</strong> {row.machine_SN || "-"}
+                                </div>
+                                <div className="mobile-access-logs">
+                                    <span className="log-tag">เปิด: {row.open_time || '--:--'}</span>
+                                    <span className="log-tag">ปิด: {row.close_time || '--:--'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );

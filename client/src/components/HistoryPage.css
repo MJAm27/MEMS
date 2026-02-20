@@ -1,4 +1,6 @@
-/* คอนเทนเนอร์หลัก */
+/* ===================================================
+   1. คอนเทนเนอร์หลักและฟอนต์
+   =================================================== */
 .history-container { 
     padding: 20px; 
     max-width: 1200px; 
@@ -6,7 +8,9 @@
     font-family: 'Prompt', sans-serif;
 }
 
-/* ส่วนหัวและตัวกรอง */
+/* ===================================================
+   2. ส่วนหัวและระบบกรอง (Header & Filters)
+   =================================================== */
 .history-header { 
     display: flex; 
     justify-content: space-between; 
@@ -40,9 +44,14 @@
     font-weight: bold;
     color: #666;
     cursor: pointer;
+    background: transparent;
 }
 
-/* การ์ดตาราง */
+/* ===================================================
+   3. การแสดงผลแบบ Desktop (Table View)
+   =================================================== */
+.desktop-view { display: block; }
+
 .history-card { 
     background: white; 
     border-radius: 20px; 
@@ -70,13 +79,13 @@
 .history-table td { 
     padding: 15px; 
     border-bottom: 1px solid #f0f0f0; 
-    vertical-align: top; 
+    vertical-align: middle; 
     font-size: 14px;
 }
 
-/* การจัดการข้อมูลอะไหล่แยกคอลัมน์ (ให้บรรทัดตรงกัน) */
+/* สไตล์แถวข้อมูลอะไหล่ */
 .item-row-detail {
-    height: 28px; /* กำหนดความสูงคงที่เพื่อให้บรรทัดชื่อและจำนวนตรงกันเสมอ */
+    height: 28px;
     display: flex;
     align-items: center;
     color: #444;
@@ -84,11 +93,11 @@
 
 .item-qtys-column .item-row-detail {
     justify-content: center;
-    color: #ff4d94; /* เน้นสีชมพูที่ตัวเลขจำนวน */
+    color: #ff4d94;
     font-weight: 800;
 }
 
-/* Badge แสดงประเภทรายการ */
+/* Badge และ Time Badges */
 .type-badge { 
     padding: 6px 12px; 
     border-radius: 50px; 
@@ -103,45 +112,117 @@
 .type-badge.T-WTH { background: #fff0f6; color: #ff4d94; }
 .type-badge.T-RTN { background: #ecfdf5; color: #059669; }
 
-/* ส่วนแสดงเวลาการเข้าถึง (Access Log) */
-.access-log-cell { min-width: 140px; }
-
 .status-timeline {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
 }
 
 .time-badge {
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    color: #94a3b8; 
     display: flex;
     justify-content: space-between;
-    padding: 4px 10px;
-    border-radius: 8px;
-    background: #f3f4f6; 
-    color: #9ca3af;
-    font-size: 11px;
-    font-weight: 600;
-    border: 1px solid transparent;
+    border: 1px solid #e2e8f0;
 }
 
-.time-badge small { opacity: 0.8; font-weight: normal; }
-
-/* สีเมื่อมีการบันทึกเวลาจริง */
-.active-open { 
-    background: #fff7ed; 
-    color: #ea580c; 
-    border: 1px solid #ffedd5; 
+.time-badge.active-open, .time-badge.active-close {
+    color: #1e293b; /* สีเข้มถ้ามีเวลา */
+    background: #ecfdf5; /* พื้นหลังเขียวอ่อนๆ */
+    border-color: #10b981;
 }
 
-.active-close { 
-    background: #f0fdf4; 
-    color: #16a34a; 
-    border: 1px solid #dcfce7; 
+.active-open { background: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; }
+.active-close { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+
+/* ===================================================
+   4. การแสดงผลแบบ Mobile (Card View) - @media query
+   =================================================== */
+.mobile-view { display: none; }
+
+@media (max-width: 768px) {
+    /* สลับ View */
+    .desktop-view { display: none; }
+    .mobile-view { display: block; }
+    
+    .history-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .filter-group { width: 100%; justify-content: space-between; }
+
+    /* สไตล์การ์ดในมือถือ */
+    .history-mobile-card {
+        background: white;
+        border-radius: 15px;
+        padding: 15px;
+        margin-bottom: 15px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        border-left: 5px solid #cbd5e1;
+    }
+
+    /* แถบสีตามประเภท */
+    .border-left-T-WTH { border-left-color: #ff4d94; }
+    .border-left-T-RTN { border-left-color: #059669; }
+
+    .card-mobile-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        border-bottom: 1px solid #f3f4f6;
+        padding-bottom: 8px;
+    }
+
+    .mobile-date { font-size: 13px; color: #333; font-weight: 700; }
+
+    .mobile-item-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+        font-size: 14px;
+        border-bottom: 1px dashed #f1f5f9;
+    }
+
+    .mobile-item-row:last-child { border-bottom: none; }
+
+    .item-qty { font-weight: 800; color: #ff4d94; }
+
+    .mobile-meta {
+        margin-top: 12px;
+        font-size: 13px;
+        color: #475569;
+        background: #f8fafc;
+        padding: 8px;
+        border-radius: 8px;
+    }
+
+    .mobile-access-logs {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    .log-tag {
+        flex: 1;
+        text-align: center;
+        background: #f1f5f9;
+        padding: 5px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #64748b;
+    }
 }
 
-/* ส่วนแสดงวัน/เวลาทำรายการ */
-.time-cell .date-text { font-weight: bold; color: #333; }
-.time-cell .time-text { font-size: 12px; color: #888; margin-top: 2px; }
-
-.font-bold { font-weight: 700; }
+/* ===================================================
+   5. Utility Classes
+   =================================================== */
 .text-center { text-align: center; }
+.font-bold { font-weight: 700; }
+.text-pink { color: #ff4d94; }
