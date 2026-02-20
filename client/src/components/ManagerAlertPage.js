@@ -84,7 +84,7 @@ function ManagerAlertPage() {
                     className={`alert-tab-card ${activeTab === "expensive" ? "active" : ""}`}
                     onClick={() => setActiveTab("expensive")}
                 >
-                    <div className="icon-circle expensive-icon" style={{backgroundColor: '#3498db'}}><FaDollarSign /></div>
+                    <div className="icon-circle expensive-icon" ><FaDollarSign /></div>
                     <div className="tab-text">
                         <h3>การใช้ราคาแพง</h3>
                         <span className="badge-count">{expensiveList.length} รายการ</span>
