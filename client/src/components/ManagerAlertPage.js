@@ -6,29 +6,29 @@ import {
     FaExclamationTriangle, 
     FaDollarSign 
 } from "react-icons/fa";
-import "./AlertPage.css"; // ใช้ CSS ร่วมกับแอดมินเพื่อให้หน้าตาเหมือนกัน
+import "./AlertPage.css"; // ใช้ CSS เดียวกับ AlertPage เพื่อความสวยงามที่เหมือนกัน
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:3001";
 
 function ManagerAlertPage() {
-    // กำหนด Tab ให้ตรงกับแอดมิน (expire, stock) และเพิ่ม expensive สำหรับ manager
+    // 1. เพิ่ม Tab 'expensive' สำหรับ Manager
     const [activeTab, setActiveTab] = useState("expire"); 
     const [expireList, setExpireList] = useState([]);
     const [stockList, setStockList] = useState([]);
-    const [expensiveList, setExpensiveList] = useState([]); // ข้อมูลราคาแพง
+    const [expensiveList, setExpensiveList] = useState([]); 
     const [loading, setLoading] = useState(true);
 
-    // ดึงข้อมูลจาก API ชุดเดียวกับที่แอดมินใช้
     const fetchAlerts = useCallback(async () => {
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
             const headers = { Authorization: `Bearer ${token}` };
 
+            // เรียก API ทั้ง 3 ตัวพร้อมกัน
             const [expireRes, stockRes, expensiveRes] = await Promise.all([
                 axios.get(`${API_BASE_URL}/api/alerts/expire`, { headers }),
                 axios.get(`${API_BASE_URL}/api/alerts/low-stock`, { headers }),
-                axios.get(`${API_BASE_URL}/api/alerts/expensive-usage`, { headers }) // API เพิ่มเติมสำหรับ Manager
+                axios.get(`${API_BASE_URL}/api/alerts/expensive-usage`, { headers }) // API เฉพาะ Manager
             ]);
 
             setExpireList(expireRes.data);
@@ -45,65 +45,55 @@ function ManagerAlertPage() {
         fetchAlerts();
     }, [fetchAlerts]);
 
-    // ฟังก์ชันแปลงวันที่ (ใช้ logic เดียวกับ Admin)
     const formatDate = (dateString) => {
-        if (!dateString) return "-";
-        const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
-        return new Date(dateString).toLocaleDateString('th-TH', options);
+        return new Date(dateString).toLocaleDateString('th-TH', {
+            year: 'numeric', month: '2-digit', day: '2-digit'
+        });
     };
 
     return (
         <div className="alert-page-container">
-            <h2 className="page-title">ศูนย์แจ้งเตือนสำหรับผู้จัดการ</h2>
-
-            {/* ส่วน Tab เลือกดูข้อมูล 3 อย่าง */}
+            <h2 className="mb-6 text-2xl font-bold">การแจ้งเตือนสำหรับผู้จัดการ</h2>
+            
+            {/* Tabs Navigation - ปรับให้มี 3 อัน */}
             <div className="alert-tabs">
-                <button 
-                    className={`alert-tab-card ${activeTab === "expire" ? "active" : ""}`}
-                    onClick={() => setActiveTab("expire")}
-                >
-                    <div className="icon-circle expire-icon"><FaClock /></div>
+                <div className={`alert-tab-card ${activeTab === 'expire' ? 'active' : ''}`} onClick={() => setActiveTab('expire')}>
+                    <div className="icon-circle"><FaClock /></div>
                     <div className="tab-text">
-                        <h3>อะไหล่ใกล้หมดอายุ</h3>
+                        <h3>ใกล้หมดอายุ</h3>
                         <span className="badge-count">{expireList.length} รายการ</span>
                     </div>
-                </button>
+                </div>
 
-                <button 
-                    className={`alert-tab-card ${activeTab === "stock" ? "active" : ""}`}
-                    onClick={() => setActiveTab("stock")}
-                >
-                    <div className="icon-circle stock-icon"><FaBoxOpen /></div>
+                <div className={`alert-tab-card ${activeTab === 'stock' ? 'active' : ''}`} onClick={() => setActiveTab('stock')}>
+                    <div className="icon-circle"><FaBoxOpen /></div>
                     <div className="tab-text">
-                        <h3>อะไหล่คงคลังน้อย</h3>
+                        <h3>สต็อกต่ำ</h3>
                         <span className="badge-count">{stockList.length} รายการ</span>
                     </div>
-                </button>
+                </div>
 
                 <button 
                     className={`alert-tab-card ${activeTab === "expensive" ? "active" : ""}`}
                     onClick={() => setActiveTab("expensive")}
                 >
                     <div className="icon-circle expensive-icon" ><FaDollarSign /></div>
+                <div className={`alert-tab-card expensive ${activeTab === 'expensive' ? 'active' : ''}`} 
+                     onClick={() => setActiveTab('expensive')}
+                     style={{ backgroundColor: activeTab === 'expensive' ? '#3498db' : '#85c1e9' }}>
+                    <div className="icon-circle"><FaDollarSign /></div>
                     <div className="tab-text">
-                        <h3>การใช้ราคาแพง</h3>
+                        <h3>มูลค่าสูง</h3>
                         <span className="badge-count">{expensiveList.length} รายการ</span>
                     </div>
-                </button>
-            </div>
-
-            <div className="alert-content-header">
-                <h3>แจ้งเตือน: {
-                    activeTab === "expire" ? "ใกล้หมดอายุ" : 
-                    activeTab === "stock" ? "คงคลังน้อย" : "รายการที่มีมูลค่าสูง"
-                }</h3>
+                </div>
             </div>
 
             {loading ? (
-                <p className="loading-text">กำลังโหลดข้อมูล...</p>
+                <div className="text-center p-10">กำลังโหลดข้อมูล...</div>
             ) : (
                 <div className="alert-list">
-                    {/* 1. อะไหล่ใกล้หมดอายุ (Logic เดียวกับ Admin) */}
+                    {/* ส่วนของ "ใกล้หมดอายุ" (Copy จาก AlertPage) */}
                     {activeTab === "expire" && (
                         expireList.length > 0 ? expireList.map((item) => (
                             <div key={item.lot_id} className="alert-item-card">
@@ -111,43 +101,42 @@ function ManagerAlertPage() {
                                     <img src={item.img || "https://via.placeholder.com/150"} alt={item.equipment_name} />
                                 </div>
                                 <div className="item-details">
-                                    <h4 className="text-danger">จำนวนใน Lot : {item.current_quantity} ชิ้น</h4>
-                                    <h3>{item.equipment_name}</h3>
-                                    <p><strong>Lot ID:</strong> {item.lot_id}</p>
-                                    <p><strong>วันหมดอายุ:</strong> {formatDate(item.expiry_date)}</p>
-                                    <p className="warning-text"><FaExclamationTriangle /> เหลืออีก {item.days_remaining} วัน</p>
+                                    <h4 className="text-warning">วันหมดอายุ : {formatDate(item.expiry_date)}</h4>
+                                    <h3>{item.equipment_name} (Lot: {item.lot_id})</h3>
+                                    <p><strong>คงเหลือใน Lot:</strong> {item.current_quantity}</p>
+                                    <p className="warning-text"><FaExclamationTriangle /> เหลือเวลาอีก {item.days_remaining} วัน</p>
                                 </div>
                             </div>
                         )) : <p className="no-data">ไม่มีรายการแจ้งเตือน</p>
                     )}
 
-                    {/* 2. อะไหล่คงคลังน้อย (Logic เดียวกับ Admin) */}
+                    {/* ส่วนของ "สต็อกต่ำ" (Copy จาก AlertPage) */}
                     {activeTab === "stock" && (
                         stockList.length > 0 ? stockList.map((item) => (
-                            <div key={item.equipment_id} className="alert-item-card">
+                            <div key={item.equipment_id} className="alert-item-card" style={{borderLeftColor: '#e74c3c'}}>
                                 <div className="item-image">
                                     <img src={item.img || "https://via.placeholder.com/150"} alt={item.equipment_name} />
                                 </div>
                                 <div className="item-details">
-                                    <h4 className="text-danger">เหลือปัจจุบัน : {item.total_quantity} ชิ้น</h4>
+                                    <h4 style={{color: '#e74c3c'}}>คงเหลือรวม : {item.total_quantity} ชิ้น</h4>
                                     <h3>{item.equipment_name}</h3>
-                                    <p><strong>จุดสั่งซื้อ (Alert):</strong> {item.alert_quantity} ชิ้น</p>
-                                    <p className="warning-text">กรุณาสั่งซื้อเพิ่มเพื่อป้องกันของขาดคลัง</p>
+                                    <p><strong>จุดสั่งซื้อ:</strong> {item.alert_quantity} ชิ้น</p>
+                                    <p className="warning-text">กรุณาสั่งซื้อเพิ่มเติม</p>
                                 </div>
                             </div>
                         )) : <p className="no-data">ไม่มีรายการแจ้งเตือน</p>
                     )}
 
-                    {/* 3. รายการราคาแพง (ข้อมูลเฉพาะของ Manager) */}
+                    {/* ส่วนใหม่: "มูลค่าสูง" (เฉพาะ Manager) */}
                     {activeTab === "expensive" && (
                         expensiveList.length > 0 ? expensiveList.map((item, idx) => (
-                            <div key={idx} className="alert-item-card expensive">
+                            <div key={idx} className="alert-item-card" style={{borderLeftColor: '#3498db'}}>
                                 <div className="item-details">
-                                    <h4 style={{color: '#3498db'}}>มูลค่ารวม : {item.total_price?.toLocaleString()} บาท</h4>
+                                    <h4 style={{color: '#3498db'}}>มูลค่าการเบิก : {item.total_price?.toLocaleString()} บาท</h4>
                                     <h3>{item.equipment_name}</h3>
                                     <p><strong>ผู้เบิก:</strong> {item.fullname}</p>
                                     <p><strong>จำนวน:</strong> {item.usage_qty} {item.unit}</p>
-                                    <p><strong>วันที่ทำรายการ:</strong> {formatDate(item.date)}</p>
+                                    <p><strong>วันที่:</strong> {formatDate(item.date)}</p>
                                 </div>
                             </div>
                         )) : <p className="no-data">ไม่มีรายการที่มีมูลค่าสูง</p>

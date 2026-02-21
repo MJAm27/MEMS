@@ -1,61 +1,97 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { FaCheckCircle, FaCamera, FaLockOpen, FaPlus, FaMinus, FaTrash, FaLock } from "react-icons/fa"; 
+import { 
+    FaCheckCircle, FaCamera, FaLockOpen, FaPlus, FaMinus, 
+    FaTrash, FaLock, FaClipboardCheck, FaTimes
+} from "react-icons/fa"; 
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import axios from "axios";
-import './BorrowPage.css';
+import './BorrowPage.css'; 
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 function BorrowPage({ user }) {
+    // กำหนดค่าเริ่มต้นให้กับ activeUser เพื่อป้องกัน error กรณี user เป็น null
+    const activeUser = user || { fullname: 'ผู้ใช้งาน', user_id: null };
+    
     const [currentStep, setCurrentStep] = useState(1); 
-    const [borrowDate, setBorrowDate] = useState(new Date().toISOString().slice(0, 10));
+    const [borrowDate, setBorrowDate] = useState(() => {
+        const now = new Date();
+        const tzOffset = now.getTimezoneOffset() * 60000; // ปรับชดเชยเวลาตาม Timezone
+        const localISOTime = (new Date(now - tzOffset)).toISOString().slice(0, 10);
+        return localISOTime;
+    });
     const [borrowItems, setBorrowItems] = useState([]);
     const [isScanning, setIsScanning] = useState(false);
     const [manualPartId, setManualPartId] = useState('');
     const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [previewImage, setPreviewImage] = useState(null);
+    const [partSuggestions, setPartSuggestions] = useState([]);
 
-    // ขั้นตอนที่ 1: สั่งเปิดประตูตู้
+    // --- 1. ควบคุมฮาร์ดแวร์ ---
     const handleOpenDoor = async () => {
-        setLoading(true);
+        setIsProcessing(true);
         setError('');
         try {
             const token = localStorage.getItem('token');
-            await axios.get(`${API_BASE}/api/open`, {
-                headers: { Authorization: `Bearer ${token}` }
+            await axios.get(`${API_BASE}/api/open`, { 
+                headers: { Authorization: `Bearer ${token}` } 
             });
-            setCurrentStep(2); 
+            setCurrentStep(2);
         } catch (err) {
-            setError('ไม่สามารถเชื่อมต่อเพื่อเปิดตู้ได้');
+            setError('ไม่สามารถติดต่อตู้เพื่อเปิดได้');
         } finally {
-            setLoading(false);
+            setIsProcessing(false);
         }
     };
 
-    // ขั้นตอนที่ 5: สั่งปิดประตูตู้ (Servo Close)
     const handleCloseDoor = async () => {
-        setLoading(true);
+        setIsProcessing(true);
+        setError('');
         try {
             const token = localStorage.getItem('token');
-            await axios.post(`${API_BASE}/api/close-box`, {}, {
-                headers: { Authorization: `Bearer ${token}` }
+            await axios.post(`${API_BASE}/api/close-box`, {}, { 
+                headers: { Authorization: `Bearer ${token}` } 
             });
-            window.location.href = "/dashboard/engineer/home"; // กลับหน้าหลัก
+            window.location.reload();
         } catch (err) {
-            setError('คำสั่งปิดประตูขัดข้อง กรุณาลองอีกครั้ง');
+            setError('คำสั่งปิดประตูขัดข้อง');
         } finally {
-            setLoading(false);
+            setIsProcessing(false);
         }
     };
 
-    // ค้นหาข้อมูลอะไหล่เพื่อเพิ่มลงรายการ
+    // --- 2. ระบบค้นหาและจัดการตะกร้า ---
+    const handlePartSearch = async (val) => {
+        setManualPartId(val);
+        if (val.length > 0) {
+            try {
+                const token = localStorage.getItem('token'); // ดึง Token มาใช้งาน
+                const res = await axios.get(`${API_BASE}/api/search/parts?term=${val}`, {
+                    headers: { Authorization: `Bearer ${token}` } // แนบ Token ไปด้วย
+                });
+                setPartSuggestions(res.data);
+            } catch (err) { 
+                console.error("Search error:", err); 
+            }
+        } else {
+            setPartSuggestions([]);
+        }
+    };
+
     const handleAddItem = useCallback(async (scannedId, quantity = 1) => {
+        if (isProcessing) return;
         const idToSearch = scannedId || manualPartId;
         if (!idToSearch) return;
 
+        setIsProcessing(true);
         setError('');
         try {
-            const response = await axios.post(`${API_BASE}/api/withdraw/partInfo`, { partId: idToSearch });
+            const token = localStorage.getItem('token'); // เพิ่มบรรทัดนี้เพื่อดึง Token
+            const response = await axios.post(`${API_BASE}/api/withdraw/partInfo`, 
+                { partId: idToSearch },
+                { headers: { Authorization: `Bearer ${token}` } } // แนบ Header ให้ถูกต้อง
+            );
             const partInfo = response.data;
 
             setBorrowItems(prev => {
@@ -64,43 +100,44 @@ function BorrowPage({ user }) {
                     return prev.map(item => item.lotId === partInfo.lotId 
                         ? { ...item, quantity: item.quantity + quantity } : item);
                 }
-                return [...prev, { 
-                    ...partInfo, 
-                    partId: partInfo.partId || partInfo.equipment_id,
-                    quantity: quantity 
-                }];
+                return [...prev, { ...partInfo, quantity: quantity }];
             });
             setManualPartId('');
+            setPartSuggestions([]);
             setIsScanning(false);
         } catch (err) {
             setError('ไม่พบข้อมูลอะไหล่รหัสนี้ในระบบ');
+        } finally {
+            setIsProcessing(false);
         }
-    }, [manualPartId]);
+    }, [manualPartId, isProcessing]);
 
-    // จัดการระบบ Scanner
+    // ระบบ QR Scanner
     useEffect(() => {
         let scanner = null;
         if (isScanning) {
-            scanner = new Html5QrcodeScanner("reader", {
-                fps: 10, qrbox: { width: 350, height: 150 },
-                aspectRatio: 1.0
-            });
+            scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 350, height: 150 } });
             scanner.render((decodedText) => {
                 handleAddItem(decodedText);
                 scanner.clear();
-            }, (err) => {});
+            }, () => {});
         }
         return () => { if (scanner) scanner.clear().catch(e => {}); };
     }, [isScanning, handleAddItem]);
 
-    // ขั้นตอนสุดท้าย: บันทึกรายการยืมล่วงหน้า (Status: Pending)
+    // บันทึกข้อมูลลงฐานข้อมูล
     const handleFinalConfirm = async () => {
         if (borrowItems.length === 0) return;
-        setLoading(true);
+        if (!activeUser.user_id) {
+            setError('ไม่พบข้อมูลผู้ใช้งาน กรุณาลองเข้าสู่ระบบใหม่');
+            return;
+        }
+
+        setIsProcessing(true);
         try {
             const token = localStorage.getItem('token');
             await axios.post(`${API_BASE}/api/borrow/pending`, {
-                userId: user.user_id,
+                userId: activeUser.user_id,
                 borrowDate: borrowDate,
                 items: borrowItems.map(item => ({
                     equipmentId: item.partId,
@@ -108,12 +145,11 @@ function BorrowPage({ user }) {
                     quantity: item.quantity
                 }))
             }, { headers: { Authorization: `Bearer ${token}` } });
-            
-            setCurrentStep(5); // ไปที่ขั้นตอนปิดตู้
+            setCurrentStep(5);
         } catch (err) {
             setError('เกิดข้อผิดพลาดในการบันทึกรายการ');
         } finally {
-            setLoading(false);
+            setIsProcessing(false);
         }
     };
 
@@ -124,136 +160,208 @@ function BorrowPage({ user }) {
     };
 
     return (
-        <div className="return-page-container">
-            <div className="return-header-section">
-                <h2>เบิกอะไหล่ล่วงหน้า</h2>
+        <div className="borrow-page-container">
+            <div className="return-header-section text-center">
+                <h2 className="text-2xl font-bold mb-4">เบิกอะไหล่ล่วงหน้า</h2>
                 <div className="step-progress-bar">
-                    {[1, 2, 3, 5].map((s) => (
-                        <div key={s} className={`step-item ${currentStep >= s ? 'active' : ''}`}>
-                            <div className="step-number">{currentStep > s ? <FaCheckCircle /> : (s === 5 ? 4 : s)}</div>
-                            {s < 5 && <div className="step-line"></div>}
-                        </div>
+                    {[1, 2, 3, 4, 5].map((step) => (
+                        <React.Fragment key={step}>
+                            <div className={`step-item ${currentStep >= step ? 'active' : ''}`}>
+                                <div className="step-circle">{currentStep > step ? <FaCheckCircle /> : step}</div>
+                            </div>
+                            {step < 5 && <div className={`step-line ${currentStep > step ? 'active' : ''}`}></div>}
+                        </React.Fragment>
                     ))}
                 </div>
             </div>
 
-            <div className="return-card">
+            <div className="return-card mt-2">
+                {/* STEP 1: เปิดประตู */}
                 {currentStep === 1 && (
-                    <div className="step-content animate-fade text-center">
-                        <div className="status-icon-wrapper"><FaLockOpen size={50} color="#ff4d94" /></div>
-                        <h3 className="step-title">1. เปิดประตูกล่อง</h3>
-                        <p className="step-desc">กดยืนยันเพื่อปลดล็อกประตูกล่องและเริ่มการหยิบอะไหล่</p>
-                        <div className="info-box mt-4 text-left">
-                            <label>วันที่เบิกยืม</label>
-                            <input type="date" value={borrowDate} onChange={(e) => setBorrowDate(e.target.value)} />
+                    <div className="step-content animate-fade text-center py-4">
+                        <div className="status-icon-wrapper mb-6"><FaLockOpen size={50} className="text-pink-500" /></div>
+                        <h3 className="step-title font-bold text-2xl mb-2">1. เปิดประตูกล่อง</h3>
+                        <p className="step-desc text-gray-400 mb-8">กดยืนยันเพื่อเปิดกล่องและหยิบอะไหล่</p>
+                        
+                        <div className="input-group-modern mb-8">
+                            <label className="input-label">วันที่เบิกยืม</label>
+                            <input type="date" className="modern-input" value={borrowDate} onChange={(e) => setBorrowDate(e.target.value)} />
                         </div>
-                        <button onClick={handleOpenDoor} disabled={loading} className="main-action-btn primary mt-4">
-                            {loading ? 'กำลังประมวลผล...' : 'เปิดประตูตู้'}
+                        
+                        <button onClick={handleOpenDoor} disabled={isProcessing} className="btn-action-primary w-full">
+                            {isProcessing ? <span className="loader"></span> : 'เปิดประตูตู้'}
                         </button>
                     </div>
                 )}
 
-                {/* Step 2: สแกน/เพิ่มรายการอะไหล่ */}
+                {/* STEP 2: เลือกอะไหล่ */}
                 {currentStep === 2 && (
                     <div className="step-content animate-fade">
-                        <div className="scanner-section mb-4">
+                        <h3 className="text-lg font-bold mb-4">2. ระบุอะไหล่ที่หยิบ</h3>
+                        
+                        <div className="scanner-section mb-6">
                             {isScanning ? (
-                                <div className="scanner-box">
+                                <div className="scanner-container">
                                     <div id="reader"></div>
-                                    <button onClick={() => setIsScanning(false)} className="cancel-btn mt-2">ยกเลิกสแกน</button>
+                                    <button onClick={() => setIsScanning(false)} className="btn-cancel-scan mt-4">ยกเลิกสแกน</button>
                                 </div>
                             ) : (
-                                <button onClick={() => setIsScanning(true)} className="main-action-btn secondary mb-3">
-                                    <FaCamera className="mr-2" /> สแกนบาร์โค้ดอะไหล่
+                                <button onClick={() => setIsScanning(true)} className="btn-scanner-trigger">
+                                    <FaCamera /> สแกนบาร์โค้ดอะไหล่
                                 </button>
                             )}
                         </div>
 
-                        <div className="manual-input-group flex gap-2 mb-4">
-                            <input 
-                                type="text" 
-                                className="withdraw-input flex-grow" 
-                                value={manualPartId} 
-                                onChange={(e) => setManualPartId(e.target.value)}
-                                placeholder="กรอกรหัสอะไหล่..." 
-                            />
-                            <button onClick={() => handleAddItem()} className="add-btn"><FaPlus /></button>
+                        <div className="divider-text mb-6"><span>หรือค้นหารหัส</span></div>
+
+                        <div className="relative mb-6">
+                            <div className="flex gap-2">
+                                <input 
+                                    type="text" 
+                                    className="modern-input flex-grow" 
+                                    value={manualPartId} 
+                                    onChange={(e) => handlePartSearch(e.target.value)}
+                                    placeholder="รหัสอะไหล่..." 
+                                />
+                                <button onClick={() => handleAddItem()} className="btn-add-square"><FaPlus /></button>
+                            </div>
+                            {partSuggestions.length > 0 && (
+                                <ul className="search-suggestions-list">
+                                    {partSuggestions.map((p) => (
+                                        <li key={p.equipment_id} onClick={() => { handleAddItem(p.equipment_id); setPartSuggestions([]); }}>
+                                            <div className="flex justify-between w-full">
+                                                <span>{p.equipment_name}</span>
+                                                <span className="text-pink-500 font-bold">{p.equipment_id}</span>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                         </div>
 
-                        {error && <p className="error-text mb-4">{error}</p>}
-
                         {borrowItems.length > 0 && (
-                            <div className="mt-6">
-                                <h4 className="section-label">รายการที่หยิบจากตู้:</h4>
-                                <div className="items-list max-h-64 overflow-y-auto mb-4">
+                            <div className="cart-section mt-8">
+                                <h4 className="section-title-sm mb-4">รายการในตะกร้า ({borrowItems.length})</h4>
+                                <div className="modern-items-list">
                                     {borrowItems.map((item, index) => (
-                                        <div key={index} className="part-item-card">
-                                            <img src={item.imageUrl} alt="" onError={(e) => e.target.src="https://via.placeholder.com/60"} />
-                                            <div className="item-info">
-                                                <span className="name">{item.partName}</span>
-                                                <span className="lot text-xs text-gray-400">Lot: {item.lotId}</span>
+                                        <div key={index} className="modern-part-card">
+                                            <div className="part-img" onClick={() => item.imageUrl && setPreviewImage(`${API_BASE}/uploads/${item.imageUrl}`)}>
+                                                {item.imageUrl ? <img src={`${API_BASE}/uploads/${item.imageUrl}`} alt="img" /> : <FaPlus />}
                                             </div>
-                                            <div className="qty-control">
-                                                <button onClick={() => updateQty(index, -1)}><FaMinus size={10}/></button>
-                                                <span className="qty-number">{item.quantity}</span>
-                                                <button onClick={() => updateQty(index, 1)}><FaPlus size={10}/></button>
+                                            <div className="part-details">
+                                                <span className="part-name">{item.partName}</span>
+                                                <span className="part-lot">Lot: {item.lotId}</span>
                                             </div>
-                                            <button className="del-btn text-red-400 ml-2" onClick={() => setBorrowItems(borrowItems.filter((_, i) => i !== index))}>
-                                                <FaTrash size={14} />
-                                            </button>
+                                            <div className="part-actions">
+                                                <div className="modern-qty-control">
+                                                    <button onClick={() => updateQty(index, -1)}><FaMinus size={10}/></button>
+                                                    <span className="qty-number">{item.quantity}</span>
+                                                    <button onClick={() => updateQty(index, 1)}><FaPlus size={10}/></button>
+                                                </div>
+                                                <button className="btn-delete-item" onClick={() => setBorrowItems(borrowItems.filter((_, i) => i !== index))}>
+                                                    <FaTrash size={12} />
+                                                </button>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
-                                <button onClick={() => setCurrentStep(3)} className="main-action-btn primary w-full">ตรวจสอบรายการ</button>
+                                <button onClick={() => setCurrentStep(3)} className="btn-action-primary w-full mt-6 shadow-pink">ตรวจสอบรายการ</button>
                             </div>
                         )}
+                        {error && <p className="error-badge mt-4">{error}</p>}
                     </div>
                 )}
 
-                {/* Step 3: สรุปรายการเพื่อส่งไปหน้าหลัก */}
+                {/* STEP 3: ตรวจสอบข้อมูล */}
                 {currentStep === 3 && (
                     <div className="step-content animate-fade">
-                        <h3 className="confirm-title text-center font-bold mb-4">ยืนยันรายการเบิกล่วงหน้า</h3>
-                        <div className="summary-box bg-gray-50 p-4 rounded-xl border border-dashed border-gray-300">
-                            {borrowItems.map((item, i) => (
-                                <div key={i} className="flex justify-between border-b border-gray-200 py-2 text-sm last:border-0">
-                                    <span>{item.partName} <br/><small className="text-gray-400">Lot: {item.lotId}</small></span>
-                                    <span className="font-bold text-pink-500">x {item.quantity}</span>
+                        <div className="text-center mb-6">
+                             <h3 className="font-bold text-2xl">3. ตรวจสอบข้อมูล</h3>
+                             <p className="text-gray-400 text-sm">กรุณาตรวจสอบรายละเอียดก่อนบันทึก</p>
+                        </div>
+
+                        <div className="asset-info-banner mb-6">
+                            <div className="label">วันที่เบิกยืมล่วงหน้า</div>
+                            <div className="value">{new Date(borrowDate).toLocaleDateString('th-TH')}</div>
+                        </div>
+
+                        <div className="review-list-container mb-8">
+                            <h4 className="text-sm font-bold mb-3 text-gray-500 uppercase">รายการอะไหล่</h4>
+                            {borrowItems.map((item, idx) => (
+                                <div key={idx} className="review-item-card">
+                                    <div className="item-img-box">
+                                        {item.imageUrl ? <img src={`${API_BASE}/uploads/${item.imageUrl}`} alt="part" /> : <FaPlus size={16} className="text-gray-300" />}
+                                    </div>
+                                    <div className="item-main-info">
+                                        <div className="item-name-row">
+                                            <span className="name">{item.partName}</span>
+                                            <div className="qty-display-group">
+                                                <span className="qty-val">x {item.quantity}</span>
+                                                <span className="unit-val">{item.unit || 'ชิ้น'}</span>
+                                            </div>
+                                        </div>
+                                        <div className="item-sub-info">
+                                            <span className="tag-lot">Lot: {item.lotId}</span>
+                                        </div>
+                                    </div>
                                 </div>
                             ))}
                         </div>
-                        <div className="button-group mt-6 flex gap-3">
-                            <button onClick={() => setCurrentStep(2)} className="secondary-btn flex-1 py-3 bg-gray-100 rounded-xl font-bold">แก้ไข</button>
-                            <button onClick={handleFinalConfirm} disabled={loading} className="main-action-btn primary flex-1">
-                                {loading ? 'กำลังบันทึก...' : 'ยืนยันการเบิกยืม'}
+
+                        <div className="flex gap-4">
+                            <button onClick={() => setCurrentStep(2)} className="btn-review-edit flex-1">แก้ไขรายการ</button>
+                            <button onClick={() => setCurrentStep(4)} className="btn-review-confirm flex-2">ไปหน้ายืนยัน</button>
+                        </div>
+                    </div>
+                )}
+
+                {/* STEP 4: ยืนยันขั้นตอนสุดท้าย */}
+                {currentStep === 4 && (
+                    <div className="text-center py-4 space-y-6 animate-fade">
+                        <FaClipboardCheck size={60} className="mx-auto text-blue-500 mb-2" />
+                        <h3 className="text-2xl font-bold">4. ยืนยันการบันทึก</h3>
+                        
+                        <div className="summary-box-blue bg-blue-50 p-6 rounded-3xl border border-blue-100 text-left">
+                            <p className="text-xs text-blue-600 font-bold uppercase mb-1">สรุปการเบิกยืมล่วงหน้า</p>
+                            <p className="text-sm text-gray-700"><b>ผู้เบิก:</b> {activeUser.fullname}</p>
+                            <p className="text-sm text-gray-700"><b>จำนวนรายการ:</b> {borrowItems.length} รายการ</p>
+                        </div>
+
+                        <div className="flex gap-4">
+                            <button onClick={() => setCurrentStep(3)} className="btn-review-edit flex-1">กลับ</button>
+                            <button onClick={handleFinalConfirm} disabled={isProcessing} className="btn-action-primary flex-2">
+                                {isProcessing ? <span className="loader"></span> : 'ยืนยันการเบิกยืม'}
                             </button>
                         </div>
                     </div>
                 )}
 
-                {/* Step 4: สำเร็จ */}
-                {currentStep === 4 && (
-                    <div className="success-screen text-center py-6 animate-bounce-in">
-                        <FaCheckCircle size={70} className="text-green-500 mb-4 mx-auto" />
-                        <h3 className="font-bold text-xl text-gray-800">บันทึกรายการยืมสำเร็จ!</h3>
-                        <p className="text-gray-500 text-sm mt-2">กรุณาไปที่หน้าหลักเพื่อระบุเลขครุภัณฑ์หลังใช้งานเสร็จ</p>
-                        <button onClick={() => window.location.href = "/dashboard/engineer/home"} className="main-action-btn primary mt-8">ไปที่หน้าหลัก</button>
-                    </div>
-                )}
-
+                {/* STEP 5: สำเร็จ & สั่งปิดตู้ */}
                 {currentStep === 5 && (
-                    <div className="step-content animate-fade text-center py-6">
-                        <div className="success-badge bg-green-100 text-green-700 p-4 rounded-2xl mb-6 flex items-center gap-3 justify-center">
-                            <FaCheckCircle size={24} /> <p className="font-bold">บันทึกรายการสำเร็จ!</p>
+                    <div className="text-center py-6 animate-fadeIn">
+                        <div className="success-badge bg-green-100 text-green-700 p-4 rounded-2xl mb-8 flex items-center gap-3 justify-center">
+                            <FaCheckCircle size={24} /> <p className="font-bold">บันทึกสำเร็จ!</p>
                         </div>
-                        <h3 className="font-bold text-xl text-gray-800">5. สั่งปิดประตู</h3>
-                        <p className="text-gray-500 mb-8">กรุณานำอะไหล่ออก ตรวจสอบสิ่งกีดขวาง <br/>แล้วกดยืนยันเพื่อล็อกตู้</p>
-                        <button onClick={handleCloseDoor} disabled={loading} className="main-action-btn primary bg-black">
-                            <FaLock className="mr-2" /> {loading ? 'กำลังปิดตู้...' : 'สั่งปิดประตูกล่อง'}
+                        <h3 className="font-bold text-2xl mb-3">5. สั่งปิดประตู</h3>
+                        <p className="text-gray-500 mb-8">ตรวจสอบสิ่งกีดขวางแล้วกดปุ่มเพื่อล็อกตู้</p>
+                        
+                        {/* แก้ไข loading เป็น isProcessing เรียบร้อยแล้ว */}
+                        <button onClick={handleCloseDoor} disabled={isProcessing} className="btn-action-dark w-full">
+                            {isProcessing ? <span className="loader"></span> : <><FaLock className="mr-2" /> สั่งปิดประตูกล่อง</>}
                         </button>
                     </div>
                 )}
             </div>
+
+            {/* Overlay สำหรับดูรูปใหญ่ */}
+            {previewImage && (
+                <div className="image-viewer-overlay" onClick={() => setPreviewImage(null)}>
+                    <div className="image-viewer-content">
+                        <img src={previewImage} alt="Preview" />
+                        <button className="close-image-btn" onClick={() => setPreviewImage(null)}><FaTimes /></button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

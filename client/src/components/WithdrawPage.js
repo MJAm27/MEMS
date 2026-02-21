@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FaLockOpen, FaCheckCircle, FaPlus, FaCamera, FaTrash, FaUser, FaMinus, FaLock, FaClipboardCheck, FaListUl } from 'react-icons/fa'; 
+import { 
+    FaLockOpen, FaCheckCircle, FaPlus, FaCamera, FaTrash, 
+    FaMinus, FaLock, FaClipboardCheck, FaTimes, FaSearch
+} from 'react-icons/fa'; 
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import axios from 'axios';
 import './WithdrawPage.css';
@@ -7,7 +10,7 @@ import './WithdrawPage.css';
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 function WithdrawPage({ user }) { 
-    const activeUser = user || { fullname: 'ผู้ใช้งาน', employeeId: 'N/A' };
+    
     
     const [currentStep, setCurrentStep] = useState(1);
     const [assetId, setAssetId] = useState('');
@@ -16,13 +19,12 @@ function WithdrawPage({ user }) {
     const [error, setError] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [showScanner, setShowScanner] = useState(false);
+    const [previewImage, setPreviewImage] = useState(null);
 
     const [machineSuggestions, setMachineSuggestions] = useState([]);
     const [partSuggestions, setPartSuggestions] = useState([]);
 
     // --- 1. ฟังก์ชันควบคุมประตู (ESP8266) ---
-
-    // สั่งเปิดประตูใน Step 1
     const handleOpenDoor = async () => {
         setIsProcessing(true);
         setError('');
@@ -31,15 +33,14 @@ function WithdrawPage({ user }) {
             await axios.get(`${API_BASE}/api/open`, { 
                 headers: { Authorization: `Bearer ${token}` } 
             });
-            setCurrentStep(2); // ไปต่อ Step 2 เมื่อเปิดสำเร็จ
+            setCurrentStep(2);
         } catch (err) {
-            setError('ไม่สามารถติดต่อตู้เพื่อเปิดได้ กรุณาตรวจสอบการเชื่อมต่อ ESP8266');
+            setError('ไม่สามารถติดต่อตู้เพื่อเปิดได้');
         } finally {
             setIsProcessing(false);
         }
     };
 
-    // สั่งปิดประตูใน Step 5
     const handleCloseDoor = async () => {
         setIsProcessing(true);
         setError('');
@@ -48,19 +49,18 @@ function WithdrawPage({ user }) {
             await axios.post(`${API_BASE}/api/close-box`, {}, { 
                 headers: { Authorization: `Bearer ${token}` } 
             });
-            window.location.reload(); // รีโหลดหน้าเพื่อจบกระบวนการ
+            window.location.reload();
         } catch (err) {
-            setError('คำสั่งปิดประตูขัดข้อง กรุณาลองใหม่อีกครั้ง');
+            setError('คำสั่งปิดประตูขัดข้อง');
         } finally {
             setIsProcessing(false);
         }
     };
 
     // --- 2. ระบบจัดการข้อมูลอะไหล่และตะกร้า ---
-
     const handleMachineSearch = async (val) => {
         setAssetId(val);
-        if (val.length > 1) {
+        if (val.length > 0) {
             try {
                 const res = await axios.get(`${API_BASE}/api/search/machines?term=${val}`);
                 setMachineSuggestions(res.data);
@@ -72,7 +72,7 @@ function WithdrawPage({ user }) {
 
     const handlePartSearch = async (val) => {
         setCurrentPartId(val);
-        if (val.length > 1) {
+        if (val.length > 0) {
             try {
                 const res = await axios.get(`${API_BASE}/api/search/parts?term=${val}`);
                 setPartSuggestions(res.data);
@@ -94,6 +94,7 @@ function WithdrawPage({ user }) {
     };
 
     const handleAddItemToCart = useCallback(async (scannedId, quantity = 1) => {
+        if (isProcessing) return;
         const idToSearch = scannedId || currentPartId;
         if (!assetId) { setError('กรุณากรอกเลขครุภัณฑ์ก่อน'); return; }
         if (!idToSearch) { setError('กรุณาระบุรหัสอะไหล่'); return; }
@@ -103,21 +104,22 @@ function WithdrawPage({ user }) {
         try {
             const response = await axios.post(`${API_BASE}/api/withdraw/partInfo`, { partId: idToSearch });
             const partInfo = response.data;
+            
             setCartItems(prev => {
                 const existing = prev.find(item => item.lotId === partInfo.lotId);
                 if (existing) {
                     return prev.map(item => item.lotId === partInfo.lotId ? { ...item, quantity: item.quantity + quantity } : item);
                 }
-                return [...prev, { ...partInfo, lotId: partInfo.lotId, partId: partInfo.partId || partInfo.equipment_id, quantity: quantity }];
+                return [...prev, { ...partInfo, quantity: quantity }];
             });
             setCurrentPartId('');
             setPartSuggestions([]);
         } catch (err) {
-            setError('ไม่พบข้อมูลอะไหล่');
+            setError(err.response?.data?.error || 'ไม่พบข้อมูลอะไหล่');
         } finally {
             setIsProcessing(false);
         }
-    }, [assetId, currentPartId]);
+    }, [assetId, currentPartId, isProcessing]);
 
     const handleFinalConfirm = async () => {
         if (cartItems.length === 0) return;
@@ -130,9 +132,9 @@ function WithdrawPage({ user }) {
                 cartItems: cartItems.map(item => ({ lotId: item.lotId, partId: item.partId, quantity: item.quantity })) 
             };
             await axios.post(`${API_BASE}/api/withdraw/confirm`, payload, { headers: { Authorization: `Bearer ${token}` } });
-            setCurrentStep(5); // บันทึก DB สำเร็จแล้วไป Step 5 เพื่อปิดตู้
+            setCurrentStep(5);
         } catch (err) {
-            setError('เกิดข้อผิดพลาดในการบันทึกข้อมูลลงฐานข้อมูล');
+            setError('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
         } finally {
             setIsProcessing(false);
         }
@@ -151,149 +153,211 @@ function WithdrawPage({ user }) {
         return () => { if (scanner) scanner.clear().catch(() => {}); };
     }, [showScanner, currentStep, handleAddItemToCart]);
 
-    // --- 3. Render Stepper ---
-    const renderStepIndicator = () => (
-        <div className="step-progress-bar">
-            {[1, 2, 3, 4, 5].map((step) => (
-                <React.Fragment key={step}>
-                    <div className={`step-item ${currentStep >= step ? 'active' : ''}`}>
-                        <div className="step-circle">{currentStep > step ? <FaCheckCircle /> : step}</div>
-                    </div>
-                    {step < 5 && <div className={`step-line ${currentStep > step ? 'active' : ''}`}></div>}
-                </React.Fragment>
-            ))}
-        </div>
-    );
-
     return (
         <div className="withdraw-page-container">
-            <div className="user-badge-info mb-4 flex items-center gap-2 text-gray-500">
-                <FaUser size={12} /> {activeUser.fullname}
+            <div className="withdraw-title-section">
+                <h2 className="text-2xl font-bold text-center w-full">เบิกอะไหล่</h2>
+                <div className="step-progress-bar">
+                    {[1, 2, 3, 4, 5].map((step) => (
+                        <React.Fragment key={step}>
+                            <div className={`step-item ${currentStep >= step ? 'active' : ''}`}>
+                                <div className="step-circle">{currentStep > step ? <FaCheckCircle /> : step}</div>
+                            </div>
+                            {step < 5 && <div className={`step-line ${currentStep > step ? 'active' : ''}`}></div>}
+                        </React.Fragment>
+                    ))}
+                </div>
             </div>
             
-            <div className="withdraw-title-section text-center">
-                <h2 className="text-2xl font-bold">เบิกอะไหล่</h2>
-                {renderStepIndicator()}
-            </div>
-            
-            <div className="withdraw-card mt-6">
-                {/* STEP 1: เปิดตู้ */}
+            <div className="withdraw-card">
                 {currentStep === 1 && (
                     <div className="text-center py-6 animate-fadeIn">
                         <div className="status-icon-wrapper mb-6"><FaLockOpen size={50} className="text-pink-500" /></div>
                         <h3 className="step-title font-bold text-2xl">1. เปิดประตูกล่อง</h3>
-                        <p className="step-desc text-gray-400 mb-8">กรุณากดปุ่มด้านล่างเพื่อปลดล็อกและเริ่มการเบิก</p>
-                        <button 
-                            onClick={handleOpenDoor} 
-                            disabled={isProcessing}
-                            className="btn-action btn-open-gate"
-                        >
-                            {isProcessing ? <span className="loader"></span> : <><FaLockOpen /> เปิดประตูตู้</>}
+                        <p className="step-desc text-gray-400 mb-8">กรุณากดปุ่มเพื่อปลดล็อก</p>
+                        <button onClick={handleOpenDoor} disabled={isProcessing} className="btn-action btn-open-gate">
+                            {isProcessing ? <span className="loader"></span> : <><FaLockOpen /> เปิดประตู</>}
                         </button>
-                        {error && <p className="error-msg text-red-500 text-sm mt-4">{error}</p>}
                     </div>
                 )}
 
-                {/* STEP 2: เลือกอะไหล่ */}
                 {currentStep === 2 && (
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-bold">2. ระบุอะไหล่</h3>
-                        <input type="text" className="withdraw-input" value={assetId} onChange={(e) => handleMachineSearch(e.target.value)} placeholder="เลขครุภัณฑ์ (Asset ID)" />
-                        {machineSuggestions.length > 0 && (
-                            <ul className="search-suggestions">
-                                {machineSuggestions.map(m => <li key={m.machine_SN} onClick={() => { setAssetId(m.machine_SN); setMachineSuggestions([]); }}>{m.machine_SN} - {m.machine_name}</li>)}
-                            </ul>
-                        )}
+                    <div className="step-content animate-fadeIn">
+                        <h3 className="text-lg font-bold mb-4">2. ระบุอะไหล่</h3>
+                        
+                        {/* ส่วนครุภัณฑ์ */}
+                        <div className="input-field-group relative">
+                            <label className="input-label">เลขครุภัณฑ์ (Asset ID)</label>
+                            <div className="input-with-icon">
+                                <FaSearch className="icon-prefix" />
+                                <input type="text" className="withdraw-input-modern" value={assetId} onChange={(e) => handleMachineSearch(e.target.value)} placeholder="ค้นหาครุภัณฑ์..." />
+                            </div>
+                            {machineSuggestions.length > 0 && (
+                                <ul className="search-suggestions-list">
+                                    {machineSuggestions.map(m => (
+                                        <li key={m.machine_SN} onClick={() => { setAssetId(m.machine_SN); setMachineSuggestions([]); }}>
+                                            {m.machine_SN} <small>{m.machine_name}</small>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+
+                        <div className="divider-or"><span>หรือสแกน</span></div>
+
+                        {/* ปุ่มสแกนแบบใหม่ */}
                         <div className="scanner-section">
-                            {showScanner ? <div id="reader"></div> : <button onClick={() => setShowScanner(true)} className="btn-action main-action-btn secondary mb-3"><FaCamera /> สแกนบาร์โค้ดอะไหล่</button>}
+                            {showScanner ? <div id="reader"></div> : 
+                            <button onClick={() => setShowScanner(true)} className="btn-modern-scanner">
+                                <FaCamera /> สแกนบาร์โค้ดอะไหล่
+                            </button>}
                         </div>
-                        <div className="flex gap-2">
-                            <input type="text" className="withdraw-input flex-grow" value={currentPartId} onChange={(e) => handlePartSearch(e.target.value)} placeholder="รหัสอะไหล่..." />
-                            <button onClick={() => handleAddItemToCart()} className="px-4 bg-pink-500 text-white rounded-xl"><FaPlus /></button>
-                        </div>
-                        {cartItems.length > 0 && (
-                            <div className="mt-4 border-t pt-4">
-                                <h4 className="text-sm font-bold mb-2">ตะกร้าอะไหล่:</h4>
-                                {cartItems.map((item, idx) => (
-                                    <div key={idx} className="cart-item-card flex justify-between items-center p-3 bg-gray-50 rounded-lg mb-2">
-                                        <div className="text-sm"><b>{item.partName}</b><br/><span className="text-xs text-gray-400">Lot: {item.lotId}</span></div>
-                                        <div className="flex items-center gap-3">
-                                            <div className="qty-control flex items-center gap-2">
-                                                <button onClick={() => updateItemQuantity(idx, -1)}><FaMinus size={10}/></button>
-                                                <span>{item.quantity}</span>
-                                                <button onClick={() => updateItemQuantity(idx, 1)}><FaPlus size={10}/></button>
+
+                        {/* ส่วนเพิ่มอะไหล่ด้วยรหัส */}
+                        <div className="input-field-group relative mt-4">
+                            <label className="input-label">ระบุรหัสอะไหล่</label>
+                            <div className="flex gap-2">
+                                <div className="input-with-icon flex-grow">
+                                    <FaPlus className="icon-prefix" />
+                                    <input type="text" className="withdraw-input-modern" value={currentPartId} onChange={(e) => handlePartSearch(e.target.value)} placeholder="รหัสอะไหล่..." />
+                                </div>
+                                <button onClick={() => handleAddItemToCart()} className="btn-add-circle"><FaPlus /></button>
+                            </div>
+                            {partSuggestions.length > 0 && (
+                                <ul className="search-suggestions-list">
+                                    {partSuggestions.map((p) => (
+                                        <li key={p.equipment_id} onClick={() => { handleAddItemToCart(p.equipment_id); setPartSuggestions([]); }}>
+                                            <div className="flex justify-between w-full">
+                                                <span>{p.equipment_name}</span>
+                                                <span className="text-pink-500 font-bold">{p.equipment_id}</span>
                                             </div>
-                                            <button onClick={() => setCartItems(cartItems.filter((_, i) => i !== idx))} className="text-red-400"><FaTrash size={12}/></button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+
+                        {/* ตะกร้าอะไหล่ - ออกแบบใหม่ตามภาพที่แนบ */}
+                        {cartItems.length > 0 && (
+                            <div className="cart-section mt-6">
+                                <h4 className="cart-header">รายการในตะกร้า ({cartItems.length})</h4>
+                                <div className="cart-list">
+                                    {cartItems.map((item, idx) => (
+                                        <div key={idx} className="new-cart-item">
+                                            <div className="item-thumb" onClick={() => item.imageUrl && setPreviewImage(`${API_BASE}/uploads/${item.imageUrl}`)}>
+                                                {item.imageUrl ? <img src={`${API_BASE}/uploads/${item.imageUrl}`} alt="img" /> : <FaPlus />}
+                                            </div>
+                                            <div className="item-info">
+                                                <div className="item-name">{item.partName}</div>
+                                                <div className="item-lot">Lot: {item.lotId}</div>
+                                            </div>
+                                            <div className="item-controls">
+                                                <div className="qty-stepper">
+                                                    <button onClick={() => updateItemQuantity(idx, -1)}><FaMinus /></button>
+                                                    <span>{item.quantity}</span>
+                                                    <button onClick={() => updateItemQuantity(idx, 1)}><FaPlus /></button>
+                                                </div>
+                                                <button onClick={() => setCartItems(cartItems.filter((_, i) => i !== idx))} className="btn-delete-small">
+                                                    <FaTrash />
+                                                </button>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
-                                <button onClick={() => setCurrentStep(3)} className="action-button-main mt-4">ตรวจสอบรายการ</button>
+                                    ))}
+                                </div>
+                                <button onClick={() => setCurrentStep(3)} className="btn-action btn-open-gate mt-6">
+                                    ตรวจสอบรายการ ({cartItems.length})
+                                </button>
                             </div>
                         )}
-                        {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
+                        {error && <p className="error-text-mini">{error}</p>}
                     </div>
                 )}
 
-                {/* STEP 3: ตรวจสอบรายการ (Review) */}
+                {/* STEP 3 & 4 & 5 ยังคงเดิมตาม Logic เดิมของคุณ */}
                 {currentStep === 3 && (
-                    <div className="space-y-4">
-                        <div className="text-center"><FaListUl size={30} className="mx-auto text-gray-400 mb-2"/><h3 className="text-xl font-bold">3. ตรวจสอบข้อมูล</h3></div>
-                        <div className="bg-gray-100 p-4 rounded-xl">
-                            <p className="text-xs text-gray-500">ครุภัณฑ์:</p>
-                            <p className="text-lg font-bold">{assetId}</p>
+                    <div className="space-y-6 animate-fadeIn">
+                        <div className="text-center">
+                            {/* 1. เอา FaListUl ออกแล้ว */}
+                            <h3 className="text-2xl font-bold">3. ตรวจสอบข้อมูล</h3>
+                            <p className="text-gray-400 text-sm">กรุณาตรวจสอบรายละเอียดก่อนบันทึก</p>
                         </div>
-                        <div className="space-y-2 border-y py-3 max-h-40 overflow-y-auto">
+
+                        {/* ข้อมูลเลขครุภัณฑ์ */}
+                        <div className="asset-info-banner">
+                            <div className="label">เลขครุภัณฑ์ (Asset ID)</div>
+                            <div className="value">{assetId}</div>
+                        </div>
+
+                        {/* รายการอะไหล่ที่เบิก */}
+                        <div className="review-list-container">
+                            <h4 className="text-sm font-bold mb-3 text-gray-500 uppercase tracking-wider">รายการอะไหล่ที่เบิก</h4>
                             {cartItems.map((item, idx) => (
-                                <div key={idx} className="flex justify-between text-sm">
-                                    <span>{item.partName}</span>
-                                    <span className="font-bold">x{item.quantity}</span>
+                                <div key={idx} className="review-item-card">
+                                    <div className="item-img-box">
+                                        {item.imageUrl ? (
+                                            <img src={`${API_BASE}/uploads/${item.imageUrl}`} alt="part" />
+                                        ) : (
+                                            <div className="flex items-center justify-center w-full h-full bg-gray-50 text-gray-300">
+                                                <FaPlus size={16} />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="item-main-info">
+                                        <div className="item-name-row">
+                                            <span className="name">{item.partName}</span>
+                                            {/* 2. ปรับโครงสร้างจำนวนและหน่วยให้อยู่บรรทัดเดียวกัน */}
+                                            <div className="qty-display-group">
+                                                <span className="qty-val">x {item.quantity}</span>
+                                                <span className="unit-val">{item.unit || 'ชิ้น'}</span>
+                                            </div>
+                                        </div>
+                                        <div className="item-sub-info">
+                                            <span className="tag-lot">Lot: {item.lotId}</span>
+                                        </div>
+                                    </div>
                                 </div>
                             ))}
                         </div>
-                        <div className="flex gap-2">
-                            <button onClick={() => setCurrentStep(2)} className="flex-1 py-3 bg-gray-200 rounded-xl">แก้ไข</button>
-                            <button onClick={() => setCurrentStep(4)} className="flex-1 py-3 bg-pink-500 text-white rounded-xl">ไปหน้าบันทึก</button>
-                        </div>
-                    </div>
-                )}
 
-                {/* STEP 4: ยืนยันการเบิก (Confirm DB) */}
-                {currentStep === 4 && (
-                    <div className="text-center py-4 space-y-6 animate-fadeIn">
-                        <FaClipboardCheck size={60} className="mx-auto text-blue-500 mb-2" />
-                        <h3 className="text-2xl font-bold">4. ยืนยันการบันทึก</h3>
-                        <div className="summary-box bg-blue-50 p-6 rounded-3xl border border-blue-100 text-left">
-                            <p className="text-xs text-blue-600 font-bold uppercase mb-1">สรุปการทำรายการ</p>
-                            <p className="text-sm text-gray-700"><b>เลขเครื่อง:</b> {assetId}</p>
-                            <p className="text-sm text-gray-700"><b>รายการ:</b> {cartItems.length} อะไหล่</p>
-                        </div>
-                        <div className="flex gap-4">
-                            <button onClick={() => setCurrentStep(3)} className="btn-secondary">กลับ</button>
-                            <button onClick={handleFinalConfirm} disabled={isProcessing} className="btn-action btn-confirm-save flex-2">
-                                {isProcessing ? <span className="loader"></span> : 'ยืนยันการบันทึก'}
+                        <div className="flex gap-3 mt-8">
+                            <button onClick={() => setCurrentStep(2)} className="btn-review-edit">
+                                แก้ไขรายการ
+                            </button>
+                            <button onClick={() => setCurrentStep(4)} className="btn-review-confirm">
+                                บันทึกข้อมูล
                             </button>
                         </div>
                     </div>
                 )}
 
-                {/* STEP 5: ปิดตู้ (Servo Close) */}
-                {currentStep === 5 && (
-                    <div className="text-center py-6 animate-fadeIn">
-                        <div className="success-badge bg-green-100 text-green-700 p-4 rounded-2xl mb-8 flex items-center gap-3 justify-center">
-                            <FaCheckCircle size={24} /> <p className="font-bold">บันทึกข้อมูลสำเร็จ!</p>
-                        </div>
-                        <h3 className="text-2xl font-bold mb-3">5. สั่งปิดประตู</h3>
-                        <p className="text-gray-500 mb-8">ตรวจสอบสิ่งกีดขวางแล้วกดปุ่มเพื่อล็อกตู้</p>
-                        <button 
-                            onClick={handleCloseDoor} 
-                            disabled={isProcessing} 
-                            className="btn-action btn-close-lock"
-                        >
-                            <FaLock /> {isProcessing ? <span className="loader"></span> : 'สั่งปิดประตูกล่อง'}
+                {currentStep === 4 && (
+                    <div className="text-center animate-fadeIn">
+                        <FaClipboardCheck size={60} className="mx-auto text-blue-500 mb-4" />
+                        <h3 className="text-2xl font-bold mb-6">4. ยืนยันการบันทึก</h3>
+                        <button onClick={handleFinalConfirm} disabled={isProcessing} className="btn-action btn-confirm-save">
+                            {isProcessing ? "กำลังบันทึก..." : "ยืนยันการเบิกอะไหล่"}
                         </button>
                     </div>
                 )}
+
+                {currentStep === 5 && (
+                    <div className="text-center animate-fadeIn">
+                        <FaCheckCircle size={60} className="mx-auto text-green-500 mb-4" />
+                        <h3 className="text-2xl font-bold mb-2">สำเร็จ!</h3>
+                        <p className="text-gray-500 mb-8">บันทึกข้อมูลเรียบร้อยแล้ว</p>
+                        <button onClick={handleCloseDoor} className="btn-action btn-close-lock"><FaLock /> ปิดประตูกล่อง</button>
+                    </div>
+                )}
             </div>
+
+            {previewImage && (
+                <div className="image-viewer-overlay" onClick={() => setPreviewImage(null)}>
+                    <div className="image-viewer-content">
+                        <img src={previewImage} alt="Preview" />
+                        <button className="close-image-btn"><FaTimes /></button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

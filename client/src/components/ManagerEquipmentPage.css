@@ -1,0 +1,32 @@
+.eq-info-cell {
+    display: flex;
+    flex-direction: column;
+}
+
+.eq-info-cell small {
+    color: #94a3b8;
+    font-size: 0.75rem;
+    margin-top: 4px;
+}
+
+.stock-text.danger {
+    color: #ef4444;
+    font-weight: 700;
+}
+
+.alert-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.alert-badge.low { background: #fef2f2; color: #ef4444; border: 1px solid #fee2e2; }
+.alert-badge.ok { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+
+.id-tag {
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: monospace;
+}
