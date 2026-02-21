@@ -10,7 +10,6 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:3001";
 
-// เพิ่มการรับ Props { viewDate } จาก ManagerMainPage
 function ManagerDashboard({ viewDate }) {
     const [todayData, setTodayData] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -20,27 +19,27 @@ function ManagerDashboard({ viewDate }) {
             setLoading(true);
             const token = localStorage.getItem('token');
             
-            // ใช้ viewDate ที่ได้รับมาแทนวันที่ปัจจุบัน
+            // ตรวจสอบว่ามี viewDate หรือไม่ ถ้าไม่มีให้ใช้เครื่องหมายปัจจุบัน
             const targetDate = viewDate || new Date().toISOString().split('T')[0];
 
             const res = await axios.get(`${API_BASE_URL}/api/history/full`, {
                 headers: { Authorization: `Bearer ${token}` },
-                // ส่ง params ไปที่ Backend เพื่อกรองตามวันที่เลือก
                 params: { startDate: targetDate, endDate: targetDate }
             });
-            setTodayData(res.data);
+
+            const sortedData = res.data.sort((a, b) => b.time.localeCompare(a.time));
+            setTodayData(sortedData);
         } catch (err) { 
             console.error("Fetch dashboard error:", err); 
         } finally { 
             setLoading(false); 
         }
-    }, [viewDate]); // ทำงานใหม่เมื่อ viewDate เปลี่ยน
+    }, [viewDate]); 
 
     useEffect(() => { 
         fetchActivityByDate(); 
     }, [fetchActivityByDate]);
 
-    // คำนวณสถิติตามข้อมูลที่ดึงมาได้จริงในวันนั้น
     const stats = useMemo(() => ({
         withdraws: todayData.filter(d => d.transaction_type_id === 'T-WTH').length,
         returns: todayData.filter(d => d.transaction_type_id === 'T-RTN').length,
@@ -73,7 +72,7 @@ function ManagerDashboard({ viewDate }) {
             <div className="dashboard-header-day">
                 {/* แสดงวันที่ที่เลือกในหัวข้อ */}
                 <h2>
-                    <FaCalendarDay /> สรุปกิจกรรมคลังประจำวันที่ {new Date(viewDate).toLocaleDateString('th-TH')}
+                    <FaCalendarDay /> สรุปกิจกรรมคลังประจำวันที่ {viewDate ? new Date(viewDate).toLocaleDateString('th-TH') : "ไม่ระบุวัน"}
                 </h2>
             </div>
 
