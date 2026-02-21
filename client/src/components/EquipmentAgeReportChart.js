@@ -58,7 +58,7 @@ function EquipmentAgeReportChart({ isPreview = false }) {
       legend: { display: false },
       title: {
         display: !isPreview,
-        text: "อายุเฉลี่ยของอะไหล่ในคลัง (วัน)",
+        text: "อายุของอะไหล่ในคลัง (วัน)",
         font: { size: 20 },
         padding: { bottom: 25, top: 10 },
       },
@@ -66,7 +66,7 @@ function EquipmentAgeReportChart({ isPreview = false }) {
         enabled: true,
         callbacks: {
           label: function(context) {
-            return `อายุเฉลี่ย: ${context.raw} วัน`;
+            return `อายุคงเหลือ: ${context.raw} วัน`;
           }
         }
       },

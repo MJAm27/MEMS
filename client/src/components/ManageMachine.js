@@ -128,7 +128,7 @@ function ManageMachine() {
         <table className="custom-table">
           <thead>
             <tr>
-              <th style={{ width: "20%" }}>รหัสครุภัณฑ์ (sn)</th>
+              <th style={{ width: "20%" }}>รหัสครุภัณฑ์ (Serial Number)</th>
               <th style={{ width: "60%" }}>ชื่อครุภัณฑ์</th>
               <th style={{ width: "20%" }} className="text-center">จัดการ</th>
             </tr>

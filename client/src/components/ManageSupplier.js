@@ -15,7 +15,7 @@ function ManageSupplier() {
   const [formData, setFormData] = useState({
     supplier_id: "",
     supplier_name: "",
-    contact_info: ""
+    contact: ""
   });
 
   // 1. โหลดข้อมูลเมื่อเปิดหน้าเว็บ
@@ -46,7 +46,7 @@ function ManageSupplier() {
   // 4. เปิด Modal เพิ่มข้อมูลใหม่
   const handleAddNew = () => {
     setIsEditMode(false);
-    setFormData({ supplier_id: "", supplier_name: "", contact_info: "" });
+    setFormData({ supplier_id: "", supplier_name: "", contact: "" });
     setShowModal(true);
   };
 
@@ -56,7 +56,7 @@ function ManageSupplier() {
     setFormData({
       supplier_id: item.supplier_id,
       supplier_name: item.supplier_name,
-      contact_info: item.contact_info || "" // ถ้าไม่มีข้อมูลให้เป็น string ว่าง
+      contact: item.contact || "" // ถ้าไม่มีข้อมูลให้เป็น string ว่าง
     });
     setShowModal(true);
   };
@@ -135,7 +135,7 @@ function ManageSupplier() {
                 <tr key={item.supplier_id}>
                   <td className="text-primary fw-bold">{item.supplier_id}</td>
                   <td>{item.supplier_name}</td>
-                  <td>{item.contact_info || "-"}</td>
+                  <td>{item.contact || "-"}</td>
                   <td style={{ textAlign: "center" }}>
                     <button className="action-btn edit-btn" onClick={() => handleEdit(item)}>
                       <FaEdit />
@@ -202,8 +202,8 @@ function ManageSupplier() {
                 <div className="form-group">
                   <label>ข้อมูลติดต่อ (Contact Info)</label>
                   <textarea
-                    name="contact_info"
-                    value={formData.contact_info}
+                    name="contact"
+                    value={formData.contact}
                     onChange={handleChange}
                     rows="3"
                     className="form-textarea" // เพิ่ม class ให้ css

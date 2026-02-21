@@ -16,7 +16,8 @@ function ManageTransaction() {
     users: [], 
     machines: [], 
     types: [], 
-    equipments: [] 
+    equipments: [] ,
+    lots: []
   });
 
   // Form Data (Header)
@@ -29,7 +30,7 @@ function ManageTransaction() {
   });
 
   const [cartItems, setCartItems] = useState([]); 
-  const [currentItem, setCurrentItem] = useState({ equipment_id: "", quantity: 1 });
+  const [currentItem, setCurrentItem] = useState({ lot_id: "",equipment_id: "", quantity: 1 });
 
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
@@ -66,16 +67,16 @@ function ManageTransaction() {
       return;
     }
     
-    const eqInfo = options.equipments.find(e => String(e.equipment_id) === String(currentItem.equipment_id));
+    const lotInfo = options.lots.find(l => String(l.lot_id) === String(currentItem.lot_id));
     
-    if (eqInfo) {
+    if (lotInfo) {
         const newItem = {
           ...currentItem,
-          equipment_name: eqInfo.equipment_name,
-          model_size: eqInfo.model_size
+          equipment_name: lotInfo.equipment_name,
+          model_size: lotInfo.model_size
         };
         setCartItems([...cartItems, newItem]);
-        setCurrentItem({ equipment_id: "", quantity: 1 }); 
+        setCurrentItem({ lot_id: "", equipment_id: "", quantity: 1 }); // รีเซ็ตค่าหลังกดเพิ่ม
     }
   };
 
@@ -106,7 +107,7 @@ function ManageTransaction() {
       alert("บันทึกรายการสำเร็จ!");
       setShowModal(false);
       fetchTransactions(); 
-      setHeaderData({ transaction_type_id: "", user_id: "", machine_SN: "", notes: "" });
+      setHeaderData({ transaction_type_id: "", user_id: "", machine_SN: "" });
       setCartItems([]);
     } catch (error) {
       console.error(error);
@@ -129,7 +130,7 @@ function ManageTransaction() {
   const handleOpenAdd = () => {
       setViewMode(false);
       setCartItems([]);
-      setHeaderData({ transaction_type_id: "", user_id: "", machine_SN: "", notes: "" });
+      setHeaderData({ transaction_type_id: "", user_id: "", machine_SN: "" });
       setShowModal(true);
   }
 
@@ -164,7 +165,7 @@ function ManageTransaction() {
           <FaSearch className="search-icon" />
           <input
             type="text"
-            placeholder="ค้นหาเลขที่รายการ หรือ ชื่อผู้ทำรายการ..."
+            placeholder="ค้นหาเลขที่รายการ หรือ ชื่อผู้ดำเนินการ..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -207,7 +208,7 @@ function ManageTransaction() {
               filteredData.map((item) => (
                 <tr key={item.transaction_id}>
                   <td className="text-primary fw-bold">{item.transaction_id}</td>
-                  <td>{new Date(item.transaction_date).toLocaleString('th-TH')}</td>
+                  <td>{new Date(item.date).toLocaleDateString('th-TH')} {item.time}</td>
                   <td>
                       <span className={`badge ${item.transaction_type_name?.includes('เบิก') ? 'bg-warning' : 'bg-success'}`}>
                           {item.transaction_type_name}
@@ -243,7 +244,7 @@ function ManageTransaction() {
                     <div>
                         <div className="info-grid">
                             <p><strong>ID:</strong> {selectedTransaction?.transaction_id}</p>
-                            <p><strong>วันที่:</strong> {new Date(selectedTransaction?.transaction_date).toLocaleString()}</p>
+                            <p><strong>วันที่:</strong> {new Date(selectedTransaction?.date).toLocaleString()}</p>
                             <p><strong>ประเภท:</strong> {selectedTransaction?.transaction_type_name}</p>
                             <p><strong>ผู้ทำรายการ:</strong> {selectedTransaction?.fullname}</p>
                             <p><strong>ครุภัณฑ์:</strong> {selectedTransaction?.machine_name || "-"}</p>
@@ -278,12 +279,18 @@ function ManageTransaction() {
                                     <label>ประเภทรายการ <span className="text-danger">*</span></label>
                                     <select 
                                         className="form-control"
-                                        value={headerData.transaction_type_id}
-                                        onChange={e => setHeaderData({...headerData, transaction_type_id: e.target.value})}
+                                        value={headerData.type_mode}
+                                        onChange={e => {
+                                            const mode = e.target.value;
+                                            // ถ้าเป็น คืน หรือ ยืม ให้เคลียร์ค่าครุภัณฑ์ทิ้งอัตโนมัติ
+                                            const resetMachine = (mode === 'return' || mode === 'borrow') ? "" : headerData.machine_SN;
+                                            setHeaderData({...headerData, type_mode: mode, machine_SN: resetMachine});
+                                        }}
                                         required
                                     >
-                                        <option value="">-- เลือกประเภท --</option>
-                                        {options.types.map(t => <option key={t.transaction_type_id} value={t.transaction_type_id}>{t.transaction_type_name}</option>)}
+                                        <option value="withdraw">เบิก</option>
+                                        <option value="return">คืน</option>
+                                        <option value="borrow">เบิกล่วงหน้า</option>
                                     </select>
                                 </div>
                                 <div className="form-group">
@@ -304,6 +311,7 @@ function ManageTransaction() {
                                         className="form-control"
                                         value={headerData.machine_SN}
                                         onChange={e => setHeaderData({...headerData, machine_SN: e.target.value})}
+                                        disabled={headerData.type_mode === 'return' || headerData.type_mode === 'borrow'}
                                     >
                                         <option value="">-- ไม่ระบุ --</option>
                                         {options.machines.map(m => <option key={m.machine_SN} value={m.machine_SN}>{m.machine_name}</option>)}
@@ -315,10 +323,24 @@ function ManageTransaction() {
                         <div className="section-box">
                             <h4>2. เพิ่มรายการอะไหล่</h4>
                             <div className="add-item-row">
-                                <select onChange={(e) => setCurrentItem({...currentItem, lot_id: e.target.value})}>
-                                    {lotOptions.map(lot => (
+                                <select 
+                                    className="form-control" 
+                                    style={{flex: 2}}
+                                    value={currentItem.lot_id || ""}
+                                    onChange={(e) => {
+                                        const selectedLotId = e.target.value;
+                                        const selectedLot = options.lots.find(l => String(l.lot_id) === String(selectedLotId));
+                                        setCurrentItem({
+                                            ...currentItem, 
+                                            lot_id: selectedLotId,
+                                            equipment_id: selectedLot ? selectedLot.equipment_id : "" // แนบ equipment_id ไปด้วย
+                                        });
+                                    }}
+                                >
+                                    <option value="">-- เลือก Lot อะไหล่ --</option>
+                                    {options.lots && options.lots.map(lot => (
                                         <option key={lot.lot_id} value={lot.lot_id}>
-                                            {`${lot.lot_id} ${lot.equipment_id} ${lot.model_size} ${lot.equipment_type_id} ${lot.equipment_name}`}
+                                            {`${lot.lot_id} ${lot.equipment_id} ${lot.model_size || ''} ${lot.equipment_type_id} ${lot.equipment_name}`}
                                         </option>
                                     ))}
                                 </select>
