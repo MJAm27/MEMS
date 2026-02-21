@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./ManageUser.css";
-import { FaPlus, FaSearch, FaEdit, FaTrash, FaTimes } from "react-icons/fa";
+import { FaPlus, FaSearch, FaEdit, FaTrash, FaTimes, FaFilter } from "react-icons/fa";
 import axios from "axios";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
@@ -9,18 +9,20 @@ function ManageUser() {
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterRole, setFilterRole] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
 
   // Form Data (ปรับให้ตรงกับ Backend ใหม่)
   const [formData, setFormData] = useState({
     user_id: "",
-    fullname: "",      // เปลี่ยนจาก username/firstname
+    fullname: "",      
     email: "",
     password: "",
-    position: "",      // เพิ่มตำแหน่ง
-    phone_number: "",  // เพิ่มเบอร์โทร
-    role_id: ""
+    position: "",      
+    phone_number: "",  
+    role_id: "",
+    profile_img:""
   });
 
   useEffect(() => {
@@ -59,7 +61,8 @@ function ManageUser() {
       password: "",
       position: "",
       phone_number: "",
-      role_id: ""
+      role_id: "",
+      profile_img:""
     });
     setShowModal(true);
   };
@@ -70,10 +73,11 @@ function ManageUser() {
       user_id: user.user_id,
       fullname: user.fullname || "",
       email: user.email || "",
-      password: "", // เว้นว่างไว้
+      password: "",
       position: user.position || "",
       phone_number: user.phone_number || "",
-      role_id: user.role_id
+      role_id: user.role_id,
+      profile_img: user.profile_img
     });
     setShowModal(true);
   };
@@ -106,30 +110,52 @@ function ManageUser() {
     }
   };
 
-  // --- จุดที่ทำให้เกิด Error แก้ไขตรงนี้ ---
-  const filteredUsers = users.filter(u => 
-    // เช็คว่ามีค่าก่อน ค่อย .toLowerCase()
-    (u.fullname && u.fullname.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (u.email && u.email.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredUsers = users.filter(u => {
+    const matchesSearch = 
+      (u.fullname && u.fullname.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (u.email && u.email.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesRole = filterRole ? u.role_id.toString() === filterRole.toString() : true;
+    return matchesSearch && matchesRole;
+  });
 
   return (
     <div className="manage-user-container fade-in">
       <div className="page-header">
-        <h2 className="page-title-text">จัดการผู้ใช้งาน (Users)</h2>
+        <h2 className="page-title-text">จัดการผู้ใช้งาน</h2>
         <button className="btn-primary" onClick={handleOpenAdd}>
           <FaPlus style={{ marginRight: "8px" }} /> เพิ่มผู้ใช้ใหม่
         </button>
       </div>
 
-      <div className="search-bar-wrapper">
-        <FaSearch className="search-icon" />
-        <input
-          type="text"
-          placeholder="ค้นหาชื่อ หรือ อีเมล..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      <div style={{ display: "flex", gap: "10px", marginBottom: "20px", flexWrap: "wrap" }}>
+        
+        <div className="search-bar-wrapper" style={{ flex: 1, minWidth: "250px", marginBottom: 0 }}>
+          <FaSearch className="search-icon" />
+          <input
+            type="text"
+            placeholder="ค้นหาชื่อ หรือ อีเมล..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        <div className="filter-wrapper" style={{ position: "relative" }}>
+            <FaFilter style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#888" }} />
+            <select
+                className="form-control"
+                value={filterRole}
+                onChange={(e) => setFilterRole(e.target.value)}
+                style={{ paddingLeft: "35px", height: "100%", cursor: "pointer" }}
+            >
+                <option value="">ทั้งหมด</option>
+                {roles.map((r) => (
+                    <option key={r.role_id} value={r.role_id}>
+                        {r.role_name}
+                    </option>
+                ))}
+            </select>
+        </div>
+
       </div>
 
       <div className="table-container">
@@ -149,8 +175,21 @@ function ManageUser() {
               <tr key={user.user_id}>
                 <td className="fw-bold text-primary">
                     <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
-                        {/* ใช้อักษรแรกของ fullname แทน username */}
-                        <div className="user-avatar">{user.fullname ? user.fullname.charAt(0).toUpperCase() : "?"}</div>
+                        <div className="user-avatar" style={{ overflow: "hidden", display: "flex", justifyContent: "center", alignItems: "center", backgroundColor: "#eee" }}>
+                            {user.profile_img ? (
+                                <img 
+                                    src={`${API_BASE_URL}/profile-img/${user.profile_img}`} 
+                                    alt="profile"
+                                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                    // onError={(e) => {
+                                    //     e.target.style.display = 'none';
+                                    //     e.target.parentElement.innerText = user.fullname ? user.fullname.charAt(0).toUpperCase() : "?";
+                                    // }}
+                                />
+                            ) : (
+                                <span>{user.fullname ? user.fullname.charAt(0).toUpperCase() : "?"}</span>
+                            )}
+                          </div>
                         {user.fullname}
                     </div>
                 </td>

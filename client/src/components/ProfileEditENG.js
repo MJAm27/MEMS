@@ -124,7 +124,6 @@ function ProfileEditENG({ user, refreshUser }) {
                     <h2>แก้ไขข้อมูลส่วนตัว</h2>
                 </div>
 
-                {/* ส่วนจัดการรูปโปรไฟล์ */}
                 <div className="edit-avatar-section">
                     <div className="avatar-upload-wrapper">
                         {previewUrl ? (

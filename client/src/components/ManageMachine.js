@@ -187,7 +187,7 @@ function ManageMachine() {
                     onChange={handleChange}
                     disabled={isEditMode}
                     required
-                    placeholder="เช่น MC-2024-XXX"
+                    placeholder="ระบุ SN"
                   />
                   {isEditMode && <small className="text-muted">รหัสครุภัณฑ์ไม่สามารถแก้ไขได้</small>}
                 </div>

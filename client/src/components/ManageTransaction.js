@@ -1,38 +1,39 @@
-import React, { useState, useEffect, useCallback } from "react"; // เพิ่ม useCallback
+import React, { useState, useEffect, useCallback } from "react"; 
 import "./ManageTransaction.css";
-import { FaPlus, FaSearch, FaEye, FaTimes, FaTrash } from "react-icons/fa";
+import { FaPlus, FaSearch, FaEye, FaTimes, FaTrash, FaFilter } from "react-icons/fa";
 import axios from "axios";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 function ManageTransaction() {
-  // State หลัก
   const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(true); // แก้ไขการประกาศที่นี่
+  const [loading, setLoading] = useState(true); 
   const [searchTerm, setSearchTerm] = useState("");
-
-  // State สำหรับ Modal และ Form
+  const [filterType, setFilterType] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [viewMode, setViewMode] = useState(false); // true=ดูรายละเอียด, false=เพิ่มใหม่
-  const [options, setOptions] = useState({ users: [], machines: [], types: [], equipments: [] });
+  const [options, setOptions] = useState({ 
+    users: [], 
+    machines: [], 
+    types: [], 
+    equipments: [] 
+  });
 
   // Form Data (Header)
   const [headerData, setHeaderData] = useState({
-    transaction_type_id: "",
+    type_mode: "withdraw", // withdraw, return, borrow
     user_id: "",
     machine_SN: "",
-    notes: ""
+    date: new Date().toISOString().split('T')[0],
+    time: new Date().toLocaleTimeString('th-TH', { hour12: false }).slice(0, 5)
   });
 
-  // Form Data (Items - รายการในตะกร้า)
   const [cartItems, setCartItems] = useState([]); 
   const [currentItem, setCurrentItem] = useState({ equipment_id: "", quantity: 1 });
 
-  // State สำหรับดูรายละเอียด (View Detail)
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
 
-  // โหลดตัวเลือกต่างๆ (User, Machine, Type) - ครอบด้วย useCallback
   const fetchOptions = useCallback(async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/api/transaction-options`);
@@ -42,7 +43,6 @@ function ManageTransaction() {
     }
   }, []);
 
-  // โหลดข้อมูลประวัติ - ครอบด้วย useCallback
   const fetchTransactions = useCallback(async () => {
     try {
       setLoading(true);
@@ -58,16 +58,14 @@ function ManageTransaction() {
   useEffect(() => {
     fetchTransactions();
     fetchOptions();
-  }, [fetchTransactions, fetchOptions]); // ใส่ Dependency ให้ครบตามที่ ESLint ต้องการ
+  }, [fetchTransactions, fetchOptions]); 
 
-  // ฟังก์ชันเพิ่มของลงตะกร้า
   const handleAddItemToCart = () => {
     if (!currentItem.equipment_id || currentItem.quantity <= 0) {
       alert("กรุณาเลือกอุปกรณ์และระบุจำนวนให้ถูกต้อง");
       return;
     }
     
-    // เปลี่ยน == เป็น === เพื่อความปลอดภัยและลบ Warning
     const eqInfo = options.equipments.find(e => String(e.equipment_id) === String(currentItem.equipment_id));
     
     if (eqInfo) {
@@ -81,14 +79,12 @@ function ManageTransaction() {
     }
   };
 
-  // ลบของออกจากตะกร้า
   const handleRemoveFromCart = (index) => {
     const newCart = [...cartItems];
     newCart.splice(index, 1);
     setCartItems(newCart);
   };
 
-  // บันทึก Transaction ทั้งหมด
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (cartItems.length === 0) {
@@ -118,7 +114,6 @@ function ManageTransaction() {
     }
   };
 
-  // เปิดดูรายละเอียด
   const handleViewDetail = async (trans) => {
     setSelectedTransaction(trans);
     setViewMode(true);
@@ -138,20 +133,22 @@ function ManageTransaction() {
       setShowModal(true);
   }
 
-  // Filter
-  const filteredData = transactions.filter(t => 
-    t.transaction_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (t.fullname && t.fullname.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredData = transactions.filter(t => {
+    const matchesSearch = 
+        t.transaction_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (t.fullname && t.fullname.toLowerCase().includes(searchTerm.toLowerCase()));
 
-  // เพิ่มส่วนแสดงผลขณะกำลังโหลดข้อมูล
+    const matchesType = filterType ? t.transaction_type_id.toString() === filterType.toString() : true;
+
+    return matchesSearch && matchesType;
+  });
+
   if (loading) {
     return <div className="loading-container">กำลังโหลดข้อมูลประวัติ...</div>;
   }
 
   return (
     <div className="manage-transaction-container fade-in">
-      {/* Header */}
       <div className="page-header">
         <div>
           <h2 className="page-title-text">จัดการประวัติการเบิก-คืน</h2>
@@ -161,18 +158,37 @@ function ManageTransaction() {
         </button>
       </div>
 
-      {/* Search */}
-      <div className="search-bar-wrapper">
-        <FaSearch className="search-icon" />
-        <input
-          type="text"
-          placeholder="ค้นหาเลขที่รายการ หรือ ชื่อผู้ทำรายการ..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      <div style={{ display: "flex", gap: "10px", marginBottom: "20px", flexWrap: "wrap" }}>
+        
+        <div className="search-bar-wrapper" style={{ flex: 1, minWidth: "250px", marginBottom: 0 }}>
+          <FaSearch className="search-icon" />
+          <input
+            type="text"
+            placeholder="ค้นหาเลขที่รายการ หรือ ชื่อผู้ทำรายการ..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        <div className="filter-wrapper" style={{ position: "relative", minWidth: "200px" }}>
+            <FaFilter style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#888" }} />
+            <select
+                className="form-control"
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                style={{ paddingLeft: "35px", height: "100%", cursor: "pointer" }}
+            >
+                <option value="">ทั้งหมด</option>
+                {options.types.map((t) => (
+                    <option key={t.transaction_type_id} value={t.transaction_type_id}>
+                        {t.transaction_type_name}
+                    </option>
+                ))}
+            </select>
+        </div>
+
       </div>
 
-      {/* Table List */}
       <div className="table-container">
         <table className="custom-table">
           <thead>
@@ -214,7 +230,6 @@ function ManageTransaction() {
         </table>
       </div>
 
-      {/* MODAL */}
       {showModal && (
         <div className="modal-overlay">
           <div className="modal-content transaction-modal">
@@ -294,31 +309,16 @@ function ManageTransaction() {
                                         {options.machines.map(m => <option key={m.machine_SN} value={m.machine_SN}>{m.machine_name}</option>)}
                                     </select>
                                 </div>
-                                <div className="form-group">
-                                    <label>หมายเหตุ</label>
-                                    <input 
-                                        type="text" 
-                                        className="form-control"
-                                        value={headerData.notes}
-                                        onChange={e => setHeaderData({...headerData, notes: e.target.value})}
-                                    />
-                                </div>
                             </div>
                         </div>
 
                         <div className="section-box">
                             <h4>2. เพิ่มรายการอะไหล่</h4>
                             <div className="add-item-row">
-                                <select 
-                                    style={{flex: 2}}
-                                    className="form-control"
-                                    value={currentItem.equipment_id}
-                                    onChange={e => setCurrentItem({...currentItem, equipment_id: e.target.value})}
-                                >
-                                    <option value="">-- เลือกอุปกรณ์ --</option>
-                                    {options.equipments.map(e => (
-                                        <option key={e.equipment_id} value={e.equipment_id}>
-                                            {e.equipment_name} ({e.model_size})
+                                <select onChange={(e) => setCurrentItem({...currentItem, lot_id: e.target.value})}>
+                                    {lotOptions.map(lot => (
+                                        <option key={lot.lot_id} value={lot.lot_id}>
+                                            {`${lot.lot_id} ${lot.equipment_id} ${lot.model_size} ${lot.equipment_type_id} ${lot.equipment_name}`}
                                         </option>
                                     ))}
                                 </select>
