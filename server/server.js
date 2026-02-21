@@ -899,6 +899,35 @@ app.get("/api/alerts/low-stock", async (req, res) => {
     }
 });
 
+// ดึงรายการอะไหล่ที่มีราคาต่อหน่วยมากกว่า 1,000 บาท
+app.get('/api/alerts/high-value', async (req, res) => {
+    try {
+        const sql = `
+            SELECT 
+                l.lot_id,
+                e.equipment_id, 
+                et.equipment_name, 
+                l.price, 
+                l.current_quantity as total_quantity, 
+                et.img,
+                e.alert_quantity,
+                et.unit as unit_name
+            FROM lot l
+            JOIN equipment e ON l.equipment_id = e.equipment_id
+            JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
+            WHERE l.price > 1000
+            ORDER BY l.price DESC
+        `;
+
+        const [results] = await db.query(sql);
+        res.json(results);
+    } catch (err) {
+        console.error("Database Error:", err);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+
+
 // GET /api/machine
 app.get('/api/machine', async (req, res) => {
     try {
