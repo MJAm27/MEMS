@@ -48,46 +48,48 @@ function ManagerEquipmentPage() {
                 </div>
             </header>
 
-            <div className="table-card">
-                <table className="custom-table">
-                    <thead>
-                        <tr>
-                            <th>รหัสประเภท</th>
-                            <th>ชื่ออะไหล่</th>
-                            <th>จำนวนล็อต</th>
-                            <th>คงคลังรวม</th>
-                            <th>ช่วงราคา</th>
-                            <th>สถานะ</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filtered.map((item) => {
-                            const isLow = (item.total_stock || 0) <= (item.alert_quantity || 0);
-                            return (
-                                <tr key={item.equipment_id}>
-                                    <td><span className="id-tag">{item.equipment_type_id}</span></td>
-                                    <td className="eq-name"><strong>{item.equipment_name}</strong></td>
-                                    <td><FaLayerGroup /> {item.total_lots} ล็อต</td>
-                                    <td>
-                                        <span className={`stock-text ${isLow ? 'danger' : 'success'}`}>
-                                            {item.total_stock} {item.unit}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        {item.min_price ? 
-                                            `${Number(item.min_price).toLocaleString()} - ${Number(item.max_price).toLocaleString()} บ.` : 
-                                            "ไม่มีข้อมูล"}
-                                    </td>
-                                    <td>
-                                        <span className={`alert-badge ${isLow ? 'low' : 'ok'}`}>
-                                            {isLow ? <><FaExclamationCircle /> สต็อกต่ำ</> : 'ปกติ'}
-                                        </span>
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
+            <div className="table-responsive-wrapper">
+                <div className="table-card">
+                    <table className="custom-table">
+                        <thead>
+                            <tr>
+                                <th>รหัสประเภท</th>
+                                <th>ชื่ออะไหล่</th>
+                                <th>จำนวนล็อต</th>
+                                <th>คงคลังรวม</th>
+                                <th>ช่วงราคา</th>
+                                <th>สถานะ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filtered.map((item) => {
+                                const isLow = (item.total_stock || 0) <= (item.alert_quantity || 0);
+                                return (
+                                    <tr key={item.equipment_id}>
+                                        <td><span className="id-tag">{item.equipment_type_id}</span></td>
+                                        <td className="eq-name"><strong>{item.equipment_name}</strong></td>
+                                        <td><FaLayerGroup /> {item.total_lots} ล็อต</td>
+                                        <td>
+                                            <span className={`stock-text ${isLow ? 'danger' : 'success'}`}>
+                                                {item.total_stock} {item.unit}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {item.min_price ? 
+                                                `${Number(item.min_price).toLocaleString()} - ${Number(item.max_price).toLocaleString()} บ.` : 
+                                                "ไม่มีข้อมูล"}
+                                        </td>
+                                        <td>
+                                            <span className={`alert-badge ${isLow ? 'low' : 'ok'}`}>
+                                                {isLow ? <><FaExclamationCircle /> สต็อกต่ำ</> : 'ปกติ'}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );

@@ -1,24 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { FaHistory, FaFilter, FaBoxOpen, FaReply} from 'react-icons/fa';
+import { FaHistory, FaFilter, FaBoxOpen, FaReply, FaCalendarAlt } from 'react-icons/fa';
 import './HistoryPage.css';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 function HistoryPage({ user }) {
     const [history, setHistory] = useState([]);
-    const [filter, setFilter] = useState('ALL'); // ALL, T-WTH (เบิก), T-RTN (คืน)
+    const [filter, setFilter] = useState('ALL'); 
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchHistory();
-    }, []);
+    // 1. สร้าง State สำหรับช่วงวันที่
+    // กำหนดค่าเริ่มต้นเป็นต้นเดือนถึงวันนี้
+    const [startDate, setStartDate] = useState(
+        new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]
+    );
+    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
 
-    const fetchHistory = async () => {
+    // 2. ปรับฟังก์ชันดึงข้อมูลให้ส่ง Params วันที่ไปด้วย
+    const fetchHistory = useCallback(async () => {
         try {
+            setLoading(true);
             const token = localStorage.getItem('token');
             const res = await axios.get(`${API_BASE}/api/history/full`, {
-                headers: { Authorization: `Bearer ${token}` }
+                headers: { Authorization: `Bearer ${token}` },
+                params: { 
+                    startDate: startDate, 
+                    endDate: endDate 
+                }
             });
             setHistory(res.data);
         } catch (err) {
@@ -26,9 +35,13 @@ function HistoryPage({ user }) {
         } finally {
             setLoading(false);
         }
-    };
+    }, [startDate, endDate]);
 
-    // ระบบกรองข้อมูลตามประเภทรายการ
+
+    useEffect(() => {
+        fetchHistory();
+    }, [fetchHistory]);
+
     const filteredData = filter === 'ALL' 
         ? history 
         : history.filter(item => item.transaction_type_id === filter);
@@ -36,26 +49,55 @@ function HistoryPage({ user }) {
     if (loading) return <div className="text-center p-10">กำลังโหลดประวัติการทำรายการ...</div>;
 
     return (
-        <div className="history-container">
+        <div className="history-container fade-in">
             <div className="history-header">
                 <div className="title-section">
                     <FaHistory className="title-icon" />
                     <h2>ประวัติรายการ</h2>
                 </div>
-                
-                <div className="filter-group">
-                    <FaFilter className="filter-icon" />
-                    <select value={filter} onChange={(e) => setFilter(e.target.value)} className="history-select">
-                        <option value="ALL">ทั้งหมด</option>
-                        <option value="T-WTH">รายการเบิก</option>
-                        <option value="T-RTN">รายการคืน</option>
-                    </select>
+
+                {/* ส่วน Filters ที่จะปรับตามหน้าจออัตโนมัติ */}
+                <div className="history-filters-wrapper">
+                    <div className="history-date-picker-group">
+                        <div className="date-input-wrapper">
+                            <FaCalendarAlt className="input-icon" />
+                            <input 
+                                type="date" 
+                                id="hist-start-date"
+                                name="startDate"
+                                value={startDate} 
+                                onChange={(e) => setStartDate(e.target.value)} 
+                                className="history-date-input"
+                            />
+                        </div>
+                        <span className="date-separator">ถึง</span>
+                        <div className="date-input-wrapper">
+                            <FaCalendarAlt className="input-icon" />
+                            <input 
+                                type="date" 
+                                id="hist-end-date"
+                                name="endDate"
+                                value={endDate} 
+                                onChange={(e) => setEndDate(e.target.value)} 
+                                className="history-date-input"
+                            />
+                        </div>
+                    </div>
+                    
+                    <div className="filter-group">
+                        <FaFilter className="filter-icon" />
+                        <select value={filter} onChange={(e) => setFilter(e.target.value)} className="history-select">
+                            <option value="ALL">ทุกประเภท</option>
+                            <option value="T-WTH">รายการเบิก</option>
+                            <option value="T-RTN">รายการคืน</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
-            {/* --- ส่วนแสดงผลแบบ Desktop (ตาราง) --- */}
+            {/* ส่วนแสดงตารางสำหรับ Laptop (พร้อม Horizontal Scroll ในมือถือ) */}
             <div className="history-card desktop-view">
-                <div className="table-responsive">
+                <div className="table-wrapper"> {/* เพิ่ม Wrapper ตรงนี้ */}
                     <table className="history-table">
                         <thead>
                             <tr>
@@ -66,20 +108,15 @@ function HistoryPage({ user }) {
                                 <th>เลขครุภัณฑ์</th>
                                 <th>เวลาเปิด-ปิด</th>
                             </tr>
-                    </thead>
+                        </thead>
                         <tbody>
                             {filteredData.length > 0 ? filteredData.map((row, index) => {
-                                // --- ส่วนสำคัญ: แปลงข้อมูลรายการอะไหล่จาก JSON ---
                                 let items = [];
                                 try {
-                                    // ตรวจสอบว่า Backend ส่งมาเป็น String หรือ Object
                                     items = typeof row.items_json === 'string' 
                                         ? JSON.parse(row.items_json) 
                                         : (row.items_json || []);
-                                } catch (e) {
-                                    console.error("Parse items error:", e);
-                                    items = [];
-                                }
+                                } catch (e) { items = []; }
 
                                 return (
                                     <tr key={index}>
@@ -94,28 +131,21 @@ function HistoryPage({ user }) {
                                             </span>
                                         </td>
                                         <td>
-                                            {/* แสดงรายการชื่ออะไหล่แยกบรรทัด */}
                                             <div className="item-names-column">
                                                 {items.map((item, i) => (
-                                                    <div key={i} className="item-row-detail">
-                                                        {item.name || "ไม่ทราบชื่ออะไหล่"}
-                                                    </div>
+                                                    <div key={i} className="item-row-detail">{item.name || "ไม่ทราบชื่อ"}</div>
                                                 ))}
                                             </div>
                                         </td>
                                         <td className="text-center font-bold text-pink">
-                                            {/* แสดงจำนวนแยกบรรทัดให้ตรงกับชื่อ */}
                                             <div className="item-qtys-column">
                                                 {items.map((item, i) => (
-                                                    <div key={i} className="item-row-detail">
-                                                        {item.qty || 0}
-                                                    </div>
+                                                    <div key={i} className="item-row-detail">{item.qty || 0}</div>
                                                 ))}
                                             </div>
                                         </td>
                                         <td className="font-bold">{row.machine_SN || "-"}</td>
                                         <td className="access-log-cell">
-                                            {/* ดึงเวลาจาก accesslogs ตาม action_type_id */}
                                             <div className="status-timeline">
                                                 <div className={`time-badge ${row.open_time ? 'active-open' : ''}`}>
                                                     <small>เปิด:</small> {row.open_time || '--:--'}
@@ -129,7 +159,7 @@ function HistoryPage({ user }) {
                                 );
                             }) : (
                                 <tr>
-                                    <td colSpan="6" className="text-center p-10 text-gray-400">ไม่พบข้อมูลประวัติในช่วงนี้</td>
+                                    <td colSpan="6" className="text-center p-10 text-gray-400">ไม่พบข้อมูลในช่วงวันที่เลือก</td>
                                 </tr>
                             )}
                         </tbody>

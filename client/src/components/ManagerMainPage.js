@@ -3,7 +3,7 @@ import { useNavigate, Routes, Route, Navigate } from "react-router-dom";
 import axios from "axios";
 import {
     FaBars, FaHome, FaChartBar, FaBell, FaHistory, 
-    FaSignOutAlt, FaUserCircle, FaCalendarDay ,FaBoxOpen
+    FaSignOutAlt, FaUserCircle ,FaBoxOpen, FaCalendarDay
 } from "react-icons/fa";
 
 import "./ManagerMainPage.css"; 
@@ -105,17 +105,24 @@ function ManagerMainPage({ user, handleLogout }) {
                         <button className="sidebar-toggle-btn" onClick={toggleSidebar}>
                             <FaBars />
                         </button>
-                        
-                        {/* --- เพิ่มส่วน Daily Filter ใน Navbar --- */}
-                        <div className="daily-filter-container">
-                            <FaCalendarDay className="calendar-icon" />
-                            <span className="filter-text">มุมมองรายวัน:</span>
-                            <input 
-                                type="date" 
-                                value={selectedDate} 
-                                onChange={(e) => setSelectedDate(e.target.value)}
-                                className="daily-date-input"
-                            />
+                        <div className="daily-filter-container" style={{ display: 'flex', alignItems: 'center', marginLeft: '15px', gap: '10px' }}>
+                        <FaCalendarDay className="calendar-icon" style={{ color: '#3498db' }} />
+                        <span className="filter-text" style={{ fontSize: '14px', fontWeight: '500', color: '#2c3e50' }}>มุมมองรายวัน:</span>
+                        <input 
+                            type="date" 
+                            id="manager-daily-date"
+                            name="selectedDate"
+                            value={selectedDate} 
+                            onChange={(e) => setSelectedDate(e.target.value)} // เรียกใช้งานที่นี่
+                            className="daily-date-input"
+                            style={{
+                                padding: '5px 10px',
+                                borderRadius: '8px',
+                                border: '1px solid #e2e8f0',
+                                outline: 'none',
+                                fontFamily: 'inherit'
+                            }}
+                        />
                         </div>
                     </div>
                     

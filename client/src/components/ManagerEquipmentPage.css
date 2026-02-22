@@ -1,32 +1,93 @@
-.eq-info-cell {
+/* Container หลัก */
+.manager-eq-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Header: Desktop เป็นแนวนอน, Mobile เป็นแนวตั้ง */
+.section-header {
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; /* สำคัญ: ให้ตกบรรทัดได้ */
+    gap: 15px;
+    margin-bottom: 20px;
 }
 
-.eq-info-cell small {
-    color: #94a3b8;
-    font-size: 0.75rem;
-    margin-top: 4px;
+.search-box {
+    display: flex;
+    align-items: center;
+    background: white;
+    padding: 8px 15px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    width: 100%;
+    max-width: 350px; /* จำกัดความกว้างใน Desktop */
 }
 
-.stock-text.danger {
-    color: #ef4444;
-    font-weight: 700;
+.search-box input {
+    border: none;
+    outline: none;
+    width: 100%;
+    margin-left: 10px;
 }
 
+/* 📱 จัดการตารางสำหรับมือถือ */
+.table-responsive-wrapper {
+    width: 100%;
+    overflow-x: auto; /* ทำให้ปัดซ้าย-ขวาได้ */
+    -webkit-overflow-scrolling: touch;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.custom-table {
+    width: 100%;
+    min-width: 800px; /* บังคับความกว้างขั้นต่ำ เพื่อไม่ให้ข้อมูลเบียดกันเกินไป */
+    border-collapse: collapse;
+}
+
+.custom-table th, .custom-table td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+/* ปรับแต่ง Badge ให้ตัวเล็กลงในหน้าจอเล็ก */
 .alert-badge {
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
+    white-space: nowrap; /* ห้ามตัวหนังสือตัดบรรทัด */
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
 }
 
-.alert-badge.low { background: #fef2f2; color: #ef4444; border: 1px solid #fee2e2; }
-.alert-badge.ok { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+/* 💻 ปรับแต่งสำหรับหน้าจอเล็ก (Media Queries) */
+@media (max-width: 768px) {
+    .section-header {
+        flex-direction: column; /* วางหัวข้อกับช่องค้นหาซ้อนกัน */
+        align-items: flex-start;
+    }
 
-.id-tag {
-    background: #f1f5f9;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-family: monospace;
+    .search-box {
+        max-width: 100%; /* ช่องค้นหาเต็มความกว้างมือถือ */
+    }
+
+    .title {
+        font-size: 1.2rem; /* ลดขนาดหัวข้อ */
+    }
+    
+    /* ซ่อนบางคอลัมน์ที่ไม่จำเป็นมากในมือถือเพื่อประหยัดพื้นที่ (ถ้าต้องการ) */
+    /* ตัวอย่าง: .custom-table th:nth-child(5), .custom-table td:nth-child(5) { display: none; } */
+}
+
+/* Animation */
+.fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }

@@ -1,298 +1,135 @@
 /* ==================== Container & Global Styles ==================== */
 .report-page {
-    padding: 30px;
-    background-color: #f8fafc; /* เปลี่ยนเป็นสีเทาฟ้าอ่อนเพื่อให้ดูแพงขึ้น */
+    padding: 20px; /* ลด padding ลงเล็กน้อยเพื่อให้เหลือพื้นที่ในมือถือ */
+    background-color: #f8fafc;
     min-height: 100vh;
     font-family: 'Prompt', 'Sarabun', sans-serif;
 }
 
-.fade-in {
-    animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
+/* ... (fadeIn animation เดิม) ... */
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(15px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* ==================== Header & Modern Filter Bar ==================== */
+/* ==================== Header & Responsive Filter Bar ==================== */
 .report-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 35px;
-    flex-wrap: wrap;
-    gap: 20px;
+    margin-bottom: 25px;
+    flex-wrap: wrap; /* ให้ตกบรรทัดใหม่เมื่อพื้นที่ไม่พอ */
+    gap: 15px;
 }
 
 .page-title {
-    font-size: 28px;
+    font-size: 24px; /* ลดขนาดลงเล็กน้อยจาก 28px */
     font-weight: 800;
     color: #1e293b;
-    margin: 0;
-    position: relative;
-    padding-left: 20px;
-}
-
-.page-title::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 6px;
-    height: 32px;
-    background: linear-gradient(to bottom, #3498db, #2dd4bf);
-    border-radius: 10px;
 }
 
 .date-filter-bar {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     background: #ffffff;
-    padding: 8px 18px;
-    border-radius: 16px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-    border: 1px solid #f1f5f9;
+    padding: 8px 12px;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    width: 100%; /* ในมือถือให้เต็มความกว้าง */
+    max-width: 450px;
+    justify-content: space-between;
 }
 
 .date-filter-bar input[type="date"] {
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 6px 12px;
-    outline: none;
-    color: #475569;
-    font-family: 'Prompt';
-    font-size: 0.9rem;
-    transition: border-color 0.2s;
+    width: 45%; /* ปรับขนาด input ให้พอดี */
+    padding: 5px;
+    font-size: 0.85rem;
 }
 
-.date-filter-bar input[type="date"]:focus {
-    border-color: #3498db;
-}
-
-/* ==================== Summary Cards (Glassmorphism inspired) ==================== */
+/* ==================== Summary Cards (Responsive Grid) ==================== */
 .report-summary-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 25px;
-    margin-bottom: 40px;
+    /* Laptop: 3 คอลัมน์ | Mobile: 1 คอลัมน์ */
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
 }
 
 .summary-card {
-    background: #ffffff;
-    padding: 25px;
-    border-radius: 24px;
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
-    border: 1px solid #f1f5f9;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.summary-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-}
-
-.summary-card .card-icon {
-    font-size: 28px;
-    width: 60px;
-    height: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    padding: 20px;
     border-radius: 18px;
 }
 
-.summary-card.info .card-icon { color: #3498db; background: #eff6ff; }
-.summary-card.warning .card-icon { color: #f59e0b; background: #fffbeb; }
-.summary-card.danger .card-icon { color: #ef4444; background: #fef2f2; }
-
-.card-text strong {
-    font-size: 32px;
-    font-weight: 800;
-    color: #0f172a;
-    display: block;
-    line-height: 1;
-    margin-top: 5px;
+.summary-card .card-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
 }
 
-/* ==================== Main Section & Chart Tabs ==================== */
+/* ==================== Charts & Tabs ==================== */
 .report-main-section {
-    background: #ffffff;
-    padding: 30px;
-    border-radius: 24px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    margin-bottom: 35px;
-    border: 1px solid #f1f5f9;
+    padding: 20px;
+    border-radius: 18px;
 }
 
 .tab-navigation {
     display: flex;
-    gap: 12px;
-    margin-bottom: 30px;
-    background: #f1f5f9;
-    padding: 6px;
-    border-radius: 14px;
-    width: fit-content;
+    width: 100%;
+    overflow-x: auto; /* ให้เลื่อนซ้ายขวาได้ถ้าปุ่มเยอะเกินหน้าจอ */
+    padding-bottom: 5px;
 }
 
 .tab-btn {
-    padding: 10px 24px;
-    border: none;
-    background: transparent;
-    color: #64748b;
-    border-radius: 10px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    flex: 1; /* ให้ปุ่มแบ่งความกว้างเท่าๆ กัน */
+    white-space: nowrap; /* ห้ามตัวหนังสือตัดบรรทัด */
+    padding: 10px 15px;
+    font-size: 14px;
 }
 
-.tab-btn.active {
-    background: #ffffff;
-    color: #3498db;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+.chart-container {
+    height: 350px !important; /* ลดความสูงในมือถือเพื่อให้เห็นข้อมูลอื่นด้วย */
 }
 
-/* ==================== Table Sections ==================== */
-.report-table-section {
-    background: #ffffff;
-    padding: 30px;
-    border-radius: 24px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    margin-bottom: 35px;
-    border: 1px solid #f1f5f9;
-}
-
-.table-title {
-    font-size: 20px;
-    font-weight: 700;
-    color: #1e293b;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.status-select {
-    padding: 10px 20px;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-    color: #475569;
-    font-family: 'Prompt';
-    background-color: #f8fafc;
-    cursor: pointer;
-}
-
-/* ==================== History Filter Bar (The one you asked) ==================== */
-.history-filters-inline {
-    display: flex;
-    gap: 15px;
-    flex-wrap: wrap;
-    align-items: center;
-}
-
-.f-group {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: #f8fafc;
-    padding: 8px 16px;
-    border-radius: 14px;
-    border: 1px solid #e2e8f0;
-    color: #64748b;
-}
-
-.f-group input, .f-group select {
-    border: none;
-    background: transparent;
-    font-family: 'Prompt';
-    color: #1e293b;
-    font-weight: 600;
-    outline: none;
-    cursor: pointer;
-}
-
-/* ==================== Tables Design ==================== */
-.report-table {
+/* ==================== Table Responsiveness ==================== */
+.table-wrapper {
     width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
+    overflow-x: auto; /* สำคัญมาก: ให้ตารางเลื่อนซ้าย-ขวาได้ในมือถือ */
+    -webkit-overflow-scrolling: touch;
+    border-radius: 12px;
 }
 
-.report-table th {
-    background-color: #f8fafc;
-    color: #64748b;
-    padding: 18px 20px;
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 12px;
-    letter-spacing: 0.05em;
-    border-bottom: 2px solid #f1f5f9;
+.report-table {
+    min-width: 600px; /* บังคับความกว้างขั้นต่ำของตารางไม่ให้เบียดกันเกินไป */
 }
 
-.report-table td {
-    padding: 20px;
-    border-bottom: 1px solid #f1f5f9;
-    vertical-align: middle;
+/* ==================== Media Queries สำหรับ Laptop (หน้าจอใหญ่) ==================== */
+@media (min-width: 1024px) {
+    .report-page {
+        padding: 30px;
+    }
+    
+    .date-filter-bar {
+        width: auto; /* ใน Laptop ไม่ต้องเต็มจอ */
+    }
+
+    .chart-container {
+        height: 450px !important;
+    }
+
+    .page-title {
+        font-size: 28px;
+    }
 }
 
-.report-table tbody tr:hover {
-    background-color: #fcfdfe;
-}
+/* ==================== Media Queries สำหรับ Mobile (หน้าจอเล็กมาก) ==================== */
+@media (max-width: 480px) {
+    .summary-card {
+        flex-direction: column; /* วางไอคอนบน ตัวเลขล่าง ในมือถือเครื่องเล็ก */
+        text-align: center;
+    }
+    
+    .card-text strong {
+        font-size: 24px;
+    }
 
-/* ==================== Progress & Badges ==================== */
-.qty-progress-cell strong {
-    font-size: 16px;
-    color: #1e293b;
-}
-
-.mini-bar {
-    width: 140px;          /* ปรับความกว้างให้ชัดเจนขึ้น */
-    height: 10px;          /* เพิ่มความสูงเล็กน้อย */
-    background: #f1f5f9;    /* สีพื้นหลังราง (สีเทาอ่อนมาก) */
-    border-radius: 10px;
-    overflow: hidden;       /* สำคัญ: เพื่อให้ fill ไม่ล้นขอบมน */
-    position: relative;
-    border: 1px solid #e2e8f0; /* เพิ่มขอบบางๆ ให้เห็นรูปทรงชัดเจน */
-}
-
-/* ส่วนที่แสดงสีตามเปอร์เซ็นต์ */
-.fill {
-    height: 100%;
-    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); /* เพิ่ม Animation ให้ลื่นไหล */
-    border-radius: 10px;
-    /* หมายเหตุ: ไม่ต้องใส่ background-color ในนี้ เพราะเราใส่ไว้ใน Inline style ของ React แล้ว */
-}
-
-.status-badge {
-    padding: 6px 16px;
-    border-radius: 10px;
-    font-size: 13px;
-    font-weight: 700;
-}
-
-.badge-type {
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 700;
-}
-
-.badge-type.T-WTH { background: #dbeafe; color: #1d4ed8; }
-.badge-type.T-RTN { background: #dcfce7; color: #15803d; }
-.badge-type.pending { background: #fef3c7; color: #b45309; } /* สีเหลืองทองสำหรับเบิกล่วงหน้า */
-
-.s-status { color: #16a34a; font-weight: 700; font-size: 13px; }
-.p-status { color: #d97706; font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 5px; }
-
-/* Responsive */
-@media (max-width: 992px) {
-    .report-header { flex-direction: column; align-items: flex-start; }
-    .section-header-with-filter { flex-direction: column; align-items: flex-start; gap: 20px; }
+    .filter-label {
+        display: none; /* ซ่อนคำว่า "ช่วงเวลาหลัก" ในมือถือเพื่อประหยัดที่ */
+    }
 }

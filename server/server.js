@@ -1009,7 +1009,10 @@ app.get('/api/search/parts', authenticateToken, async (req, res) => {
 // ==========================================
 app.get('/api/history/full', authenticateToken, async (req, res) => {
     try {
-        const sql = `
+        // 1. รับค่าวันที่จาก Query Params
+        const { startDate, endDate } = req.query;
+
+        let sql = `
             SELECT 
                 t.transaction_id, 
                 tt.transaction_type_name as type_name,
@@ -1017,31 +1020,39 @@ app.get('/api/history/full', authenticateToken, async (req, res) => {
                 t.date, 
                 t.time,
                 t.machine_SN,
-                u.fullname,
+                u.fullname, 
                 (
-                    SELECT JSON_ARRAYAGG(JSON_OBJECT('name', et.equipment_name, 'qty', el.quantity))
+                    SELECT JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'name', et.equipment_name,
+                            'qty', el.quantity
+                        )
+                    )
                     FROM equipment_list el
                     JOIN equipment e ON el.equipment_id = e.equipment_id
                     JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
                     WHERE el.transaction_id = t.transaction_id
                 ) as items_json,
-                
-                -- รวมร่าง: ใช้รหัส A-001/A-002 จากโค้ด 1 + จัดรูปแบบเวลาจากโค้ด 2
-                (SELECT TIME_FORMAT(time, '%H:%i:%s') FROM accesslogs 
-                 WHERE transaction_id = t.transaction_id AND action_type_id = 'A-001' LIMIT 1) as open_time,
-                 
-                (SELECT TIME_FORMAT(time, '%H:%i:%s') FROM accesslogs 
-                 WHERE transaction_id = t.transaction_id AND action_type_id = 'A-002' LIMIT 1) as close_time
-                 
+                (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-001' LIMIT 1) as open_time,
+                (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-002' LIMIT 1) as close_time
             FROM transactions t
             LEFT JOIN transactions_type tt ON t.transaction_type_id = tt.transaction_type_id
             LEFT JOIN users u ON t.user_id = u.user_id
-            ORDER BY t.date DESC, t.time DESC
         `;
-        const [rows] = await pool.query(sql);
+
+        const params = [];
+        // 2. ตรวจสอบว่ามีการส่งวันที่มาหรือไม่ ถ้ามีให้เพิ่มเงื่อนไข WHERE
+        if (startDate && endDate) {
+            sql += " WHERE t.date BETWEEN ? AND ? ";
+            params.push(startDate, endDate);
+        }
+
+        sql += ` GROUP BY t.transaction_id ORDER BY t.date DESC, t.time DESC`;
+
+        const [rows] = await pool.query(sql, params);
         res.json(rows);
     } catch (error) {
-        console.error("History API Error:", error);
+        console.error("Backend Error:", error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -1893,7 +1904,7 @@ app.get('/api/history/full', authenticateToken, async (req, res) => {
                 t.date, 
                 t.time,
                 t.machine_SN,
-                u.fullname, -- 1. เพิ่มการดึงชื่อผู้ทำรายการตรงนี้
+                u.fullname, 
                 (
                     SELECT JSON_ARRAYAGG(
                         JSON_OBJECT(
@@ -1910,11 +1921,17 @@ app.get('/api/history/full', authenticateToken, async (req, res) => {
                 (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-002' LIMIT 1) as close_time
             FROM transactions t
             LEFT JOIN transactions_type tt ON t.transaction_type_id = tt.transaction_type_id
-            LEFT JOIN users u ON t.user_id = u.user_id -- 2. เพิ่มการเชื่อมตาราง users ตรงนี้
+            LEFT JOIN users u ON t.user_id = u.user_id 
             GROUP BY t.transaction_id
             ORDER BY t.date DESC, t.time DESC
         `;
-        const [rows] = await pool.query(sql);
+        const params = [];
+        if(startDate&&endDate) {
+            sql += " WHERE t.date BETWEEN ? AND ?";
+            params.push(startDate, endDate);
+        }
+        sql += ` ORDER BY t.date DESC, t.time DESC`;
+        const [rows] = await pool.query(sql, params);
         res.json(rows);
     } catch (error) {
         res.status(500).json({ error: error.message });
