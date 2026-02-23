@@ -87,21 +87,17 @@ function authenticateToken(req, res, next) {
 /**
  * ฟังก์ชัน Helper สำหรับบันทึก Log ลง Database
  */
-async function logActionToDB(userId, actionTypeId) {
-    // ✅ แก้ไข: เพิ่ม Backticks ล้อมรอบ SQL Query
-    // สร้าง ID เอง เพราะใน DB เป็น varchar(20) ไม่ใช่ Auto Increment
+async function logActionToDB(userId, actionTypeId, transactionId = null) {
     const logId = `LOG-${Date.now().toString().slice(-10)}`; 
-
     const sql = `
-        INSERT INTO accesslogs (log_id, user_id, action_type_id, date, time) 
-        VALUES (?, ?, ?, CURDATE(), CURTIME())
+        INSERT INTO accesslogs (log_id, user_id, action_type_id, transaction_id, date, time) 
+        VALUES (?, ?, ?, ?, CURDATE(), CURTIME())
     `;
     try {   
-        await db.query(sql, [logId, userId, actionTypeId]);
-        console.log(`[Database] Logged action: User ${userId}, ActionType ${actionTypeId}`);
+        await db.query(sql, [logId, userId, actionTypeId, transactionId]);
+        console.log(`[Log] บันทึกสำเร็จ: Action ${actionTypeId}, Tx: ${transactionId}`);
     } catch (dbError) {
-        console.error('[Database] Error logging action:', dbError.message);
-        throw new Error('Failed to log action to database');
+        console.error('[Log Error]:', dbError.message);
     }
 }
 
@@ -125,42 +121,29 @@ async function commandServo(action) {
 
 // --- API สำหรับสั่งเปิดประตูตู้ ---
 app.get('/api/open', authenticateToken, async (req, res) => {
-    const ACTION_TYPE_ID = 'A-001'; // รหัสสำหรับการเปิดตู้
     const userId = req.user.userId;
-
+    const transactionId = req.query.transactionId || null; // รับมาจากหน้าบ้าน
     try {
-        // 1. ส่งคำสั่งไปที่ ESP8266 (Path /open ตามที่เขียนในบอร์ด)
         await axios.get(`${ESP_IP}/open`, { timeout: 5000 }); 
-        
-        // 2. บันทึก Log ลง Database
-        await logActionToDB(userId, ACTION_TYPE_ID);
-
-        res.status(200).send({ message: 'สั่งเปิดประตูสำเร็จ (Servo 0°)' });
+        await logActionToDB(userId, 'A-001', transactionId);
+        res.status(200).send({ message: 'เปิดตู้สำเร็จ' });
     } catch (error) {
-        console.error("Open Error:", error.message);
-        res.status(500).send({ error: 'ไม่สามารถติดต่อตู้เพื่อเปิดได้ หรือบอร์ด Offline' });
+        res.status(500).send({ error: 'ติดต่อ ESP ไม่ได้' });
     }
 });
 
 // --- API สำหรับสั่งปิดประตูตู้ ---
 app.post('/api/close-box', authenticateToken, async (req, res) => {
-    const ACTION_TYPE_ID = 'A-002'; // รหัสสำหรับการปิดตู้
     const userId = req.user.userId;
-
+    const { transactionId } = req.body; // รับมาจากหน้าบ้าน
     try {
-        // 1. ส่งคำสั่งไปที่ ESP8266 (Path /close ตามที่เขียนในบอร์ด)
         await axios.get(`${ESP_IP}/close`, { timeout: 5000 }); 
-
-        // 2. บันทึก Log ลง Database
-        await logActionToDB(userId, ACTION_TYPE_ID);
-
-        res.status(200).send({ message: 'สั่งปิดประตูสำเร็จ (Servo 180°)' });
+        await logActionToDB(userId, 'A-002', transactionId || null);
+        res.status(200).send({ message: 'ปิดตู้สำเร็จ' });
     } catch (error) {
-        console.error("Close Error:", error.message);
-        res.status(500).send({ error: 'ไม่สามารถสั่งปิดประตูได้ กรุณาตรวจสอบสถานะตู้' });
+        res.status(500).send({ error: 'ติดต่อ ESP ไม่ได้' });
     }
 });
-
 
 // --- API Endpoints สำหรับ Withdrawal (เชื่อมต่อ DB) ---
 
@@ -245,6 +228,7 @@ app.post('/api/withdraw/partInfo', async (req, res) => {
 
 
 // 2. API: Confirm and Cut Stock (POST /api/withdraw/confirm)
+// 2. API: Confirm and Cut Stock (POST /api/withdraw/confirm)
 app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
     const { machine_SN, cartItems } = req.body;
     const userId = req.user.userId;
@@ -254,46 +238,50 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
         connection = await pool.getConnection();
         await connection.beginTransaction();
 
-        // 1. สร้าง ID (ตรวจสอบ VARCHAR(50) ใน DB)
+        // 1. สร้าง Transaction ID
         const transactionId = `WTH-${Date.now()}`;
 
-        // 2. บันทึก Transaction (ต้องมี 'T-WTH' ในตารางแม่)
+        // 2. บันทึกลงตาราง transactions
         await connection.query(
-            "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_SN) VALUES (?, 'T-WTH', CURDATE(), CURTIME(), ?, ?)",
+            "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_SN, is_pending) VALUES (?, 'T-WTH', CURDATE(), CURTIME(), ?, ?, 0)",
             [transactionId, userId, machine_SN]
         );
 
+        // 3. Loop ตัดสต็อกและบันทึกรายการอะไหล่
         for (const item of cartItems) {
-            // 3. ตัดสต็อกตาม Lot ID
             const [updateRes] = await connection.query(
                 "UPDATE lot SET current_quantity = current_quantity - ? WHERE lot_id = ? AND current_quantity >= ?",
                 [item.quantity, item.lotId, item.quantity]
             );
 
-            if (updateRes.affectedRows === 0) {
-                throw new Error(`ล็อต ${item.lotId} ของไม่พอหรือไม่ถูกต้อง`);
-            }
+            if (updateRes.affectedRows === 0) throw new Error(`ล็อต ${item.lotId} ของไม่พอ`);
 
-            // 4. บันทึกรายการอะไหล่ที่เบิก
-            const listId = `EL-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+            const listId = `ER-${Date.now().toString().slice(-8)}-${Math.floor(Math.random() * 99)}`;
             await connection.query(
                 "INSERT INTO equipment_list (equipment_list_id, transaction_id, equipment_id, quantity) VALUES (?, ?, ?, ?)",
                 [listId, transactionId, item.partId, item.quantity]
             );
         }
 
-        // 5. บันทึก Log การเข้าถึง
+        // --- ส่วนสำคัญ: บันทึก Log การเปิดและปิดตู้โดยผูกกับ transactionId ---
+        
+        // บันทึกเวลาเปิด (A-001)
         await connection.query(
-            "INSERT INTO accesslogs (log_id, user_id, action_type_id, date, time) VALUES (?, ?, 'A-002', CURDATE(), CURTIME())",
-            [`LG-${Date.now()}`, userId]
+            "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-001', ?, ?)",
+            [`LG-OP-${Date.now()}`, transactionId, userId] // ต้องมี transactionId ตรงนี้
         );
 
+        // บันทึกเวลาปิด (A-002) 
+        // เพิ่มเวลาเล็กน้อย (500ms) เพื่อให้ปิดหลังเปิดเล็กน้อยในกรณีบันทึกพร้อมกัน
+        await connection.query(
+            "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-002', ?, ?)",
+            [`LG-CL-${Date.now() + 500}`, transactionId, userId]
+        );
         await connection.commit();
-        res.json({ success: true, message: "บันทึกประวัติและตัดสต็อกสำเร็จ" });
+        res.json({ success: true, message: "บันทึกสำเร็จ", transactionId });
 
     } catch (error) {
         if (connection) await connection.rollback();
-        console.error("❌ Database Error:", error.message);
         res.status(500).json({ error: error.message });
     } finally {
         if (connection) connection.release();
