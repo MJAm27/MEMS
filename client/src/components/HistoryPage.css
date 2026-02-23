@@ -6,16 +6,29 @@
     max-width: 1200px; 
     margin: 0 auto; 
     font-family: 'Prompt', sans-serif;
+    background-color: #f8fafc;
+    min-height: 100vh;
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* ===================================================
-   2. ส่วนหัวและระบบกรอง (Header & Filters)
+   2. ส่วนหัวและระบบกรอง (Header & Filters) - Responsive
    =================================================== */
 .history-header { 
     display: flex; 
     justify-content: space-between; 
     align-items: center; 
     margin-bottom: 25px; 
+    flex-wrap: wrap; /* ตกบรรทัดเมื่อจอแคบ */
+    gap: 20px;
 }
 
 .title-section { 
@@ -25,44 +38,104 @@
     color: #db2777; 
 }
 
-.title-icon { font-size: 24px; }
+.history-filters-wrapper {
+    display: flex;
+    flex-wrap: wrap; 
+    align-items: center;
+    width: 100%;
+    margin-top: 10px;
+}
 
+/* --- ส่วนเลือกวันที่ (Date Picker Group) --- */
+.history-date-picker-group {
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+    padding: 6px 12px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    gap: 10px;
+    flex: 1; 
+    min-width: 280px;
+}
+
+.date-input-wrapper {
+    display: flex;
+    align-items: center;
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 0 8px;
+}
+
+.input-icon {
+    color: #64748b;
+    font-size: 14px;
+}
+
+.history-date-input {
+    border: none;
+    background: transparent;
+    padding: 8px 5px;
+    font-size: 13px;
+    font-family: 'Prompt';
+    outline: none;
+    cursor: pointer;
+    color: #1e293b;
+}
+
+.date-separator {
+    font-size: 12px;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+/* --- ส่วนกรองประเภท (Select Filter) --- */
 .filter-group { 
-    display: flex; 
-    align-items: center; 
-    gap: 10px; 
+    display: flex;
+    align-items: center;
+    gap: 10px;
     background: white;
     padding: 5px 15px;
     border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border: 1px solid #e2e8f0;
+    height: 44px;
 }
 
+.filter-icon { color: #64748b; }
+
 .history-select { 
-    padding: 8px 10px; 
+    padding: 8px 5px; 
     border: none; 
     outline: none; 
-    font-weight: bold;
-    color: #666;
+    font-weight: 600;
+    color: #475569;
     cursor: pointer;
     background: transparent;
+    font-family: 'Prompt';
 }
 
 /* ===================================================
    3. การแสดงผลแบบ Desktop (Table View)
    =================================================== */
-.desktop-view { display: block; }
-
 .history-card { 
     background: white; 
     border-radius: 20px; 
-    box-shadow: 0 10px 30px rgba(0,0,0,0.08); 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05); 
     overflow: hidden; 
 }
 
-.table-responsive { overflow-x: auto; }
+/* สำคัญ: ให้ตารางเลื่อนซ้ายขวาได้ในมือถือ */
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
 
 .history-table { 
     width: 100%; 
+    min-width: 900px; /* บังคับความกว้างขั้นต่ำไม่ให้เบียดกัน */
     border-collapse: collapse; 
     text-align: left; 
 }
@@ -78,146 +151,120 @@
 
 .history-table td { 
     padding: 15px; 
-    border-bottom: 1px solid #f0f0f0; 
+    border-bottom: 1px solid #f1f5f9; 
     vertical-align: middle; 
     font-size: 14px;
 }
 
-/* สไตล์แถวข้อมูลอะไหล่ */
+.history-table tbody tr:hover {
+    background-color: #fff9fc;
+}
+
+/* จัดการวันที่และเวลาในตาราง */
+.date-text { font-weight: 600; color: #1e293b; }
+.time-text { font-size: 12px; color: #94a3b8; }
+
+/* รายการอะไหล่ภายในตาราง */
 .item-row-detail {
-    height: 28px;
-    display: flex;
-    align-items: center;
-    color: #444;
+    padding: 2px 0;
+    color: #475569;
+    font-size: 13.5px;
 }
 
 .item-qtys-column .item-row-detail {
-    justify-content: center;
-    color: #ff4d94;
-    font-weight: 800;
+    text-align: center;
+    color: #db2777;
+    font-weight: 700;
 }
 
-/* Badge และ Time Badges */
+/* Badge ประเภทรายการ */
 .type-badge { 
-    padding: 6px 12px; 
+    padding: 6px 14px; 
     border-radius: 50px; 
-    font-weight: bold; 
-    display: flex; 
+    font-weight: 700; 
+    display: inline-flex; 
     align-items: center; 
-    gap: 6px; 
-    width: fit-content; 
+    gap: 8px; 
     font-size: 12px;
+    text-transform: uppercase;
 }
 
-.type-badge.T-WTH { background: #fff0f6; color: #ff4d94; }
-.type-badge.T-RTN { background: #ecfdf5; color: #059669; }
+.type-badge.T-WTH { background: #fff1f2; color: #e11d48; }
+.type-badge.T-RTN { background: #f0fdf4; color: #16a34a; }
 
-.status-timeline {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
+/* เวลาเปิด-ปิดตู้ */
+.status-timeline { display: flex; flex-direction: column; gap: 5px; }
 
 .time-badge {
-    background: #f1f5f9;
-    padding: 2px 8px;
+    background: #f8fafc;
+    padding: 3px 10px;
     border-radius: 6px;
-    font-size: 0.75rem;
-    color: #94a3b8; 
+    font-size: 11px;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
     display: flex;
     justify-content: space-between;
-    border: 1px solid #e2e8f0;
 }
 
-.time-badge.active-open, .time-badge.active-close {
-    color: #1e293b; /* สีเข้มถ้ามีเวลา */
-    background: #ecfdf5; /* พื้นหลังเขียวอ่อนๆ */
-    border-color: #10b981;
-}
-
-.active-open { background: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; }
-.active-close { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+.time-badge.active-open { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+.time-badge.active-close { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
 
 /* ===================================================
-   4. การแสดงผลแบบ Mobile (Card View) - @media query
+   4. Media Queries สำหรับมือถือ
    =================================================== */
-.mobile-view { display: none; }
-
 @media (max-width: 768px) {
-    /* สลับ View */
-    .desktop-view { display: none; }
-    .mobile-view { display: block; }
-    
+    .history-container { padding: 15px; }
+
     .history-header {
         flex-direction: column;
-        align-items: flex-start;
-        gap: 15px;
+        align-items: stretch;
     }
 
-    .filter-group { width: 100%; justify-content: space-between; }
+    .history-filters-wrapper {
+        flex-direction: column; 
+        align-items: stretch;
+    }
 
-    /* สไตล์การ์ดในมือถือ */
+    .history-date-picker-group {
+        width: 100%;
+        justify-content: space-between;
+        padding: 10px;
+    }
+
+    .filter-group {
+        justify-content: space-between;
+    }
+    
+    .date-input-wrapper {
+        flex: 1;
+    }
+
+    .history-date-input {
+        width: 100%; 
+        font-size: 13px;
+    }
+
+    .filter-group {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    
+    .history-select {
+        flex: 1;
+    }
+
+    /* ตกแต่ง Card Mobile (ถ้าไฟล์ JS มีส่วน Mobile แยกไว้) */
     .history-mobile-card {
         background: white;
-        border-radius: 15px;
+        border-radius: 16px;
         padding: 15px;
-        margin-bottom: 15px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        border-left: 5px solid #cbd5e1;
-    }
-
-    /* แถบสีตามประเภท */
-    .border-left-T-WTH { border-left-color: #ff4d94; }
-    .border-left-T-RTN { border-left-color: #059669; }
-
-    .card-mobile-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
         margin-bottom: 12px;
-        border-bottom: 1px solid #f3f4f6;
-        padding-bottom: 8px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+        border-left: 4px solid #cbd5e1;
     }
 
-    .mobile-date { font-size: 13px; color: #333; font-weight: 700; }
-
-    .mobile-item-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 6px 0;
-        font-size: 14px;
-        border-bottom: 1px dashed #f1f5f9;
-    }
-
-    .mobile-item-row:last-child { border-bottom: none; }
-
-    .item-qty { font-weight: 800; color: #ff4d94; }
-
-    .mobile-meta {
-        margin-top: 12px;
-        font-size: 13px;
-        color: #475569;
-        background: #f8fafc;
-        padding: 8px;
-        border-radius: 8px;
-    }
-
-    .mobile-access-logs {
-        display: flex;
-        gap: 8px;
-        margin-top: 10px;
-    }
-
-    .log-tag {
-        flex: 1;
-        text-align: center;
-        background: #f1f5f9;
-        padding: 5px;
-        border-radius: 6px;
-        font-size: 11px;
-        font-weight: 600;
-        color: #64748b;
-    }
+    .border-left-T-WTH { border-left-color: #e11d48; }
+    .border-left-T-RTN { border-left-color: #16a34a; }
 }
 
 /* ===================================================
@@ -225,4 +272,3 @@
    =================================================== */
 .text-center { text-align: center; }
 .font-bold { font-weight: 700; }
-.text-pink { color: #ff4d94; }

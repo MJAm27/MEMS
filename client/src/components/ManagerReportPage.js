@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Bar } from "react-chartjs-2";
 import { 
-    FaBox, FaExclamationTriangle, FaHistory, FaCalendarAlt, 
-    FaUser, FaChartBar, FaFilter, FaExchangeAlt, FaClock
+    FaBox, FaExclamationTriangle, FaFilter, FaChartBar
 } from "react-icons/fa";
 import {
     Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend,
@@ -25,15 +24,9 @@ function ManagerReportPage() {
     const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
     const [stockStatusFilter, setStockStatusFilter] = useState("all");
 
-    // --- State สำหรับตัวกรองประวัติเบิก-คืนละเอียด ---
-    const [histStartDate, setHistStartDate] = useState(new Date().toISOString().split('T')[0]); 
-    const [histEndDate, setHistEndDate] = useState(new Date().toISOString().split('T')[0]);
-    const [histType, setHistType] = useState("all"); // 'all', 'T-WTH', 'T-RTN', 'pending'
-
     const [summary, setSummary] = useState({ total: 0, nearExpire: 0, nearOutOfStock: 0 });
     const [rawInventory, setRawInventory] = useState([]);
     const [rawUsage, setRawUsage] = useState([]);
-    const [historyData, setHistoryData] = useState([]);
     const [loading, setLoading] = useState(true);
 
     // ดึงข้อมูลภาพรวมและกราฟ
@@ -56,35 +49,7 @@ function ManagerReportPage() {
         }
     }, [startDate, endDate]);
 
-    // ดึงข้อมูลประวัติละเอียด
-    const fetchDetailedHistory = useCallback(async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`${API_BASE_URL}/api/history/full`, { 
-                headers: { Authorization: `Bearer ${token}` },
-                params: { 
-                    startDate: histStartDate, 
-                    endDate: histEndDate 
-                } 
-            });
-            setHistoryData(res.data);
-        } catch (err) { 
-            console.error("Error fetching history:", err); 
-        }
-    }, [histStartDate, histEndDate]);
-
     useEffect(() => { fetchAllData(); }, [fetchAllData]);
-    useEffect(() => { fetchDetailedHistory(); }, [fetchDetailedHistory]);
-
-    // --- กรองประวัติ (เบิกล่วงหน้าจะดูจาก is_pending) ---
-    const filteredHistory = useMemo(() => {
-        return historyData.filter(row => {
-            if (histType === "pending") return row.is_pending === 1;
-            if (histType === "T-WTH") return row.transaction_type_id === "T-WTH" && row.is_pending === 0;
-            if (histType === "T-RTN") return row.transaction_type_id === "T-RTN";
-            return true;
-        });
-    }, [historyData, histType]);
 
     // --- กราฟ Stacked Bar แนวนอน (คงเหลือ + ใช้ไป) ---
     const getChartData = () => {
@@ -145,18 +110,16 @@ function ManagerReportPage() {
             </header>
 
             <div className="report-summary-grid">
-                <div className="summary-card info" onClick={() => navigate("/dashboard/manager/home")} style={{ cursor: 'pointer' }}>
+                <div className="summary-card info" onClick={() => navigate("/dashboard/manager/equipment")} style={{ cursor: 'pointer' }}>
                     <FaBox className="card-icon" />
                     <div className="card-text"><span>อะไหล่ในคลัง</span><strong>{summary.total}</strong></div>
                 </div>
 
-                {/* ลิงก์ไปหน้าแจ้งเตือน (ManagerAlertPage) */}
                 <div className="summary-card warning" onClick={() => navigate("/dashboard/manager/alerts")} style={{ cursor: 'pointer' }}>
                     <FaExclamationTriangle className="card-icon" />
                     <div className="card-text"><span>ใกล้หมดอายุ</span><strong>{summary.nearExpire}</strong></div>
                 </div>
 
-                {/* ลิงก์ไปหน้าแจ้งเตือน (ManagerAlertPage) */}
                 <div className="summary-card danger" onClick={() => navigate("/dashboard/manager/alerts")} style={{ cursor: 'pointer' }}>
                     <FaExclamationTriangle className="card-icon" />
                     <div className="card-text"><span>สต็อกต่ำกว่าเกณฑ์</span><strong>{summary.nearOutOfStock}</strong></div>
@@ -169,7 +132,7 @@ function ManagerReportPage() {
                     <button className={`tab-btn ${activeTab === "usage" ? "active" : ""}`} onClick={() => setActiveTab("usage")}><FaChartBar /> สถิติการเบิกใช้</button>
                 </div>
                 
-                <div className="chart-container" style={{ height: '450px' }}>
+                <div className="chart-container" style={{ height: window.innerWidth < 768 ? '300px' : '450px'}}>
                     <Bar 
                         data={getChartData()} 
                         options={{ 
@@ -186,7 +149,7 @@ function ManagerReportPage() {
                 </div>
             </div>
 
-            {/* --- ตารางตรวจสอบสต็อก พร้อมแถบสี Progress Bar ที่แก้ไขแล้ว --- */}
+            {/* ตารางตรวจสอบสต็อกคงเหลือ (Inventory Table) */}
             {activeTab === "inventory" && (
                 <div className="report-table-section mb-10">
                     <div className="section-header-with-filter">
@@ -236,61 +199,6 @@ function ManagerReportPage() {
                     </div>
                 </div>
             )}
-
-            {/* --- ส่วนฟิวเตอร์ประวัติเบิก-คืนละเอียด แบบ Inline ทันสมัย --- */}
-            <div className="report-table-section">
-                <div className="section-header-with-filter">
-                    <h3><FaHistory /> ประวัติการทำรายการแบบละเอียด</h3>
-                    <div className="history-filters-inline">
-                        <div className="f-group">
-                            <FaCalendarAlt />
-                            <input type="date" value={histStartDate} onChange={(e) => setHistStartDate(e.target.value)} />
-                            <span>-</span>
-                            <input type="date" value={histEndDate} onChange={(e) => setHistEndDate(e.target.value)} />
-                        </div>
-                        <div className="f-group">
-                            <FaExchangeAlt />
-                            <select value={histType} onChange={(e) => setHistType(e.target.value)}>
-                                <option value="all">ทุกประเภท</option>
-                                <option value="T-WTH">รายการเบิก</option>
-                                <option value="T-RTN">รายการคืน</option>
-                                <option value="pending">รายการเบิกล่วงหน้า</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                <div className="table-wrapper">
-                    <table className="report-table">
-                        <thead>
-                            <tr><th>วัน/เวลา</th><th>ประเภท</th><th>ผู้ทำรายการ</th><th>รายการอะไหล่</th><th>สถานะ</th></tr>
-                        </thead>
-                        <tbody>
-                            {filteredHistory.length > 0 ? filteredHistory.map((row, idx) => {
-                                let items = [];
-                                try { items = typeof row.items_json === 'string' ? JSON.parse(row.items_json) : (row.items_json || []); } catch(e) { items = []; }
-                                return (
-                                    <tr key={idx}>
-                                        <td><div className="td-time"><span>{new Date(row.date).toLocaleDateString('th-TH')}</span><small>{row.time}</small></div></td>
-                                        <td>
-                                            <span className={`badge-type ${row.transaction_type_id} ${row.is_pending ? 'pending' : ''}`}>
-                                                {row.is_pending ? 'เบิกล่วงหน้า' : row.type_name}
-                                            </span>
-                                        </td>
-                                        <td><div className="td-user"><FaUser size={10} /> {row.fullname || "ไม่ระบุชื่อ"}</div></td>
-                                        <td>{items.map((it, i) => <div key={i} className="item-row">{it.name} <b>x{it.qty}</b></div>)}</td>
-                                        <td>
-                                            {row.is_pending ? 
-                                                <span className="p-status"><FaClock /> ค้างสรุป</span> : 
-                                                <span className="s-status">สำเร็จ</span>
-                                            }
-                                        </td>
-                                    </tr>
-                                );
-                            }) : <tr><td colSpan="5" className="text-center p-10">ไม่พบประวัติในช่วงวันที่เลือก</td></tr>}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
         </div>
     );
 }

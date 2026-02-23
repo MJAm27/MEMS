@@ -44,3 +44,25 @@
     font-size: 0.7rem;
     margin-left: auto;
 }
+
+/* ManagerMainPage.css */
+@media (max-width: 768px) {
+    .daily-filter-container {
+        padding: 5px 8px;
+        gap: 5px;
+    }
+
+    .filter-text {
+        display: none; 
+    }
+
+    .daily-date-input {
+        width: 115px;
+        font-size: 12px;
+        padding: 4px;
+    }
+    
+    .calendar-icon {
+        font-size: 14px;
+    }
+}

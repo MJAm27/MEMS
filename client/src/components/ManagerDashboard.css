@@ -1,28 +1,265 @@
-.dashboard-container { padding: 25px; background-color: #f4f7fa; min-height: 100vh; }
-.dashboard-header-day h2 { font-size: 24px; color: #1a5276; display: flex; align-items: center; gap: 12px; }
+/* --- Dashboard Layout & General --- */
+.dashboard-container {
+    padding: 25px;
+    background-color: #f4f7fa;
+    min-height: 100vh;
+    font-family: 'Prompt', sans-serif;
+}
 
-/* Grid ระบบ Card สรุป */
+.dashboard-header-day {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.dashboard-header-day h2 {
+    font-size: 24px;
+    color: #1a5276;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+}
+
+/* --- Summary Cards Grid --- */
 .report-summary-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    /* Laptop: 4 ใบ | Mobile: ปรับตามความกว้างอัตโนมัติ */
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 20px;
     margin-bottom: 30px;
 }
 
 .summary-card {
-    background: white; padding: 20px; border-radius: 15px;
-    display: flex; align-items: center; gap: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    transition: transform 0.2s;
 }
 
-.summary-card .card-icon { font-size: 35px; padding: 15px; border-radius: 12px; }
+.summary-card:hover {
+    transform: translateY(-5px);
+}
+
+.summary-card .card-icon {
+    font-size: 30px;
+    padding: 15px;
+    border-radius: 12px;
+}
+
 .summary-card.info .card-icon { color: #3498db; background: #eef7fe; }
 .summary-card.success .card-icon { color: #2ecc71; background: #e8f8f5; }
+.summary-card.warning .card-icon { color: #f39c12; background: #fef5e7; }
+.summary-card.purple .card-icon { color: #9b59b6; background: #f4ecf7; }
 
-.dashboard-chart-section, .report-table-section {
-    background: white; padding: 25px; border-radius: 15px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 25px;
+.card-text span {
+    display: block;
+    font-size: 14px;
+    color: #7f8c8d;
 }
 
-.badge-type { padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.card-text strong {
+    font-size: 20px;
+    color: #2c3e50;
+}
+
+/* --- Main Content Grid (Chart + Insight) --- */
+.dashboard-main-grid {
+    display: grid;
+    /* Laptop: กราฟกว้าง 2 ส่วน | Insight กว้าง 1 ส่วน */
+    grid-template-columns: 2fr 1fr;
+    gap: 25px;
+    margin-bottom: 25px;
+}
+
+.dashboard-chart-section {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+/* --- Machine Insight Card --- */
+.dashboard-machine-insight {
+    background: linear-gradient(135deg, #ffffff 0%, #fdf2f2 100%);
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px rgba(231, 76, 60, 0.05);
+    border: 1px solid rgba(231, 76, 60, 0.1);
+    display: flex;
+    flex-direction: column;
+}
+
+.insight-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.insight-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #2c3e50;
+}
+
+.machine-focus-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    border-left: 5px solid #e74c3c;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
+
+.machine-id {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #2c3e50;
+    font-family: 'Courier New', monospace;
+    display: block;
+}
+
+.usage-badge {
+    background: #fff5f5;
+    color: #e74c3c;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-top: 5px;
+}
+
+/* Pulse Animation */
+.visual-indicator { position: relative; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; }
+.pulse-ring {
+    position: absolute; width: 100%; height: 100%; border: 3px solid #e74c3c;
+    border-radius: 50%; opacity: 0.2; animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0% { transform: scale(0.8); opacity: 0.5; }
+    100% { transform: scale(1.4); opacity: 0; }
+}
+
+/* --- Table Section --- */
+.report-table-section {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto; /* ทำให้ตารางเลื่อนได้ในมือถือ */
+    -webkit-overflow-scrolling: touch;
+}
+
+.report-table {
+    width: 100%;
+    min-width: 800px; /* บังคับความกว้างขั้นต่ำเพื่อให้ไม่อัดแน่นในมือถือ */
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.report-table th {
+    background: #f8fafc;
+    color: #64748b;
+    text-align: left;
+    padding: 15px;
+    font-weight: 600;
+    border-bottom: 2px solid #edf2f7;
+}
+
+.report-table td {
+    padding: 15px;
+    border-bottom: 1px solid #edf2f7;
+    vertical-align: middle;
+}
+
+/* --- Table Tags & Badges --- */
+.date-tag { background: #f0f2f5; padding: 4px 8px; border-radius: 4px; font-size: 13px; color: #4a5568; font-weight: 500; }
+.time-tag { color: #718096; font-weight: 600; font-size: 14px; }
+.td-user { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+
+.badge-type { padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
 .badge-type.T-WTH { background: #e3f2fd; color: #1976d2; }
 .badge-type.T-RTN { background: #e8f5e9; color: #2ecc71; }
+
+.item-pill {
+    display: inline-flex;
+    align-items: center;
+    background: #f1f5f9;
+    padding: 2px 10px;
+    border-radius: 12px;
+    margin: 2px;
+    font-size: 12px;
+}
+
+.item-qty { margin-left: 5px; font-weight: 800; color: #3182ce; }
+.duration-tag { font-family: monospace; color: #e53e3e; background: #fff5f5; padding: 2px 6px; border-radius: 4px; }
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 1024px) {
+    .dashboard-main-grid {
+        grid-template-columns: 1fr; /* ปรับเป็นแถวเดียวใน Tablet/Mobile */
+    }
+}
+
+@media (max-width: 768px) {
+
+    .daily-filter-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #f0f4f8;
+        padding: 6px 15px;
+        border-radius: 50px; /* ทรงแคปซูลตามรูป */
+        transition: all 0.3s ease; 
+    }
+
+    .filter-text {
+        /* ซ่อนข้อความ "มุมมองรายวัน:" หรือลดขนาดลงเพื่อประหยัดพื้นที่ */
+        display: none; 
+    }
+
+    .daily-date-input {
+        font-size: 13px; /* ลดขนาดฟอนต์ */
+        padding: 2px 5px;
+        width: 120px; /* กำหนดความกว้างที่แน่นอนเพื่อไม่ให้เบียดส่วนอื่น */
+        border: none;
+        background: transparent;
+    }
+
+    .calendar-icon {
+        font-size: 14px;
+    }
+
+    /* หากต้องการให้ Navbar จัดวางแบบยืดหยุ่นในมือถือ */
+    .top-navbar {
+        padding: 0 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .dashboard-header-day {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .report-summary-grid {
+        grid-template-columns: 1fr; /* การ์ดตัวเลขเรียงเดี่ยวในมือถือ */
+    }
+    
+    .summary-card {
+        padding: 15px;
+    }
+}
