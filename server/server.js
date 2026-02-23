@@ -231,7 +231,7 @@ app.post('/api/withdraw/partInfo', async (req, res) => {
                 partName: data.equipment_name,
                 currentStock: data.current_quantity,
                 unit: data.unit,
-                // ส่งแค่ชื่อไฟล์เหมือนในหน้า ManageEquipment
+               
                 imageUrl: data.img || null 
             });
         } else {
@@ -807,20 +807,13 @@ app.get("/api/inventoryBalanceReportChart", async (req, res) => {
             SELECT
                 et.equipment_type_id,
                 et.equipment_name,
-                -- 1. คงเหลือ: ผลรวม current_quantity จากทุก Lot ของอุปกรณ์นี้
-                COALESCE(SUM(l.current_quantity), 0) AS quantity, 
-                
-                -- 2. ทั้งหมด: คงเหลือปัจจุบัน + ผลรวมจำนวนที่เคยถูกบันทึกใน equipment_list โดยอิงตาม lot_id
+                COALESCE(SUM(l.current_quantity), 0) AS quantity,
                 COALESCE(SUM(l.current_quantity), 0) + COALESCE((
                     SELECT SUM(el.quantity)
                     FROM equipment_list el
                     WHERE el.lot_id IN (SELECT lot_id FROM lot WHERE equipment_id = e.equipment_id)
                 ), 0) AS total_quantity,
-                
-                -- 3. เกณฑ์การเตือนสต็อกต่ำ
                 COALESCE(e.alert_quantity, 0) AS alert_quantity,
-                
-                -- 4. จำนวนที่ใช้ไปแล้วจริง (Used) สำหรับแสดงในกราฟสีเทา
                 COALESCE((
                     SELECT SUM(el.quantity)
                     FROM equipment_list el
@@ -829,7 +822,6 @@ app.get("/api/inventoryBalanceReportChart", async (req, res) => {
                     AND t.transaction_type_id = 'T-WTH'
                     AND t.is_pending = 0
                 ), 0) AS used_quantity
-
             FROM equipment_type et
             LEFT JOIN equipment e ON e.equipment_type_id = et.equipment_type_id
             LEFT JOIN lot l ON l.equipment_id = e.equipment_id
@@ -842,60 +834,6 @@ app.get("/api/inventoryBalanceReportChart", async (req, res) => {
     } catch (err) {
         console.error("Report Chart Error:", err);
         res.status(500).json({ error: err.message });
-    }
-});
-// ================== ALERTS ==================
-
-// 1. อะไหล่ที่ใกล้หมดอายุ (เช็คจาก Lot, < 100 วัน)
-app.get("/api/alerts/expire", async (req, res) => {
-    try {
-        const sql = `
-            SELECT 
-                l.lot_id,
-                l.expiry_date,
-                l.current_quantity,
-                et.equipment_name,
-                e.equipment_id,
-                et.img,
-                s.supplier_name,
-                DATEDIFF(l.expiry_date, CURDATE()) as days_remaining
-            FROM lot l
-            JOIN equipment e ON l.equipment_id = e.equipment_id
-            LEFT JOIN supplier s ON l.supplier_id = s.supplier_id
-            JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
-            WHERE l.expiry_date IS NOT NULL 
-            AND DATEDIFF(l.expiry_date, CURDATE()) < 100
-            AND l.current_quantity > 0
-            ORDER BY days_remaining ASC
-        `;
-        const [rows] = await db.query(sql);
-        res.json(rows);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Error fetching expire alerts" });
-    }
-});
-
-// 2. อะไหล่ที่ใกล้หมดสต็อก (รวม Lot ตาม Equipment ID แล้วเทียบ Alert Quantity)
-app.get("/api/alerts/low-stock", async (req, res) => {
-    try {
-        const sql = `
-            SELECT e.equipment_id, et.equipment_name, et.img, e.alert_quantity, SUM(l.current_quantity) as total_quantity FROM equipment e LEFT JOIN lot l ON e.equipment_id = l.equipment_id JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id GROUP BY e.equipment_id HAVING total_quantity <= e.alert_quantity OR total_quantity IS NULL;
-        `;
-        // หมายเหตุ: OR total_quantity IS NULL เพื่อดักจับกรณีไม่มีของใน Lot เลย (รวมได้ 0 หรือ null)
-        
-        const [rows] = await db.query(sql);
-        
-        // แปลงค่า null ให้เป็น 0 เพื่อความสวยงาม
-        const formattedRows = rows.map(row => ({
-            ...row,
-            total_quantity: row.total_quantity || 0
-        }));
-
-        res.json(formattedRows);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Error fetching low stock alerts" });
     }
 });
 
@@ -987,13 +925,12 @@ app.get('/api/search/parts', authenticateToken, async (req, res) => {
                 e.equipment_id, 
                 et.equipment_name, 
                 e.model_size, 
-                l.lot_id
+                l.lot_id,
+                et.img    /* เพิ่มบรรทัดนี้เข้ามาเพื่อให้ดึงชื่อไฟล์รูปมาด้วย */
             FROM equipment e
             JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
             LEFT JOIN lot l ON e.equipment_id = l.equipment_id
-            WHERE et.equipment_name LIKE ? 
-               OR e.equipment_id LIKE ? 
-               OR l.lot_id LIKE ?
+            WHERE et.equipment_name LIKE ? OR e.equipment_id LIKE ? OR l.lot_id LIKE ?
             GROUP BY e.equipment_id
             LIMIT 20
         `;
@@ -1026,7 +963,6 @@ app.get('/api/history/full', authenticateToken, async (req, res) => {
                     WHERE el.transaction_id = t.transaction_id
                 ) as items_json,
                 
-                -- รวมร่าง: ใช้รหัส A-001/A-002 จากโค้ด 1 + จัดรูปแบบเวลาจากโค้ด 2
                 (SELECT TIME_FORMAT(time, '%H:%i:%s') FROM accesslogs 
                  WHERE transaction_id = t.transaction_id AND action_type_id = 'A-001' LIMIT 1) as open_time,
                  
@@ -1195,14 +1131,24 @@ app.get("/api/report/transactions-detail", async (req, res) => {
 // 🔔 ส่วนแจ้งเตือน (Alerts) - แก้ไขแล้ว
 // ==========================================
 
-// 1. แจ้งเตือนของหมดอายุ (Expire)
 app.get("/api/alerts/expire", async (req, res) => {
     const sql = `
-        SELECT l.lot_id, l.equipment_id, et.equipment_name, l.expiry_date, l.current_quantity 
-        FROM lot l 
-        JOIN equipment e ON l.equipment_id = e.equipment_id 
-        JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id 
-        WHERE l.expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) 
+        SELECT 
+            l.lot_id,
+            l.equipment_id,
+            et.equipment_name,
+            et.img,
+            s.supplier_name,
+            l.expiry_date,
+            l.current_quantity,
+            DATEDIFF(l.expiry_date, CURDATE()) AS days_remaining
+        FROM lot l
+        JOIN equipment e ON l.equipment_id = e.equipment_id
+        JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
+        LEFT JOIN supplier s ON l.supplier_id = s.supplier_id
+        WHERE l.expiry_date IS NOT NULL
+        AND l.current_quantity > 0
+        AND l.expiry_date <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)
         ORDER BY l.expiry_date ASC
     `;
     try {
@@ -1214,14 +1160,18 @@ app.get("/api/alerts/expire", async (req, res) => {
     }
 });
 
-// 2. แจ้งเตือนของใกล้หมด (Low Stock)
 app.get("/api/alerts/low-stock", async (req, res) => {
     const sql = `
-        SELECT e.equipment_id, et.equipment_name, e.alert_quantity, COALESCE(SUM(l.current_quantity), 0) as total_stock 
-        FROM equipment e 
-        LEFT JOIN lot l ON e.equipment_id = l.equipment_id 
-        JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id 
-        GROUP BY e.equipment_id 
+        SELECT 
+            e.equipment_id,
+            et.equipment_name,
+            et.img,
+            e.alert_quantity,
+            COALESCE(SUM(l.current_quantity), 0) as total_stock
+        FROM equipment e
+        LEFT JOIN lot l ON e.equipment_id = l.equipment_id
+        JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
+        GROUP BY e.equipment_id
         HAVING total_stock <= e.alert_quantity
     `;
     try {
@@ -1240,6 +1190,8 @@ app.get("/api/alerts/low-stock", async (req, res) => {
 // 1. เปิดให้เข้าถึงรูปภาพในโฟลเดอร์ uploads ได้ผ่าน URL
 app.use('/profile-img', express.static(path.join(__dirname, 'uploads')));
 
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // 2. ตั้งค่า Multer สำหรับ Save ไฟล์
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -1247,7 +1199,7 @@ const storage = multer.diskStorage({
         cb(null, 'uploads/'); 
     },
     filename: (req, file, cb) => {
-        cb(null, 'profile-' + Date.now() + path.extname(file.originalname));
+        cb(null,  Date.now() + path.extname(file.originalname));
     }
 });
 const upload = multer({ storage: storage });
@@ -1272,7 +1224,7 @@ app.get("/api/inventory", async (req, res) => {
                 et.equipment_type_id, et.equipment_name, et.img, et.unit
             FROM lot l
             JOIN supplier s ON l.supplier_id = s.supplier_id
-            JOIN equipment e ON l.equipment_id = e.equipment_id
+            RIGHT JOIN equipment e ON e.equipment_id = l.equipment_id 
             JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
             ORDER BY l.lot_id DESC
         `;
@@ -1359,7 +1311,7 @@ app.post("/api/inventory/add", async (req, res) => {
         // --- STEP 5: Insert LOT ---
         await conn.query(
             "INSERT INTO lot (lot_id, equipment_id, supplier_id, import_date, expiry_date, current_quantity, price) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            [newLotId, finalEquipmentId, finalSupplierId, lotData.import_date, lotData.expire_date, lotData.current_quantity, lotData.price]
+            [newLotId, finalEquipmentId, finalSupplierId, lotData.import_date, lotData.expiry_date, lotData.current_quantity, lotData.price]
         );
 
         await conn.commit(); // บันทึกทุกอย่าง
@@ -1405,7 +1357,7 @@ app.put("/api/inventory/update/:lot_id", async (req, res) => {
         // Update Lot
         await conn.query(
             "UPDATE lot SET import_date=?, expiry_date=?, current_quantity=?, price=? WHERE lot_id=?",
-            [lotData.import_date, lotData.expire_date, lotData.current_quantity, lotData.price, lot_id]
+            [lotData.import_date, lotData.expiry_date, lotData.current_quantity, lotData.price, lot_id]
         );
 
         await conn.commit();
@@ -1959,6 +1911,220 @@ app.get('/api/reports/equipment-age', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+// ==========================================
+// 📌 API สำหรับจัดการ Master Data (อะไหล่หลัก)
+// ==========================================
+
+// 1. API สำหรับเพิ่มข้อมูลอะไหล่ใหม่ (Add)
+app.post('/api/equipment/add', async (req, res) => {
+    const { equipment_id, equipment_type_id, equipment_name, model_size, alert_quantity, unit, img } = req.body;
+    let connection;
+    
+    try {
+        connection = await pool.getConnection();
+        await connection.beginTransaction();
+
+        // 1.1 เช็คว่ามีรหัสประเภทอะไหล่ (equipment_type_id) นี้ในระบบหรือยัง
+        const [existingType] = await connection.query("SELECT * FROM equipment_type WHERE equipment_type_id = ?", [equipment_type_id]);
+        
+        if (existingType.length === 0) {
+            // ถ้ายังไม่มี ให้สร้างประเภทอะไหล่ใหม่
+            await connection.query(
+                "INSERT INTO equipment_type (equipment_type_id, equipment_name, unit, img) VALUES (?, ?, ?, ?)",
+                [equipment_type_id, equipment_name, unit, img || null]
+            );
+        } else {
+            // ถ้ามีอยู่แล้ว ให้อัปเดตข้อมูลให้ตรงกับที่ส่งมาใหม่
+            await connection.query(
+                "UPDATE equipment_type SET equipment_name = ?, unit = ?, img = COALESCE(?, img) WHERE equipment_type_id = ?",
+                [equipment_name, unit, img || null, equipment_type_id]
+            );
+        }
+
+        // 1.2 เช็คว่ามีรหัสอะไหล่ (equipment_id) นี้หรือยัง เพื่อป้องกันการเพิ่มซ้ำ
+        const [existingEq] = await connection.query("SELECT * FROM equipment WHERE equipment_id = ?", [equipment_id]);
+        if (existingEq.length > 0) {
+            throw new Error(`รหัสอะไหล่ ${equipment_id} มีอยู่ในระบบแล้ว กรุณาใช้รหัสอื่น`);
+        }
+
+        // 1.3 เพิ่มข้อมูลลงตาราง equipment
+        await connection.query(
+            "INSERT INTO equipment (equipment_id, equipment_type_id, model_size, alert_quantity) VALUES (?, ?, ?, ?)",
+            [equipment_id, equipment_type_id, model_size, alert_quantity]
+        );
+
+        await connection.commit();
+        res.status(201).json({ success: true, message: "เพิ่มข้อมูลอะไหล่สำเร็จ" });
+    } catch (error) {
+        if (connection) await connection.rollback();
+        console.error("Add Equipment Error:", error);
+        res.status(500).json({ error: error.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// 2. API สำหรับแก้ไขข้อมูลอะไหล่ (Update)
+app.put('/api/equipment/update/:id', async (req, res) => {
+    const equipment_id_param = req.params.id;
+    const { equipment_type_id, equipment_name, model_size, alert_quantity, unit, img } = req.body;
+    let connection;
+
+    try {
+        connection = await pool.getConnection();
+        await connection.beginTransaction();
+
+        // 2.1 อัปเดตตาราง equipment
+        await connection.query(
+            "UPDATE equipment SET equipment_type_id = ?, model_size = ?, alert_quantity = ? WHERE equipment_id = ?",
+            [equipment_type_id, model_size, alert_quantity, equipment_id_param]
+        );
+
+        // 2.2 อัปเดตตาราง equipment_type (ชื่อ, หน่วย, รูป)
+        await connection.query(
+            "UPDATE equipment_type SET equipment_name = ?, unit = ?, img = COALESCE(?, img) WHERE equipment_type_id = ?",
+            [equipment_name, unit, img || null, equipment_type_id]
+        );
+
+        await connection.commit();
+        res.json({ success: true, message: "แก้ไขข้อมูลสำเร็จ" });
+    } catch (error) {
+        if (connection) await connection.rollback();
+        console.error("Update Equipment Error:", error);
+        res.status(500).json({ error: error.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// 3. API สำหรับลบข้อมูลอะไหล่ (Delete)
+app.delete('/api/equipment/:id', async (req, res) => {
+    const equipment_id = req.params.id;
+    let connection;
+
+    try {
+        connection = await pool.getConnection();
+        await connection.beginTransaction();
+
+        // ลบข้อมูลจากตาราง equipment
+        await connection.query("DELETE FROM equipment WHERE equipment_id = ?", [equipment_id]);
+
+        await connection.commit();
+        res.json({ success: true, message: "ลบข้อมูลสำเร็จ" });
+    } catch (error) {
+        if (connection) await connection.rollback();
+        console.error("Delete Equipment Error:", error);
+        
+        // เช็คว่าลบไม่ได้เพราะติด Foreign Key (เช่น ยังมี Lot ของอะไหล่นี้อยู่ในสต็อก)
+        if (error.code === 'ER_ROW_IS_REFERENCED_2' || error.errno === 1451) {
+            res.status(400).json({ error: "ไม่สามารถลบได้ เนื่องจากมีสต็อก (Lot) ของอะไหล่นี้ค้างอยู่ในระบบ กรุณาลบ Lot ให้หมดก่อน" });
+        } else {
+            res.status(500).json({ error: error.message });
+        }
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// ==========================================
+// 📌 API สำหรับจัดการ Lot (สต็อกสินค้าเข้า)
+// ==========================================
+
+// 1. API สำหรับเพิ่ม Lot ใหม่
+app.post('/api/inventory/add-lot', async (req, res) => {
+    const { lot_id, equipment_id, supplier_id, import_date, expiry_date, current_quantity, price } = req.body;
+    let connection;
+
+    try {
+        connection = await pool.getConnection();
+
+        // 1. เช็คว่ามี lot_id นี้อยู่ในระบบหรือยัง
+        const [existingLot] = await connection.query("SELECT * FROM lot WHERE lot_id = ?", [lot_id]);
+        if (existingLot.length > 0) {
+            return res.status(400).json({ error: `รหัส Lot ${lot_id} มีอยู่ในระบบแล้ว กรุณาใช้รหัสอื่น` });
+        }
+
+        // 2. เช็คว่า supplier_id ที่ส่งมามีจริงในตาราง supplier หรือไม่ (ถ้าไม่มีต้องเตือน)
+        if (supplier_id) {
+            const [existingSupplier] = await connection.query("SELECT * FROM supplier WHERE supplier_id = ?", [supplier_id]);
+            if (existingSupplier.length === 0) {
+                 return res.status(400).json({ error: `ไม่พบข้อมูลบริษัทรหัส ${supplier_id} ในระบบ` });
+            }
+        }
+
+        // 3. เพิ่มข้อมูลลงตาราง lot
+        const sql = `
+            INSERT INTO lot (lot_id, equipment_id, supplier_id, import_date, expiry_date, current_quantity, price) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `;
+        
+        // ถ้า expiry_date เป็น string ว่าง ("") ให้เปลี่ยนเป็น null ลง DB
+        const finalExpiryDate = expiry_date ? expiry_date : null;
+
+        await connection.query(sql, [
+            lot_id, 
+            equipment_id, 
+            supplier_id || null, 
+            import_date, 
+            finalExpiryDate, 
+            current_quantity, 
+            price
+        ]);
+
+        res.status(201).json({ success: true, message: "เพิ่ม Lot ใหม่สำเร็จ" });
+    } catch (error) {
+        console.error("Add Lot Error:", error);
+        res.status(500).json({ error: error.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// 2. API สำหรับแก้ไขข้อมูล Lot
+app.put('/api/inventory/update-lot/:id', async (req, res) => {
+    const lot_id_param = req.params.id;
+    const { supplier_id, import_date, expiry_date, current_quantity, price } = req.body;
+    let connection;
+
+    try {
+        connection = await pool.getConnection();
+
+        const sql = `
+            UPDATE lot 
+            SET supplier_id = ?, 
+                import_date = ?, 
+                expiry_date = ?, 
+                current_quantity = ?, 
+                price = ?
+            WHERE lot_id = ?
+        `;
+
+        const finalExpiryDate = expiry_date ? expiry_date : null;
+
+        const [result] = await connection.query(sql, [
+            supplier_id || null, 
+            import_date, 
+            finalExpiryDate, 
+            current_quantity, 
+            price, 
+            lot_id_param
+        ]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "ไม่พบข้อมูล Lot ที่ต้องการแก้ไข" });
+        }
+
+        res.json({ success: true, message: "แก้ไขข้อมูล Lot สำเร็จ" });
+    } catch (error) {
+        console.error("Update Lot Error:", error);
+        res.status(500).json({ error: error.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// หมายเหตุ: API ลบ Lot (DELETE /api/inventory/:id) ของคุณมีอยู่ใน server.js อยู่แล้ว จึงไม่ต้องเขียนเพิ่ม
 
 // 4. สั่งให้ Server รัน
 // ✅ ใช้ server.listen เพื่อรันทั้ง Express และ Socket.IO

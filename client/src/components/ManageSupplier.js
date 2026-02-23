@@ -2,8 +2,9 @@ import React, { useState, useEffect } from "react";
 import "./ManageSupplier.css"; 
 import { FaPlus, FaSearch, FaEdit, FaTrash, FaTimes } from "react-icons/fa";
 import axios from "axios";
+import SubNavbar from "./SubNavbar";
 
-// กำหนด URL ของ API (ปรับตาม Port ที่คุณใช้จริง)
+
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 function ManageSupplier() {
@@ -99,6 +100,7 @@ function ManageSupplier() {
     <div className="manage-supplier-container fade-in">
       {/* Header */}
       <div className="page-header">
+        <SubNavbar />
         <div>
           <h2 className="page-title-text">จัดการข้อมูลบริษัทนำเข้าอะไหล่</h2>
         </div>

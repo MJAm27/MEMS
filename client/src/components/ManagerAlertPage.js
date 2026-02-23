@@ -154,7 +154,7 @@ function ManagerAlertPage() {
                             <img src={item.img && item.img !== "NULL" ? item.img : "https://via.placeholder.com/150"} alt={item.equipment_name} />
                         </div>
                         <div className="item-details">
-                            <h4 className="text-danger">เหลือปัจจุบัน : {item.total_quantity} {item.unit || "หน่วย"}</h4>
+                            <h4 className="text-danger">เหลือปัจจุบัน : {item.total_stock} {item.unit || "หน่วย"}</h4>
                             <h3>{item.equipment_name}</h3>
                             <p><strong>จุดสั่งซื้อที่กำหนด:</strong> {item.alert_quantity} {item.unit || "หน่วย"}</p>
                             <p className="warning-text">สถานะ: ต่ำกว่าจุดสั่งซื้อที่กำหนด กรุณาสั่งซื้อเพิ่ม</p>

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import "./ManageMachine.css";
 import { FaPlus, FaSearch, FaEdit, FaTrash, FaTimes } from "react-icons/fa";
-import axios from "axios"; // แนะนำให้ลง npm install axios หรือใช้ fetch แบบเดิมก็ได้
+import axios from "axios"; 
+import SubNavbar from "./SubNavbar";
+
 
 function ManageMachine() {
   const [machines, setMachines] = useState([]); // เริ่มต้นเป็น array ว่าง
@@ -53,15 +55,14 @@ function ManageMachine() {
     
     try {
       if (isEditMode) {
-        // Update
-        await axios.put(`http://localhost:3001/api/machine/${formData.machine_SN}`, {
+        await axios.put(`${process.env.REACT_APP_API_URL}/api/machine/${formData.machine_SN}`, {
           machine_name: formData.machine_name
         });
         alert("แก้ไขข้อมูลสำเร็จ");
       } else {
         // Add New
         await axios.post(
-            "http://localhost:3001/api/machine",
+            `${process.env.REACT_APP_API_URL}/api/machine`,
             {
                 machine_SN: formData.machine_SN,
                 machine_name: formData.machine_name
@@ -88,7 +89,7 @@ function ManageMachine() {
   const handleDelete = async (sn) => {
     if (window.confirm(`คุณต้องการลบเครื่องจักรเลขที่ ${sn} ใช่หรือไม่?`)) {
       try {
-        await axios.delete(`http://localhost:3001/api/machine/${sn}`);
+        await axios.delete(`${process.env.REACT_APP_API_URL}/api/machine/${sn}`);
         fetchMachines(); // โหลดข้อมูลใหม่หลังจากลบ
       } catch (error) {
         console.error("Error deleting:", error);
@@ -106,6 +107,7 @@ function ManageMachine() {
   return (
     <div className="manage-machine-container fade-in">
       <div className="page-header">
+        <SubNavbar />
         <div>
           <h2 className="page-title-text">จัดการข้อมูลครุภัณฑ์ </h2>
         </div>
@@ -179,7 +181,7 @@ function ManageMachine() {
             <form onSubmit={handleSubmit}>
               <div className="modal-body">
                 <div className="form-group">
-                  <label>รหัสครุภัณฑ์ (sn) <span className="text-danger">*</span></label>
+                  <label>รหัสครุภัณฑ์ (SN) <span className="text-danger">*</span></label>
                   <input
                     type="text"
                     name="machine_SN"
@@ -187,7 +189,7 @@ function ManageMachine() {
                     onChange={handleChange}
                     disabled={isEditMode}
                     required
-                    placeholder="ระบุ SN"
+                    placeholder="ระบุ เลขSN หรือ รหัสครุภัณฑ์"
                   />
                   {isEditMode && <small className="text-muted">รหัสครุภัณฑ์ไม่สามารถแก้ไขได้</small>}
                 </div>
@@ -200,7 +202,7 @@ function ManageMachine() {
                     value={formData.machine_name}
                     onChange={handleChange}
                     required
-                    placeholder="ระบุชื่อเรียกเครื่องจักร"
+                    placeholder="ระบุชื่อครุภัณฑ์"
                   />
                 </div>
               </div>
