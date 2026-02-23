@@ -61,6 +61,9 @@ pool.query("SELECT 1")
 const JWT_SECRET = "MY_SUPER_SECRET_KEY_FOR_JWT_12345";
 
 // +++++++++++++++++++++++ ค่าคงที่สำหรับ ESP8266 +++++++++++++++++++++++
+//step1 setup MQTT Broker ใน server kob 
+//step2 แก้ไข ESP8266 ให้เชื่อมต่อกับ MQTT Broker ของ Server แทนการรับคำสั่งผ่าน HTTP โดยตรง
+//step3 ใน server.js ให้ใช้ MQTT Client (เช่น mqtt.js) เพื่อส่งคำสั่งไปยัง ESP8266 ผ่าน MQTT แทนการใช้ HTTP
 const ESP_IP = 'http://192.168.1.139'; 
 const HARDCODED_USER_ID = 123464; // (ชั่วคราว)
 // -------------------------------------------------------------------
@@ -228,7 +231,6 @@ app.post('/api/withdraw/partInfo', async (req, res) => {
 
 
 // 2. API: Confirm and Cut Stock (POST /api/withdraw/confirm)
-// 2. API: Confirm and Cut Stock (POST /api/withdraw/confirm)
 app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
     const { machine_SN, cartItems } = req.body;
     const userId = req.user.userId;
@@ -238,50 +240,69 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
         connection = await pool.getConnection();
         await connection.beginTransaction();
 
-        // 1. สร้าง Transaction ID
+        // 1. สร้าง Transaction ID สำหรับรายการเบิกนี้
         const transactionId = `WTH-${Date.now()}`;
 
-        // 2. บันทึกลงตาราง transactions
+        // 2. บันทึกลงตาราง transactions (is_pending = 0 คือรายการที่สมบูรณ์แล้ว)
         await connection.query(
             "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_SN, is_pending) VALUES (?, 'T-WTH', CURDATE(), CURTIME(), ?, ?, 0)",
             [transactionId, userId, machine_SN]
         );
 
-        // 3. Loop ตัดสต็อกและบันทึกรายการอะไหล่
+        // 3. Loop เพื่อตัดสต็อกและบันทึกรายการอุปกรณ์
         for (const item of cartItems) {
+            // ตัดสต็อกในตาราง lot ตาม lot_id ที่สแกนมา
             const [updateRes] = await connection.query(
                 "UPDATE lot SET current_quantity = current_quantity - ? WHERE lot_id = ? AND current_quantity >= ?",
                 [item.quantity, item.lotId, item.quantity]
             );
 
-            if (updateRes.affectedRows === 0) throw new Error(`ล็อต ${item.lotId} ของไม่พอ`);
+            if (updateRes.affectedRows === 0) {
+                throw new Error(`ล็อต ${item.lotId} มีจำนวนอะไหล่ไม่พอ หรือข้อมูลไม่ถูกต้อง`);
+            }
 
+            // บันทึกรายละเอียดอะไหล่ลงใน equipment_list
             const listId = `ER-${Date.now().toString().slice(-8)}-${Math.floor(Math.random() * 99)}`;
             await connection.query(
-                "INSERT INTO equipment_list (equipment_list_id, transaction_id, equipment_id, quantity) VALUES (?, ?, ?, ?)",
-                [listId, transactionId, item.partId, item.quantity]
+                "INSERT INTO equipment_list (equipment_list_id, transaction_id, equipment_id, quantity, lot_id) VALUES (?, ?, ?, ?, ?)",
+                [listId, transactionId, item.partId, item.quantity, item.lotId]
             );
         }
 
-        // --- ส่วนสำคัญ: บันทึก Log การเปิดและปิดตู้โดยผูกกับ transactionId ---
-        
-        // บันทึกเวลาเปิด (A-001)
         await connection.query(
-            "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-001', ?, ?)",
-            [`LG-OP-${Date.now()}`, transactionId, userId] // ต้องมี transactionId ตรงนี้
+            `UPDATE accesslogs 
+             SET transaction_id = ? 
+             WHERE user_id = ? AND transaction_id IS NULL AND action_type_id = 'A-001' 
+             ORDER BY date DESC, time DESC LIMIT 1`,
+            [transactionId, userId]
         );
 
-        // บันทึกเวลาปิด (A-002) 
-        // เพิ่มเวลาเล็กน้อย (500ms) เพื่อให้ปิดหลังเปิดเล็กน้อยในกรณีบันทึกพร้อมกัน
+        
+        
+        // บันทึกเวลาเปิด (A-001)
+        const openLogId = `LG-OP-${Date.now()}`;
+        await connection.query(
+            "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-001', ?, ?)",
+            [openLogId, transactionId, userId]
+        );
+
+        // บันทึกเวลาปิด (A-002) - โค้ดที่คุณส่งมา
+        const closeLogId = `LG-CL-${Date.now() + 500}`; // เพิ่มเวลาเล็กน้อยป้องกัน ID ซ้ำในเครื่องที่เร็วมาก
         await connection.query(
             "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-002', ?, ?)",
-            [`LG-CL-${Date.now() + 500}`, transactionId, userId]
+            [closeLogId, transactionId, userId]
         );
+
         await connection.commit();
-        res.json({ success: true, message: "บันทึกสำเร็จ", transactionId });
+        res.json({ 
+            success: true, 
+            message: "เบิกอะไหล่และบันทึกเวลาเปิด-ปิดประตูเรียบร้อยแล้ว", 
+            transactionId: transactionId 
+        });
 
     } catch (error) {
         if (connection) await connection.rollback();
+        console.error("❌ Confirm Transaction Error:", error.message);
         res.status(500).json({ error: error.message });
     } finally {
         if (connection) connection.release();
@@ -298,17 +319,14 @@ app.post('/api/return-part', authenticateToken, async (req, res) => {
         connection = await pool.getConnection();
         await connection.beginTransaction();
 
-        // 1. สร้างรหัส Transaction สำหรับการคืน (RTN-)
         const transactionId = `RTN-${Date.now()}`;
 
-        // 2. บันทึกลงตาราง transactions (ใช้รหัส 'T-RTN' ตามที่คุณเพิ่มใน DB แล้ว)
         await connection.query(
             "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_SN) VALUES (?, 'T-RTN', ?, CURTIME(), ?, NULL)",
             [transactionId, returnDate, userId]
         );
 
         for (const item of items) {
-            // 3. เพิ่มสต็อกกลับเข้าไปใน Lot เดิม (คืนของ)
             const [updateRes] = await connection.query(
                 "UPDATE lot SET current_quantity = current_quantity + ? WHERE lot_id = ?",
                 [item.quantity, item.lotId]
@@ -318,7 +336,6 @@ app.post('/api/return-part', authenticateToken, async (req, res) => {
                 throw new Error(`ไม่พบรหัสล็อต ${item.lotId} เพื่อทำการคืน`);
             }
 
-            // 4. บันทึกรายละเอียดลง equipment_list
             const listId = `EL-RTN-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
             await connection.query(
                 "INSERT INTO equipment_list (equipment_list_id, transaction_id, equipment_id, quantity) VALUES (?, ?, ?, ?)",
@@ -326,12 +343,21 @@ app.post('/api/return-part', authenticateToken, async (req, res) => {
             );
         }
 
+        // 🟢 เพิ่ม: บันทึก Log เวลา (สำคัญเพื่อให้เวลาขึ้นในหน้า History)
+        await connection.query(
+            "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-001', ?, ?)",
+            [`LG-OP-${Date.now()}`, transactionId, userId]
+        );
+        await connection.query(
+            "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-002', ?, ?)",
+            [`LG-CL-${Date.now() + 500}`, transactionId, userId]
+        );
+
         await connection.commit();
-        res.json({ success: true, message: "บันทึกการคืนอะไหล่สำเร็จ" });
+        res.json({ success: true, message: "บันทึกการคืนอะไหล่และเวลาเรียบร้อยแล้ว" });
 
     } catch (error) {
         if (connection) await connection.rollback();
-        console.error("Return Error:", error);
         res.status(500).json({ error: error.message });
     } finally {
         if (connection) connection.release();
@@ -485,7 +511,6 @@ app.post('/api/borrow/finalize-partial', authenticateToken, async (req, res) => 
         connection = await pool.getConnection();
         await connection.beginTransaction();
 
-        // 1. ตรวจสอบจำนวนที่มีอยู่ในมือปัจจุบัน (เช่น มีอยู่ 5)
         const [rows] = await connection.query(
             "SELECT quantity FROM equipment_list WHERE transaction_id = ? AND lot_id = ?",
             [transactionId, lotId]
@@ -498,57 +523,47 @@ app.post('/api/borrow/finalize-partial', authenticateToken, async (req, res) => 
             throw new Error(`จำนวนที่บันทึก (${usedQty}) มากกว่าจำนวนที่มีอยู่ในมือ (${currentInHand})`);
         }
 
-        // 2. สร้าง Transaction ใหม่สำหรับการ "ใช้จริง" (ใส่เลขครุภัณฑ์ และ is_pending = 0)
         const realTxId = `W-REAL-${Date.now().toString().slice(-8)}`;
         await connection.query(
             "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_SN, is_pending) VALUES (?, 'T-WTH', CURDATE(), CURTIME(), ?, ?, 0)",
             [realTxId, req.user.userId, machineSN]
         );
 
-        // บันทึกรายการอะไหล่ที่ใช้จริงลงใน Transaction ใหม่
         await connection.query(
             "INSERT INTO equipment_list (equipment_list_id, transaction_id, equipment_id, quantity, lot_id) VALUES (?, ?, ?, ?, ?)",
             [`ELR-${Date.now().toString().slice(-5)}`, realTxId, equipmentId, usedQty, lotId]
         );
 
-        // 3. 🟢 หัวใจสำคัญ: อัปเดตยอดคงเหลือใน "ใบเบิกเดิม" (จาก 5 หักออก 2 เหลือ 3)
+        // 🟢 เพิ่ม: บันทึก Log เวลาสำหรับรายการที่นำไปใช้จริง
+        await connection.query(
+            "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-001', ?, ?)",
+            [`LG-OP-${Date.now()}`, realTxId, req.user.userId]
+        );
+        await connection.query(
+            "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-002', ?, ?)",
+            [`LG-CL-${Date.now() + 500}`, realTxId, req.user.userId]
+        );
+
         const newRemainingQty = currentInHand - usedQty;
-        
         if (newRemainingQty > 0) {
-            // ยังเหลือของในมือ -> อัปเดตจำนวนใหม่
             await connection.query(
                 "UPDATE equipment_list SET quantity = ? WHERE transaction_id = ? AND lot_id = ?",
                 [newRemainingQty, transactionId, lotId]
             );
         } else {
-            // ของหมดพอดี -> ลบรายการอะไหล่ชิ้นนี้ออกจากใบยืม
-            await connection.query(
-                "DELETE FROM equipment_list WHERE transaction_id = ? AND lot_id = ?",
-                [transactionId, lotId]
-            );
+            await connection.query("DELETE FROM equipment_list WHERE transaction_id = ? AND lot_id = ?", [transactionId, lotId]);
         }
 
-        // 4. ตรวจสอบว่าใบยืมเดิม (PEND-xxx) ยังเหลืออะไหล่ชิ้นอื่นอีกไหม
-        const [check] = await connection.query(
-            "SELECT COUNT(*) as itemCount FROM equipment_list WHERE transaction_id = ?",
-            [transactionId]
-        );
-
+        const [check] = await connection.query("SELECT COUNT(*) as itemCount FROM equipment_list WHERE transaction_id = ?", [transactionId]);
         if (check[0].itemCount === 0) {
-            // ถ้าไม่มีอะไหล่เหลือในใบนี้แล้ว ให้ปิดสถานะใบยืมเป็น 0
             await connection.query("UPDATE transactions SET is_pending = 0 WHERE transaction_id = ?", [transactionId]);
         }
 
         await connection.commit();
-        res.json({ 
-            success: true, 
-            message: `บันทึกใช้จริงสำเร็จ ยอดคงเหลือในมือคือ ${newRemainingQty} ชิ้น`,
-            remainingInHand: newRemainingQty 
-        });
+        res.json({ success: true, message: "บันทึกใช้จริงสำเร็จ" });
 
     } catch (error) {
         if (connection) await connection.rollback();
-        console.error("Finalize Partial Error:", error);
         res.status(500).json({ error: error.message });
     } finally {
         if (connection) connection.release();
@@ -563,13 +578,8 @@ app.post('/api/borrow/return-all', authenticateToken, async (req, res) => {
         connection = await pool.getConnection();
         await connection.beginTransaction();
 
-        // 1. 🟢 บวกจำนวนกลับเข้าสต็อกจริงในตาราง lot
-        await connection.query(
-            "UPDATE lot SET current_quantity = current_quantity + ? WHERE lot_id = ?",
-            [qtyToReturn, lotId]
-        );
+        await connection.query("UPDATE lot SET current_quantity = current_quantity + ? WHERE lot_id = ?", [qtyToReturn, lotId]);
 
-        // 2. บันทึกประวัติการคืน (T-RTN) เพื่อให้แสดงในหน้า History
         const returnTxId = `RTN-${Date.now().toString().slice(-8)}`;
         await connection.query(
             "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, is_pending) VALUES (?, 'T-RTN', CURDATE(), CURTIME(), ?, 0)",
@@ -581,23 +591,25 @@ app.post('/api/borrow/return-all', authenticateToken, async (req, res) => {
             [`ELR-${Date.now().toString().slice(-5)}`, returnTxId, equipmentId, qtyToReturn, lotId]
         );
 
-        // 3. ลบรายการนี้ออกจากใบยืมเดิม
+        // 🟢 เพิ่ม: บันทึก Log เวลาสำหรับการคืนคลัง
         await connection.query(
-            "DELETE FROM equipment_list WHERE transaction_id = ? AND lot_id = ?",
-            [transactionId, lotId]
+            "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-001', ?, ?)",
+            [`LG-OP-${Date.now()}`, returnTxId, req.user.userId]
+        );
+        await connection.query(
+            "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-002', ?, ?)",
+            [`LG-CL-${Date.now() + 500}`, returnTxId, req.user.userId]
         );
 
-        // 4. ตรวจสอบเพื่อปิดใบยืมหลัก
-        const [check] = await connection.query(
-            "SELECT COUNT(*) as itemCount FROM equipment_list WHERE transaction_id = ?",
-            [transactionId]
-        );
+        await connection.query("DELETE FROM equipment_list WHERE transaction_id = ? AND lot_id = ?", [transactionId, lotId]);
+
+        const [check] = await connection.query("SELECT COUNT(*) as itemCount FROM equipment_list WHERE transaction_id = ?", [transactionId]);
         if (check[0].itemCount === 0) {
             await connection.query("UPDATE transactions SET is_pending = 0 WHERE transaction_id = ?", [transactionId]);
         }
 
         await connection.commit();
-        res.json({ success: true, message: "คืนอะไหล่เข้าคลังและปรับปรุงสต็อกเรียบร้อย" });
+        res.json({ success: true, message: "คืนอะไหล่เข้าคลังเรียบร้อย" });
     } catch (error) {
         if (connection) await connection.rollback();
         res.status(500).json({ error: error.message });
@@ -934,7 +946,6 @@ app.get('/api/search/parts', authenticateToken, async (req, res) => {
 // ==========================================
 app.get('/api/history/full', authenticateToken, async (req, res) => {
     try {
-        // 1. รับค่าวันที่จาก Query Params
         const { startDate, endDate } = req.query;
 
         let sql = `
@@ -948,25 +959,34 @@ app.get('/api/history/full', authenticateToken, async (req, res) => {
                 u.fullname, 
                 (
                     SELECT JSON_ARRAYAGG(
-                        JSON_OBJECT(
-                            'name', et.equipment_name,
-                            'qty', el.quantity
-                        )
+                        JSON_OBJECT('name', et.equipment_name, 'qty', el.quantity)
                     )
                     FROM equipment_list el
                     JOIN equipment e ON el.equipment_id = e.equipment_id
                     JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
                     WHERE el.transaction_id = t.transaction_id
                 ) as items_json,
-                (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-001' LIMIT 1) as open_time,
-                (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-002' LIMIT 1) as close_time
+                
+                -- ส่วนที่แก้ไข: ดึงคอลัมน์ time จาก accesslogs ตามเงื่อนไขที่คุณระบุ --
+                
+                -- ให้ open_time คือ time ที่ action_type_id = A-001
+                (SELECT time FROM accesslogs 
+                 WHERE transaction_id = t.transaction_id 
+                 AND action_type_id = 'A-001' 
+                 LIMIT 1) as open_time,
+                
+                -- ให้ close_time คือ time ที่ action_type_id = A-002
+                (SELECT time FROM accesslogs 
+                 WHERE transaction_id = t.transaction_id 
+                 AND action_type_id = 'A-002' 
+                 LIMIT 1) as close_time
+                 
             FROM transactions t
             LEFT JOIN transactions_type tt ON t.transaction_type_id = tt.transaction_type_id
             LEFT JOIN users u ON t.user_id = u.user_id
         `;
 
         const params = [];
-        // 2. ตรวจสอบว่ามีการส่งวันที่มาหรือไม่ ถ้ามีให้เพิ่มเงื่อนไข WHERE
         if (startDate && endDate) {
             sql += " WHERE t.date BETWEEN ? AND ? ";
             params.push(startDate, endDate);

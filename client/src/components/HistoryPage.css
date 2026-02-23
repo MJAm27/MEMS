@@ -1,274 +1,235 @@
-/* ===================================================
-   1. คอนเทนเนอร์หลักและฟอนต์
-   =================================================== */
+/* HistoryPage.css */
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --primary-color: #db2777;
+    --secondary-color: #fce7f3;
+    --text-main: #1e293b;
+    --text-sub: #64748b;
+    --bg-light: #f8fafc;
+    --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+}
+
 .history-container { 
-    padding: 20px; 
-    max-width: 1200px; 
+    padding: 24px; 
+    max-width: 1400px; 
     margin: 0 auto; 
     font-family: 'Prompt', sans-serif;
-    background-color: #f8fafc;
+    background-color: var(--bg-light);
     min-height: 100vh;
 }
 
-.fade-in {
-    animation: fadeIn 0.5s ease-in;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* ===================================================
-   2. ส่วนหัวและระบบกรอง (Header & Filters) - Responsive
-   =================================================== */
+/* ส่วนหัวและระบบกรอง */
 .history-header { 
     display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    margin-bottom: 25px; 
-    flex-wrap: wrap; /* ตกบรรทัดเมื่อจอแคบ */
+    flex-direction: column;
     gap: 20px;
+    margin-bottom: 30px; 
 }
 
 .title-section { 
     display: flex; 
     align-items: center; 
     gap: 12px; 
-    color: #db2777; 
+    color: var(--primary-color); 
+}
+
+.title-section h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
 }
 
 .history-filters-wrapper {
-    display: flex;
-    flex-wrap: wrap; 
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 16px;
     align-items: center;
-    width: 100%;
-    margin-top: 10px;
 }
 
-/* --- ส่วนเลือกวันที่ (Date Picker Group) --- */
 .history-date-picker-group {
     display: flex;
     align-items: center;
     background: #ffffff;
-    padding: 6px 12px;
+    padding: 8px 16px;
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
     border: 1px solid #e2e8f0;
-    gap: 10px;
-    flex: 1; 
-    min-width: 280px;
+    gap: 12px;
 }
 
 .date-input-wrapper {
     display: flex;
     align-items: center;
-    background: #f8fafc;
+    gap: 8px;
+    background: #f1f5f9;
     border-radius: 8px;
-    padding: 0 8px;
-}
-
-.input-icon {
-    color: #64748b;
-    font-size: 14px;
+    padding: 4px 10px;
 }
 
 .history-date-input {
     border: none;
     background: transparent;
-    padding: 8px 5px;
-    font-size: 13px;
     font-family: 'Prompt';
+    font-size: 0.9rem;
+    color: var(--text-main);
     outline: none;
-    cursor: pointer;
-    color: #1e293b;
 }
 
-.date-separator {
-    font-size: 12px;
-    color: #94a3b8;
-    font-weight: 500;
-}
-
-/* --- ส่วนกรองประเภท (Select Filter) --- */
 .filter-group { 
     display: flex;
     align-items: center;
     gap: 10px;
     background: white;
-    padding: 5px 15px;
+    padding: 8px 16px;
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     border: 1px solid #e2e8f0;
-    height: 44px;
+    height: 48px;
 }
-
-.filter-icon { color: #64748b; }
 
 .history-select { 
-    padding: 8px 5px; 
-    border: none; 
-    outline: none; 
-    font-weight: 600;
-    color: #475569;
-    cursor: pointer;
+    border: none;
+    outline: none;
+    font-weight: 500;
+    color: var(--text-main);
     background: transparent;
     font-family: 'Prompt';
+    cursor: pointer;
 }
 
-/* ===================================================
-   3. การแสดงผลแบบ Desktop (Table View)
-   =================================================== */
+/* Desktop View (Table) */
 .history-card { 
     background: white; 
-    border-radius: 20px; 
-    box-shadow: 0 10px 30px rgba(0,0,0,0.05); 
-    overflow: hidden; 
+    border-radius: 16px; 
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
 }
 
-/* สำคัญ: ให้ตารางเลื่อนซ้ายขวาได้ในมือถือ */
 .table-wrapper {
     width: 100%;
     overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
 }
 
 .history-table { 
     width: 100%; 
-    min-width: 900px; /* บังคับความกว้างขั้นต่ำไม่ให้เบียดกัน */
     border-collapse: collapse; 
-    text-align: left; 
+    min-width: 1000px;
 }
 
 .history-table th { 
-    padding: 18px 15px; 
-    background: #fdf2f8; 
-    color: #db2777; 
-    font-size: 14px; 
+    padding: 16px; 
+    background: #fff9fc; 
+    color: var(--primary-color); 
     font-weight: 600;
-    border-bottom: 2px solid #fce7f3;
+    text-align: left;
+    border-bottom: 2px solid var(--secondary-color);
 }
 
 .history-table td { 
-    padding: 15px; 
+    padding: 16px; 
     border-bottom: 1px solid #f1f5f9; 
-    vertical-align: middle; 
-    font-size: 14px;
+    color: var(--text-main);
+    vertical-align: top;
 }
 
-.history-table tbody tr:hover {
-    background-color: #fff9fc;
-}
+.date-text { font-weight: 600; display: block; }
+.time-text { font-size: 0.8rem; color: var(--text-sub); }
 
-/* จัดการวันที่และเวลาในตาราง */
-.date-text { font-weight: 600; color: #1e293b; }
-.time-text { font-size: 12px; color: #94a3b8; }
-
-/* รายการอะไหล่ภายในตาราง */
-.item-row-detail {
-    padding: 2px 0;
-    color: #475569;
-    font-size: 13.5px;
-}
-
-.item-qtys-column .item-row-detail {
-    text-align: center;
-    color: #db2777;
-    font-weight: 700;
-}
-
-/* Badge ประเภทรายการ */
-.type-badge { 
-    padding: 6px 14px; 
-    border-radius: 50px; 
-    font-weight: 700; 
-    display: inline-flex; 
-    align-items: center; 
-    gap: 8px; 
-    font-size: 12px;
-    text-transform: uppercase;
+.type-badge {
+    padding: 4px 12px;
+    border-radius: 99px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .type-badge.T-WTH { background: #fff1f2; color: #e11d48; }
 .type-badge.T-RTN { background: #f0fdf4; color: #16a34a; }
 
-/* เวลาเปิด-ปิดตู้ */
-.status-timeline { display: flex; flex-direction: column; gap: 5px; }
+.item-row-detail {
+    font-size: 0.9rem;
+    padding: 2px 0;
+}
 
+/* Timeline / Badges */
+.status-timeline { display: flex; flex-direction: column; gap: 4px; }
 .time-badge {
-    background: #f8fafc;
-    padding: 3px 10px;
+    font-size: 0.75rem;
+    padding: 4px 8px;
     border-radius: 6px;
-    font-size: 11px;
-    color: #64748b;
+    background: #f1f5f9;
+    color: var(--text-sub);
     border: 1px solid #e2e8f0;
     display: flex;
     justify-content: space-between;
+    min-width: 100px;
+}
+.time-badge.active-open { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+.time-badge.active-close { background: #dcfce7; color: #166534; border-color: #86efac; }
+
+/* Mobile View (Cards) */
+.mobile-view { display: none; }
+
+/* Responsive Logic */
+@media (max-width: 1024px) {
+    .history-filters-wrapper {
+        grid-template-columns: 1fr;
+    }
 }
 
-.time-badge.active-open { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
-.time-badge.active-close { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
-
-/* ===================================================
-   4. Media Queries สำหรับมือถือ
-   =================================================== */
 @media (max-width: 768px) {
-    .history-container { padding: 15px; }
+    .history-container { padding: 16px; }
+    
+    .desktop-view { display: none; }
+    .mobile-view { 
+        display: flex; 
+        flex-direction: column;
+        gap: 16px;
+    }
 
-    .history-header {
+    .history-date-picker-group {
         flex-direction: column;
         align-items: stretch;
     }
 
-    .history-filters-wrapper {
-        flex-direction: column; 
-        align-items: stretch;
-    }
-
-    .history-date-picker-group {
-        width: 100%;
-        justify-content: space-between;
-        padding: 10px;
-    }
-
-    .filter-group {
-        justify-content: space-between;
-    }
-    
-    .date-input-wrapper {
-        flex: 1;
-    }
-
-    .history-date-input {
-        width: 100%; 
-        font-size: 13px;
-    }
-
-    .filter-group {
-        width: 100%;
-        justify-content: flex-start;
-    }
-    
-    .history-select {
-        flex: 1;
-    }
-
-    /* ตกแต่ง Card Mobile (ถ้าไฟล์ JS มีส่วน Mobile แยกไว้) */
     .history-mobile-card {
         background: white;
         border-radius: 16px;
-        padding: 15px;
-        margin-bottom: 12px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.04);
-        border-left: 4px solid #cbd5e1;
+        padding: 16px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border-left: 5px solid #cbd5e1;
     }
 
     .border-left-T-WTH { border-left-color: #e11d48; }
     .border-left-T-RTN { border-left-color: #16a34a; }
-}
 
-/* ===================================================
-   5. Utility Classes
-   =================================================== */
-.text-center { text-align: center; }
-.font-bold { font-weight: 700; }
+    .card-mobile-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+
+    .mobile-date { font-weight: 700; color: var(--text-main); font-size: 0.95rem; }
+
+    .card-mobile-body { display: flex; flex-direction: column; gap: 10px; }
+
+    .mobile-item-row {
+        display: flex;
+        justify-content: space-between;
+        background: #f8fafc;
+        padding: 8px 12px;
+        border-radius: 8px;
+    }
+
+    .mobile-meta { font-size: 0.85rem; color: var(--text-sub); }
+    
+    .mobile-access-logs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 5px;
+    }
+}
