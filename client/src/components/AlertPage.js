@@ -83,9 +83,16 @@ function AlertPage() {
             expireList.length > 0 ? (
               expireList.map((item) => (
                 <div key={item.lot_id} className="alert-item-card">
-                  <div className="item-image">
-                    {/* ใช้รูป placeholder ถ้าไม่มีรูป */}
-                    <img src={item.img || "https://via.placeholder.com/150"} alt={item.equipment_name} />
+                 <div className="item-image">
+                    {item.img ? (
+                      <img 
+                        src={`${API_BASE_URL}/uploads/${item.img}`} 
+                        alt={item.equipment_name} 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+                      />
+                    ) : (
+                      <div style={{ color: '#ccc', fontSize: '0.8rem', textAlign: 'center' }}>ไม่มีรูป</div>
+                    )}
                   </div>
                   <div className="item-details">
                     <h4 className="text-danger">จำนวน : {item.current_quantity} ชิ้น</h4>
@@ -107,10 +114,18 @@ function AlertPage() {
               stockList.map((item) => (
                 <div key={item.equipment_id} className="alert-item-card">
                   <div className="item-image">
-                    <img src={item.img || "https://via.placeholder.com/150"} alt={item.equipment_name} />
+                    {item.img ? (
+                      <img 
+                        src={`${API_BASE_URL}/uploads/${item.img}`} 
+                        alt={item.equipment_name} 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+                      />
+                    ) : (
+                      <div style={{ color: '#ccc', fontSize: '0.8rem', textAlign: 'center' }}>ไม่มีรูป</div>
+                    )}
                   </div>
                   <div className="item-details">
-                    <h4 className="text-danger">เหลือปัจจุบัน : {item.total_quantity} ชิ้น</h4>
+                    <h4 className="text-danger">เหลือปัจจุบัน : {item.total_stock} ชิ้น</h4>
                     <h3>{item.equipment_name}</h3>
                     <p><strong>จุดสั่งซื้อ (Alert):</strong> {item.alert_quantity} ชิ้น</p>
                     <p className="warning-text">

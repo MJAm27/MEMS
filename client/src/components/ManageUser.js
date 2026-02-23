@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import "./ManageUser.css";
 import { FaPlus, FaSearch, FaEdit, FaTrash, FaTimes, FaFilter } from "react-icons/fa";
 import axios from "axios";
+import SubNavbar from "./SubNavbar";
+
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
@@ -120,6 +122,7 @@ function ManageUser() {
 
   return (
     <div className="manage-user-container fade-in">
+      <SubNavbar />
       <div className="page-header">
         <h2 className="page-title-text">จัดการผู้ใช้งาน</h2>
         <button className="btn-primary" onClick={handleOpenAdd}>

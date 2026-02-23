@@ -19,6 +19,7 @@ import "./AdminMainPage.css";
 
 import ManageMachine from "./ManageMachine";
 import ManageEquipment from "./ManageEquipment";
+import ManageLot from "./ManageLot";
 import ManageTransaction from "./ManageTransaction";
 import ManageUser from "./ManageUser";
 import ManageSupplier from "./ManageSupplier";
@@ -257,6 +258,7 @@ function AdminMainPage({ user, handleLogout }) {
                         
                         <Route path="/admin/machine" element={<ManageMachine />} />
                         <Route path="/admin/equipment" element={<ManageEquipment />} />
+                        <Route path="/admin/lot/:equipmentId" element={<ManageLot />} />
                         <Route path="/admin/transactions" element={<ManageTransaction />} />
                         <Route path="/admin/user" element={<ManageUser />} />
                         <Route path="/admin/supplier" element={<ManageSupplier />} />

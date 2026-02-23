@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import "./ManageTransaction.css";
 import { FaPlus, FaSearch, FaEye, FaTimes, FaTrash, FaFilter } from "react-icons/fa";
 import axios from "axios";
+import SubNavbar from "./SubNavbar";
+
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
@@ -151,6 +153,7 @@ function ManageTransaction() {
   return (
     <div className="manage-transaction-container fade-in">
       <div className="page-header">
+        <SubNavbar />
         <div>
           <h2 className="page-title-text">จัดการประวัติการเบิก-คืน</h2>
         </div>

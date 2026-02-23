@@ -1,35 +1,35 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom"; 
 import "./ManageEquipment.css";
-import { FaPlus, FaSearch, FaEdit, FaTrash, FaTimes } from "react-icons/fa";
+import { FaPlus, FaSearch, FaTimes, FaBoxOpen, FaEdit, FaTrash } from "react-icons/fa";
 import axios from "axios";
-import * as XLSX from 'xlsx';
-import Barcode from 'react-barcode';
+import SubNavbar from "./SubNavbar";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 function ManageEquipment() {
-  const [inventory, setInventory] = useState([]); // ข้อมูลตารางหลัก
-  const [masterData, setMasterData] = useState({ suppliers: [], equipmentTypes: [], equipments: [] });
+  const navigate = useNavigate();
+  const [inventory, setInventory] = useState([]); 
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   
-  // --- States ควบคุมการเลือก "ข้อมูลเดิม" หรือ "สร้างใหม่" ---
-  const [isNewSupplier, setIsNewSupplier] = useState(false);
-  const [isNewType, setIsNewType] = useState(false);
-  const [isNewEquipment, setIsNewEquipment] = useState(false);
-
-  // --- Form Data แยกส่วน ---
-  const [lotData, setLotData] = useState({ 
-    lot_id: "", import_date: "", expire_date: "", current_quantity: 0, price: 0 
+  // +++ รวม State ให้เหลือแค่ฟอร์มของอะไหล่ +++
+  const [formData, setFormData] = useState({
+    equipment_id: "",
+    equipment_type_id: "",
+    equipment_name: "",
+    model_size: "",
+    alert_quantity: 10,
+    unit: "",
+    img: ""
   });
-  const [supplierData, setSupplierData] = useState({ supplier_id: "", supplier_name: "", contact: "" });
-  const [typeData, setTypeData] = useState({ equipment_type_id: "", equipment_name: "", img: "", unit: "" });
-  const [equipmentData, setEquipmentData] = useState({ equipment_id: "", alert_quantity: 10, model_size: "" });
+
+  const [isUploading, setIsUploading] = useState(false); 
+  const [previewImage, setPreviewImage] = useState(null);
 
   useEffect(() => {
     fetchData();
-    fetchMasterData();
   }, []);
 
   const fetchData = async () => {
@@ -39,30 +39,21 @@ function ManageEquipment() {
     } catch (error) { console.error("Error fetching inventory:", error); }
   };
 
-  const fetchMasterData = async () => {
-    try {
-      const res = await axios.get(`${API_BASE_URL}/api/master-data`);
-      setMasterData(res.data);
-    } catch (error) { console.error("Error fetching master data:", error); }
-  };
-  
-  const [isUploading, setIsUploading] = useState(false); // State บอกสถานะการอัปโหลด
-
-  // 3. ฟังก์ชันสำหรับอัปโหลดรูปทันทีที่เลือกไฟล์
+  // +++ ฟังก์ชันอัปโหลดรูปภาพ (รับชื่อไฟล์กลับมา) +++
   const handleImageUpload = async (e) => {
       const file = e.target.files[0];
       if (!file) return;
 
-      const formData = new FormData();
-      formData.append('image', file);
+      const uploadData = new FormData();
+      uploadData.append('image', file);
 
       setIsUploading(true);
       try {
-          const res = await axios.post(`${API_BASE_URL}/api/upload`, formData, {
+          const res = await axios.post(`${API_BASE_URL}/api/upload`, uploadData, {
               headers: { 'Content-Type': 'multipart/form-data' }
           });
-          // เมื่ออัปโหลดเสร็จ Server ส่ง URL กลับมา -> เราเอาไปใส่ใน form state
-          setTypeData({ ...typeData, img: res.data.url });
+          // เก็บชื่อไฟล์ที่ได้จาก Backend ไว้ใน State
+          setFormData({ ...formData, img: res.data.filename });
       } catch (error) {
           alert("อัปโหลดรูปไม่สำเร็จ");
           console.error(error);
@@ -71,182 +62,88 @@ function ManageEquipment() {
       }
   };
 
-  // --- Handlers ---
   const handleAddNew = () => {
     setIsEditMode(false);
-    // Reset Data
-    setLotData({ lot_id: "", import_date: "", expire_date: "", current_quantity: 0, price: 0 });
-    setSupplierData({ supplier_id: "", supplier_name: "", contact: "" });
-    setTypeData({ equipment_type_id: "", equipment_name: "", img: "", unit: "" });
-    setEquipmentData({ equipment_id: "", alert_quantity: 10, model_size: "" });
-    
-    // Reset Modes
-    setIsNewSupplier(false);
-    setIsNewType(false);
-    setIsNewEquipment(false);
-    
-    setShowModal(true);
-  };
-
-  const handleEdit = (item) => {
-    setIsEditMode(true);
-    // Load Data to Forms
-    setLotData({
-      lot_id: item.lot_id,
-      import_date: item.import_date ? item.import_date.split('T')[0] : "",
-      expire_date: item.expiry_date ? item.expiry_date.split('T')[0] : "",
-      current_quantity: item.current_quantity,
-      price: item.cost_price
+    setFormData({
+      equipment_id: "", equipment_type_id: "", equipment_name: "", 
+      model_size: "", alert_quantity: 10, unit: "", img: ""
     });
-    setSupplierData({ supplier_id: item.supplier_id, supplier_name: item.supplier_name, contact: item.contact_info || "" });
-    setTypeData({ equipment_type_id: item.equipment_type_id, equipment_name: item.equipment_name, img: item.img, unit: item.unit });
-    setEquipmentData({ equipment_id: item.equipment_id, alert_quantity: item.alert_quantity, model_size: item.model_size });
-
-    // ในโหมดแก้ไข บังคับเป็นโหมดกรอกเองเพื่อให้แก้ไขค่าได้ (แต่ ID จะถูกล็อคที่ Backend หรือ Frontend ตามต้องการ)
-    setIsNewSupplier(true); 
-    setIsNewType(true);
-    setIsNewEquipment(true);
-
     setShowModal(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm(`ต้องการลบ Lot ${id} ใช่หรือไม่?`)) {
-      try {
-        await axios.delete(`${API_BASE_URL}/api/inventory/${id}`);
-        fetchData();
-      } catch (error) { alert("ลบไม่สำเร็จ"); }
-    }
+  const handleEditEquipment = (item) => {
+    setIsEditMode(true);
+    setFormData({
+      equipment_id: item.equipment_id,
+      equipment_type_id: item.equipment_type_id || "",
+      equipment_name: item.equipment_name || "",
+      model_size: item.model_size || "",
+      alert_quantity: item.alert_quantity || 10,
+      unit: item.unit || "",
+      img: item.img || ""
+    });
+    setShowModal(true);
+  };
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const payload = {
-        isNewSupplier, isNewType, isNewEquipment,
-        lotData, supplierData, typeData, equipmentData
-    };
 
     try {
         if (isEditMode) {
-            await axios.put(`${API_BASE_URL}/api/inventory/update/${lotData.lot_id}`, payload);
-            alert("แก้ไขข้อมูลสำเร็จ");
+            // ส่งข้อมูลไปอัปเดต (ต้องแก้ URL API ให้ตรงกับของจริง)
+            await axios.put(`${API_BASE_URL}/api/equipment/update/${formData.equipment_id}`, formData);
+            alert("แก้ไขข้อมูลอะไหล่สำเร็จ");
         } else {
-            await axios.post(`${API_BASE_URL}/api/inventory/add`, payload);
-            alert("เพิ่มข้อมูลสำเร็จ");
+            // ส่งข้อมูลไปเพิ่มใหม่ (ต้องแก้ URL API ให้ตรงกับของจริง)
+            await axios.post(`${API_BASE_URL}/api/equipment/add`, formData);
+            alert("เพิ่มข้อมูลอะไหล่สำเร็จ");
         }
         setShowModal(false);
         fetchData();
-        fetchMasterData(); // Refresh dropdowns
     } catch (error) {
         alert("เกิดข้อผิดพลาด: " + (error.response?.data?.message || error.message));
     }
   };
 
-  // --- Helper to handle Dropdown Selection ---
-  const handleSelectMaster = (type, id) => {
-      if (type === 'supplier') {
-          const s = masterData.suppliers.find(x => x.supplier_id === id);
-          if (s) setSupplierData({ supplier_id: s.supplier_id, supplier_name: s.supplier_name, contact: s.contact_info || "" });
+  const handleDeleteEquipment = async (equipmentId) => {
+    if (window.confirm(`ต้องการลบอะไหล่รหัส ${equipmentId} ใช่หรือไม่?\n(ข้อควรระวัง: การลบอะไหล่หลักอาจมีผลกับ Lot ทั้งหมดของอะไหล่นี้)`)) {
+      try {
+        await axios.delete(`${API_BASE_URL}/api/equipment/${equipmentId}`);
+        alert("ลบข้อมูลอะไหล่สำเร็จ");
+        fetchData();
+      } catch (error) { 
+        alert("ลบไม่สำเร็จ กรุณาตรวจสอบว่ามี Lot ค้างอยู่หรือไม่"); 
       }
-      if (type === 'type') {
-        const t = masterData.equipmentTypes.find(x => x.equipment_type_id === id);
-        if (t) setTypeData({ equipment_type_id: t.equipment_type_id, equipment_name: t.equipment_name, img: t.img || "", unit: t.unit });
-      }
-      if (type === 'equipment') {
-        const e = masterData.equipments.find(x => x.equipment_id === id);
-        if (e) setEquipmentData({ equipment_id: e.equipment_id, alert_quantity: e.alert_quantity, model_size: e.model_size });
-      }
+    }
   };
 
-  const filteredInventory = inventory.filter(item => 
-    item.equipment_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    item.lot_id.toLowerCase().includes(searchTerm.toLowerCase())
+  // จัดกลุ่มข้อมูลให้ไม่ซ้ำรหัสอะไหล่
+  const uniqueEquipments = [];
+  const equipmentMap = new Map();
+  inventory.forEach(item => {
+      if (!equipmentMap.has(item.equipment_id)) {
+          equipmentMap.set(item.equipment_id, true);
+          uniqueEquipments.push(item);
+      }
+  });
+
+  const filteredEquipments = uniqueEquipments.filter(item => 
+    item.equipment_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    item.equipment_id?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const [previewImage, setPreviewImage] = useState(null);
-
-  const handleExportExcel = () => {
-    // 1. ใช้ filteredInventory (ตามที่คุณประกาศไว้บรรทัด 104)
-    const dataToExport = filteredInventory.map(item => ({
-        "Lot ID": item.lot_id,                // จำเป็นสำหรับระบุล็อต
-        "รหัสอุปกรณ์": item.equipment_id,
-        "ชื่ออุปกรณ์": item.equipment_name,
-        "ประเภท": item.equipment_type_name || "-",
-        "จำนวนคงเหลือ": item.current_quantity || 0, // ใน DB และ State คุณใช้ current_quantity
-        "ราคาต้นทุน": item.price || 0,
-        "วันที่นำเข้า": item.import_date ? new Date(item.import_date).toLocaleDateString('th-TH') : "-",
-        "วันหมดอายุ": item.expiry_date ? new Date(item.expiry_date).toLocaleDateString('th-TH') : "-",
-        "ซัพพลายเออร์": item.supplier_name || "-"
-    }));
-
-    // 2. สร้างไฟล์ Excel
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "InventoryData");
-
-    // 3. ดาวน์โหลด
-    XLSX.writeFile(workbook, "Inventory_Report.xlsx");
-};
-
-  // ฟังก์ชันสำหรับดาวน์โหลด Barcode เป็นไฟล์ภาพ PNG
-const downloadBarcode = (lotId) => {
-    const svg = document.getElementById(`barcode-${lotId}`);
-    if (svg) {
-        // 1. แปลง SVG เป็น String
-        const serializer = new XMLSerializer();
-        const svgString = serializer.serializeToString(svg);
-        
-        // 2. สร้าง Canvas
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        const img = new Image();
-
-        // 3. กำหนดขนาดรูปภาพ
-        // ต้อง Encode svgString ให้เป็น Base64 หรือ URL component
-        const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
-        const url = URL.createObjectURL(svgBlob);
-
-        img.onload = () => {
-            canvas.width = img.width + 20;  // เผื่อขอบขาวนิดหน่อย
-            canvas.height = img.height + 20;
-            
-            // เติมพื้นหลังสีขาว (ถ้าไม่เติมจะเป็นพื้นใส)
-            ctx.fillStyle = "white";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 10, 10);
-
-            // 4. สั่งดาวน์โหลด
-            const pngUrl = canvas.toDataURL("image/png");
-            const downloadLink = document.createElement("a");
-            downloadLink.href = pngUrl;
-            downloadLink.download = `Barcode_${lotId}.png`;
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
-            
-            URL.revokeObjectURL(url);
-        };
-
-        img.src = url;
-    }
-};
 
   return (
     <div className="manage-equipment-container fade-in">
       <div className="page-header">
+        <SubNavbar />
           <div className="header-title">
               <h2 className="page-title-text">จัดการข้อมูลอะไหล่</h2>
           </div>
-
-          {/* รวมกลุ่มปุ่มไว้ด้วยกัน */}
           <div className="header-actions" style={{ display: 'flex', gap: '10px' }}>
-              <button 
-                  className="btn-success" 
-                  onClick={handleExportExcel} 
-                  style={{ backgroundColor: '#28a745', color: 'white', border: 'none', padding: '10px 15px', borderRadius: '5px', display: 'flex', alignItems: 'center', gap: '5px' }}
-              >
-                  Export to Excel
-              </button>
               <button className="btn-primary" onClick={handleAddNew}>
                   <FaPlus /> เพิ่มอะไหล่ใหม่
               </button>
@@ -255,7 +152,7 @@ const downloadBarcode = (lotId) => {
 
       <div className="search-bar-wrapper">
         <FaSearch className="search-icon" />
-        <input type="text" placeholder="ค้นหา Lot ID หรือ ชื่ออุปกรณ์..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+        <input type="text" placeholder="ค้นหา รหัสอะไหล่ หรือ ชื่ออะไหล่..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
       </div>
 
       <div className="table-container">
@@ -263,63 +160,44 @@ const downloadBarcode = (lotId) => {
             <thead>
                 <tr>
                     <th>รูปภาพ</th>
-                    <th>Lot ID</th>
-                    <th>ชื่ออุปกรณ์</th>
-                    <th>Model/Size</th>
-                    <th>Supplier</th>
-                    <th>คงเหลือ</th>
-                    <th>วันที่นำเข้า</th>
-                    <th>วันหมดอายุ</th>
-                    <th>ราคา</th>
+                    <th>รหัสประเภท</th>
+                    <th>ประเภทอะไหล่</th>
+                    <th>รหัสอะไหล่</th>
+                    <th>รุ่น/ขนาด</th>
+                    <th>จำนวนขั้นต่ำ</th>
                     <th>จัดการ</th>
+                    <th>รายละเอียด</th>
                 </tr>
             </thead>
             <tbody>
-                {filteredInventory.map(item => (
-                    <tr key={item.lot_id}>
+                {filteredEquipments.map(item => (
+                    <tr key={item.equipment_id}>
                         <td style={{ textAlign: "center" }}>{item.img ? (
                           <img 
-                            src={item.img ? `${process.env.REACT_APP_API_URL}/uploads/${item.img}` : "/default.png"} 
+                            src={`${process.env.REACT_APP_API_URL}/uploads/${item.img}`} 
                             alt="Equipment"
-                            // คลิกแล้วเรียกใช้ฟังก์ชันขยายรูปเหมือนใน Modal
-                            onClick={() => setPreviewImage(item.img)} 
-                            style={{ 
-                              width: '50px', 
-                              height: '50px', 
-                              objectFit: 'cover', 
-                              borderRadius: '6px',
-                              cursor: 'pointer',
-                              border: '1px solid #eee'
-                            }}
+                            onClick={() => setPreviewImage(`${process.env.REACT_APP_API_URL}/uploads/${item.img}`)} 
+                            style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '6px', cursor: 'pointer', border: '1px solid #eee' }}
                             title="คลิกเพื่อขยาย"
                           />
-                          
                         ) : (
                           <div style={{ color: '#ccc', fontSize: '0.8rem' }}>ไม่มีรูป</div>
                         )}</td>
-                        <td className="text-primary fw-bold">{item.lot_id}<Barcode 
-                            id={`barcode-${item.lot_id}`} // ID สำคัญสำหรับการดึงไป save
-                            value={item.lot_id} 
-                            width={1.5} 
-                            height={50} 
-                            fontSize={14}
-                        />
-                        <button 
-                            onClick={() => downloadBarcode(item.lot_id)}
-                            style={{ marginTop: '5px', fontSize: '0.8rem', padding: '5px 10px', cursor: 'pointer' }}
-                        >
-                            💾 บันทึก Barcode
-                        </button></td>
+                        <td>{item.equipment_type_id}</td>
                         <td>{item.equipment_name}</td>
+                        <td className="text-primary fw-bold">{item.equipment_id}</td>
                         <td>{item.model_size}</td>
-                        <td>{item.supplier_name}</td>
-                        <td className="text-center">{item.current_quantity} {item.unit}</td>
-                        <td>{new Date(item.import_date).toLocaleDateString('th-TH')}</td>
-                        <td>{new Date(item.expiry_date).toLocaleDateString('th-TH')}</td>
-                        <td>{item.cost_price}</td>
+                        <td>{item.alert_quantity} {item.unit}</td>
                         <td>
-                            <button className="action-btn edit-btn" onClick={() => handleEdit(item)}><FaEdit /></button>
-                            <button className="action-btn delete-btn" onClick={() => handleDelete(item.lot_id)}><FaTrash /></button>
+                            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                                <button className="action-btn edit-btn" onClick={() => handleEditEquipment(item)} title="แก้ไขข้อมูลอะไหล่" style={{ color: '#ffc107', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}><FaEdit /></button>
+                                <button className="action-btn delete-btn" onClick={() => handleDeleteEquipment(item.equipment_id)} title="ลบข้อมูลอะไหล่" style={{ color: '#dc3545', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}><FaTrash /></button>
+                            </div>
+                        </td>
+                        <td>
+                            <button className="btn-primary" style={{ padding: '5px 10px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '5px', margin: '0 auto' }} onClick={() => navigate(`/dashboard/admin/lot/${item.equipment_id}`)}>
+                                <FaBoxOpen /> ดู Lot
+                            </button>
                         </td>
                     </tr>
                 ))}
@@ -327,142 +205,65 @@ const downloadBarcode = (lotId) => {
         </table>
       </div>
 
+      {/* Modal ฟอร์ม เพิ่ม/แก้ไข ข้อมูลอะไหล่ */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal-content large-modal">
+          <div className="modal-content" style={{ maxWidth: '500px' }}>
             <form onSubmit={handleSubmit}>
                 <div className="modal-header">
-                    <h3>{isEditMode ? `แก้ไขข้อมูลอะไหล่ Lot: ${lotData.lot_id}` : "เพิ่มข้อมูลอะไหล่"}</h3>
+                    <h3>{isEditMode ? `แก้ไขข้อมูลอะไหล่: ${formData.equipment_id}` : "เพิ่มข้อมูลอะไหล่ใหม่"}</h3>
                     <button type="button" className="close-btn" onClick={() => setShowModal(false)}><FaTimes /></button>
                 </div>
-                <div className="modal-body" style={{maxHeight: '70vh', overflowY: 'auto'}}>
+                <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
                     
-                    {/* 1. Supplier Form */}
-                    <div className="section-box">
-                        <h4>1. ข้อมูล Supplier</h4>
-                        {!isEditMode && (
-                            <div className="toggle-row">
-                                <label><input type="radio" checked={!isNewSupplier} onChange={() => setIsNewSupplier(false)} /> เลือกที่มีอยู่</label>
-                                <label><input type="radio" checked={isNewSupplier} onChange={() => setIsNewSupplier(true)} /> สร้างใหม่</label>
-                            </div>
+                    {/* ส่วนอัปโหลดรูปภาพ */}
+                    <div className="form-group" style={{ marginBottom: '15px', textAlign: 'center' }}>
+                        <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>รูปภาพอะไหล่ (img)</label>
+                        {formData.img && (
+                            <img 
+                                src={`${process.env.REACT_APP_API_URL}/uploads/${formData.img}`} 
+                                alt="Preview" 
+                                style={{ width: '120px', height: '120px', objectFit: 'cover', borderRadius: '8px', marginBottom: '10px', border: '1px solid #ccc' }} 
+                            />
                         )}
-                        {!isNewSupplier && !isEditMode ? (
-                             <select className="form-control" onChange={(e) => handleSelectMaster('supplier', e.target.value)}>
-                                <option value="">-- เลือก Supplier --</option>
-                                {masterData.suppliers?.map(s => <option key={s.supplier_id} value={s.supplier_id}>{s.supplier_name}</option>)}
-                             </select>
-                        ) : (
-                            <div className="form-row">
-                              {/* ////// เป็นตัวเลขไม่เกิน 11 หลัก */}
-                                <input placeholder="Supplier ID *" value={supplierData.supplier_id} onChange={e => setSupplierData({...supplierData, supplier_id: e.target.value})} required disabled={isEditMode} />
-                                <input placeholder="ชื่อบริษัท *" value={supplierData.supplier_name} onChange={e => setSupplierData({...supplierData, supplier_name: e.target.value})} required />
-                                <input placeholder="เบอร์ติดต่อ" value={supplierData.contact} onChange={e => setSupplierData({...supplierData, contact: e.target.value})} />
-                            </div>
-                        )}
+                        <input type="file" accept="image/*" onChange={handleImageUpload} className="form-control" />
+                        {isUploading && <span style={{ color: 'blue', fontSize: '0.8rem' }}>กำลังอัปโหลด...</span>}
                     </div>
 
-                    {/* 2. Equipment Type Form */}
-                    <div className="section-box">
-                        <h4>2. ประเภทอุปกรณ์ (Type)</h4>
-                        {!isEditMode && (
-                            <div className="toggle-row">
-                                <label><input type="radio" checked={!isNewType} onChange={() => { setIsNewType(false); setIsNewEquipment(false); }} /> เลือกที่มีอยู่</label>
-                                <label><input type="radio" checked={isNewType} onChange={() => { setIsNewType(true); setIsNewEquipment(true); }} /> สร้างใหม่</label>
-                            </div>
-                        )}
-                         {!isNewType && !isEditMode ? (
-                             <select className="form-control" onChange={(e) => handleSelectMaster('type', e.target.value)}>
-                                <option value="">-- เลือกประเภท --</option>
-                                {masterData.equipmentTypes?.map(t => <option key={t.equipment_type_id} value={t.equipment_type_id}>{t.equipment_name}</option>)}
-                             </select>
-                        ) : (
-                            <div className="form-grid">
-                                <input placeholder="Type ID *" value={typeData.equipment_type_id} onChange={e => setTypeData({...typeData, equipment_type_id: e.target.value})} required disabled={isEditMode} />
-                                <input placeholder="ชื่ออุปกรณ์ *" value={typeData.equipment_name} onChange={e => setTypeData({...typeData, equipment_name: e.target.value})} required />
-                                
-                                <div className="file-upload-wrapper" style={{gridColumn: "span 2"}}>
-                                    <label style={{display:'block', marginBottom:'5px', fontSize:'0.9rem'}}>รูปภาพอุปกรณ์:</label>
-                                    {/* Input สำหรับเลือกไฟล์ */}
-                                    <input type="file" accept="image/*" onChange={handleImageUpload} className="form-control" />
-                                    
-                                    {/* แสดงสถานะ หรือ Preview */}
-                                    {isUploading && <p style={{color:'blue', fontSize:'0.8rem'}}>กำลังอัปโหลด...</p>}
-                                    
-                                    {/* แสดงรูปตัวอย่างถ้ามี URL แล้ว */}
-                                    {typeData.img && (
-                                        <div style={{marginTop:'10px'}}>
-                                            <img 
-                                                src={typeData.img} 
-                                                alt="Preview" 
-                                                // เพิ่ม onClick เพื่อส่ง URL ไปที่ state previewImage
-                                                onClick={() => setPreviewImage(typeData.img)} 
-                                                style={{ 
-                                                    height: '100px', 
-                                                    borderRadius: '8px', 
-                                                    border: '1px solid #ddd', 
-                                                    cursor: 'pointer', // เปลี่ยนเมาส์เป็นรูปนิ้วมือ
-                                                    transition: 'transform 0.2s'
-                                                }}
-                                                // เพิ่ม Effect เล็กน้อยตอนเอาเมาส์ชี้
-                                                onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-                                                onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                                            />
-                                            <input type="hidden" value={typeData.img} /> {/* ซ่อน input text ไว้เก็บค่า URL ส่งไป backend */}
-                                        </div>
-                                    )}
-                                </div>
-                                <input placeholder="หน่วยนับ (เช่น ชิ้น)" value={typeData.unit} onChange={e => setTypeData({...typeData, unit: e.target.value})} required />
-                            </div>
-                        )}
-                    </div>
-
-                    {/* 3. Equipment Form */}
-                    <div className="section-box">
-                        <h4>3. รายละเอียดรุ่น (Model/Size)</h4>
-                        {!isNewEquipment && !isEditMode && (
-                             <select className="form-control" onChange={(e) => handleSelectMaster('equipment', e.target.value)}>
-                                <option value="">-- เลือกรุ่นที่มีอยู่ --</option>
-                                {masterData.equipments
-                                    .filter(e => e.equipment_type_id === typeData.equipment_type_id) // Filter ตาม Type ที่เลือก
-                                    ?.map(e => <option key={e.equipment_id} value={e.equipment_id}>{e.model_size}</option>)}
-                             </select>
-                        )}
-                        {(isNewEquipment || isEditMode) && (
-                            <div className="form-row">
-                                <input placeholder="Equipment ID *" value={equipmentData.equipment_id} onChange={e => setEquipmentData({...equipmentData, equipment_id: e.target.value})} required disabled={isEditMode} />
-                                <input placeholder="Model / Size *" value={equipmentData.model_size} onChange={e => setEquipmentData({...equipmentData, model_size: e.target.value})} required />
-                                <input type="number" placeholder="Alert Qty" value={equipmentData.alert_quantity} onChange={e => setEquipmentData({...equipmentData, alert_quantity: e.target.value})} />
-                            </div>
-                        )}
-                    </div>
-
-                    {/* 4. LOT Form */}
-                    <div className="section-box highlight-box">
-                        <h4>4. ข้อมูล Lot (สินค้าเข้า)</h4>
-                        <div className="form-row">
-                            <div className="col-half">
-                                <label>วันที่นำเข้า</label>
-                                <input type="date" value={lotData.import_date} onChange={e => setLotData({...lotData, import_date: e.target.value})} required />
-                            </div>
-                            <div className="col-half">
-                                <label>วันหมดอายุ</label>
-                                <input type="date" value={lotData.expire_date} onChange={e => setLotData({...lotData, expire_date: e.target.value})} required />
-                            </div>
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                        <div style={{ flex: 1 }}>
+                            <label>รหัสประเภท (Type ID) *</label>
+                            <input type="text" className="form-control" name="equipment_type_id" value={formData.equipment_type_id} onChange={handleChange} required />
                         </div>
-                        <div className="form-row">
-                             <div className="col-half">
-                                <label>จำนวน (Quantity)</label>
-                                <input type="number" value={lotData.current_quantity} onChange={e => setLotData({...lotData, current_quantity: e.target.value})} required />
-                             </div>
-                             <div className="col-half">
-                                <label>ราคาต้นทุน (Price)</label>
-                                <input type="number" value={lotData.price} onChange={e => setLotData({...lotData, price: e.target.value})} required />
-                             </div>
+                        <div style={{ flex: 1 }}>
+                            <label>ประเภทอะไหล่ (Name) *</label>
+                            <input type="text" className="form-control" name="equipment_name" value={formData.equipment_name} onChange={handleChange} required />
+                        </div>
+                    </div>
+
+                    <div style={{ marginBottom: '10px' }}>
+                        <label>รหัสอะไหล่ (Equipment ID) *</label>
+                        <input type="text" className="form-control" name="equipment_id" value={formData.equipment_id} onChange={handleChange} required disabled={isEditMode} style={{ backgroundColor: isEditMode ? '#f4f4f4' : 'white' }} />
+                    </div>
+
+                    <div style={{ marginBottom: '10px' }}>
+                        <label>รุ่น / ขนาด (Model/Size) *</label>
+                        <input type="text" className="form-control" name="model_size" value={formData.model_size} onChange={handleChange} required />
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                        <div style={{ flex: 1 }}>
+                            <label>จำนวนแจ้งเตือน (Alert Qty)</label>
+                            <input type="number" className="form-control" name="alert_quantity" value={formData.alert_quantity} onChange={handleChange} required min="0" />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <label>หน่วยนับ (Unit) *</label>
+                            <input type="text" className="form-control" name="unit" value={formData.unit} onChange={handleChange} placeholder="เช่น ชิ้น, กล่อง" required />
                         </div>
                     </div>
 
                 </div>
-                <div className="modal-footer">
+                <div className="modal-footer" style={{ marginTop: '15px' }}>
                     <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>ยกเลิก</button>
                     <button type="submit" className="btn-primary">บันทึกข้อมูล</button>
                 </div>
@@ -470,13 +271,12 @@ const downloadBarcode = (lotId) => {
           </div>
         </div>
       )}
+      
       {previewImage && (
         <div className="image-viewer-overlay" onClick={() => setPreviewImage(null)}>
           <div className="image-viewer-content">
             <img src={previewImage} alt="Full Screen" />
-            <button className="close-image-btn" onClick={() => setPreviewImage(null)}>
-              <FaTimes />
-            </button>
+            <button className="close-image-btn" onClick={() => setPreviewImage(null)}><FaTimes /></button>
           </div>
         </div>
       )}
