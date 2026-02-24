@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useLocation } from "react-router-dom"; 
 import { FaCheckCircle, FaCamera, FaLockOpen, FaPlus, FaMinus, FaTrash, FaLock, FaClipboardCheck} from "react-icons/fa"; 
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import axios from "axios";
@@ -7,6 +8,7 @@ import './ReturnPartPage.css';
 const API_BASE = process.env.REACT_APP_API_URL ;
 
 function ReturnPartPage() {
+    const location = useLocation(); 
     const [currentStep, setCurrentStep] = useState(1); 
     const [returnDate, setReturnDate] = useState(() => {
         const now = new Date();
@@ -19,7 +21,22 @@ function ReturnPartPage() {
     const [error, setError] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
 
-    // ฟังก์ชัน Reset ข้อมูล
+    useEffect(() => {
+        if (location.state && location.state.preloadedItem) {
+            const item = location.state.preloadedItem;
+            setReturnItems([{
+                partId: item.partId,
+                partName: item.partName,
+                lotId: item.lotId,
+                quantity: item.quantity,
+                borrowId: item.borrowId,
+                isFixed: item.isFixed,
+                unit: 'ชิ้น'
+            }]);
+            window.history.replaceState({}, document.title);
+        }
+    }, [location]);
+
     const handleReset = () => {
         setCurrentStep(1);
         setReturnItems([]);
@@ -52,7 +69,6 @@ function ReturnPartPage() {
             await axios.post(`${API_BASE}/api/close-box`, {}, { 
                 headers: { Authorization: `Bearer ${token}` } 
             });
-            // 🟢 Reset ข้อมูลแทนการ Reload
             handleReset();
         } catch (err) {
             setError('คำสั่งปิดประตูขัดข้อง');
@@ -73,7 +89,9 @@ function ReturnPartPage() {
                 { partId: idToSearch },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-            const partInfo = response.data;
+            
+            // ✅ แก้ไข: ใช้ข้อมูลจาก response.data
+            const partInfo = response.data; 
 
             setReturnItems(prev => {
                 const existing = prev.find(item => item.lotId === partInfo.lotId);
@@ -84,6 +102,8 @@ function ReturnPartPage() {
                 return [...prev, { 
                     ...partInfo, 
                     partId: partInfo.partId || partInfo.equipment_id,
+                    // ✅ แก้ไข Syntax: ใช้ partInfo แทน data และเขียนให้อยู่ในบรรทัดเดียวกัน
+                    imageUrl: partInfo.img || partInfo.imageUrl || null,
                     quantity: quantity 
                 }];
             });
@@ -99,22 +119,25 @@ function ReturnPartPage() {
     useEffect(() => {
         let scanner = null;
         if (isScanning) {
-            scanner = new Html5QrcodeScanner("reader", {
-                fps: 10, qrbox: { width: 350, height: 150 },
-                aspectRatio: 1.0
+            scanner = new Html5QrcodeScanner("reader", { 
+                fps: 10, 
+                qrbox: { width: 250, height: 250 } 
             });
             scanner.render((decodedText) => {
                 handleAddItem(decodedText);
-                scanner.clear();
+                setIsScanning(false);
             }, (err) => {});
         }
-        return () => { if (scanner) scanner.clear().catch(e => {}); };
+        return () => { 
+            if (scanner) {
+                scanner.clear().catch(e => console.error("Scanner cleanup error", e)); 
+            }
+        };
     }, [isScanning, handleAddItem]);
 
     const handleFinalConfirm = async () => {
         if (returnItems.length === 0) return;
         setIsProcessing(true);
-        setError('');
         try {
             const token = localStorage.getItem('token');
             const payload = {
@@ -122,17 +145,16 @@ function ReturnPartPage() {
                 items: returnItems.map(item => ({
                     equipmentId: item.partId || item.equipment_id,
                     lotId: item.lotId || item.lot_id,
-                    quantity: item.quantity
+                    quantity: item.quantity,
+                    borrowId: item.borrowId 
                 }))
             };
-            
             await axios.post(`${API_BASE}/api/return-part`, payload, { 
                 headers: { Authorization: `Bearer ${token}` } 
             });
             setCurrentStep(5); 
         } catch (err) {
-            const errorMsg = err.response?.data?.error || err.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล';
-            setError(errorMsg);
+            setError(err.response?.data?.error || 'เกิดข้อผิดพลาด');
         } finally {
             setIsProcessing(false);
         }
@@ -212,13 +234,30 @@ function ReturnPartPage() {
                                             </div>
                                             <div className="part-actions">
                                                 <div className="modern-qty-control">
-                                                    <button onClick={() => updateQty(index, -1)}><FaMinus size={10}/></button>
+                                                    <button 
+                                                        onClick={() => updateQty(index, -1)} 
+                                                        disabled={item.isFixed} // ✅ ล็อคปุ่มลบ
+                                                        style={{ opacity: item.isFixed ? 0.5 : 1, cursor: item.isFixed ? 'not-allowed' : 'pointer' }}
+                                                    >
+                                                        <FaMinus size={10}/>
+                                                    </button>
+                                                    
                                                     <span>{item.quantity}</span>
-                                                    <button onClick={() => updateQty(index, 1)}><FaPlus size={10}/></button>
+                                                    
+                                                    <button 
+                                                        onClick={() => updateQty(index, 1)} 
+                                                        disabled={item.isFixed} // ✅ ล็อคปุ่มบวก
+                                                        style={{ opacity: item.isFixed ? 0.5 : 1, cursor: item.isFixed ? 'not-allowed' : 'pointer' }}
+                                                    >
+                                                        <FaPlus size={10}/>
+                                                    </button>
                                                 </div>
-                                                <button className="btn-delete-item" onClick={() => setReturnItems(returnItems.filter((_, i) => i !== index))}>
-                                                    <FaTrash size={12} />
-                                                </button>
+                                                {/* ✅ ถ้าถูกฟิกมา ไม่ควรให้ลบรายการทิ้งได้ง่ายๆ */}
+                                                {!item.isFixed && (
+                                                    <button className="btn-delete-item" onClick={() => setReturnItems(returnItems.filter((_, i) => i !== index))}>
+                                                        <FaTrash size={12} />
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
@@ -244,7 +283,7 @@ function ReturnPartPage() {
                             {returnItems.map((item, idx) => (
                                 <div key={idx} className="review-item-card">
                                     <div className="item-img-box">
-                                        {item.imageUrl ? <img src={`${API_BASE}/uploads/${item.imageUrl}`} alt="part" /> : <div className="flex items-center justify-center w-full h-full bg-gray-50 text-gray-300"><FaPlus size={16} /></div>}
+                                        {item.imageUrl ? <img src={`${API_BASE}/uploads/${item.imageUrl}`} alt="part" /> : <div className="flex items-center justify-center w-full h-full bg-gray-0 text-gray-300"><FaPlus size={16} /></div>}
                                     </div>
                                     <div className="item-main-info">
                                         <div className="item-name-row">
