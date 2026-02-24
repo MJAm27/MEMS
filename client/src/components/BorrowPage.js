@@ -7,7 +7,7 @@ import { Html5QrcodeScanner } from 'html5-qrcode';
 import axios from "axios";
 import './BorrowPage.css'; 
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+const API_BASE = process.env.REACT_APP_API_URL ;
 
 function BorrowPage({ user }) {
     // กำหนดค่าเริ่มต้นให้กับ activeUser เพื่อป้องกัน error กรณี user เป็น null

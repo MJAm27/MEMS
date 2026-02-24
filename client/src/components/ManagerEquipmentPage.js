@@ -3,7 +3,7 @@ import axios from "axios";
 import { FaSearch, FaBoxOpen, FaLayerGroup, FaExclamationCircle } from "react-icons/fa";
 import "./ManagerEquipmentPage.css";
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:3001";
+const API_BASE_URL = process.env.REACT_APP_API_URL ;
 
 function ManagerEquipmentPage() {
     const [equipmentData, setEquipmentData] = useState([]);

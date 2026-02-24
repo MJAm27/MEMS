@@ -3,7 +3,6 @@ import axios from 'axios';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './VerifyPage.css'; 
 
-// const API_BASE_URL = "http://localhost:3001"; 
 function VerifyPage() {
     const location = useLocation();
     const navigate = useNavigate();

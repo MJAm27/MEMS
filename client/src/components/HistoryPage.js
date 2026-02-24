@@ -3,7 +3,7 @@ import axios from 'axios';
 import { FaHistory, FaFilter, FaBoxOpen, FaReply, FaCalendarAlt } from 'react-icons/fa';
 import './HistoryPage.css';
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+const API_BASE = process.env.REACT_APP_API_URL ;
 
 function HistoryPage({ user }) {
     const [history, setHistory] = useState([]);

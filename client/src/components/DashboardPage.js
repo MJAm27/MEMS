@@ -25,7 +25,7 @@ function getPayloadFromToken(token) {
 function DashboardPage() {
     const [userPayload, setUserPayload] = useState(null); 
     const navigate = useNavigate();
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+    const API_URL = process.env.REACT_APP_API_URL ;
 
     /**
      * ฟังก์ชันออกจากระบบ

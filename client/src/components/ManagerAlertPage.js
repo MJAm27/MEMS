@@ -3,7 +3,7 @@ import axios from "axios";
 import { FaClock, FaBoxOpen, FaExclamationTriangle, FaMoneyBillWave } from "react-icons/fa";
 import "./ManagerAlertPage.css";
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:3001";
+const API_BASE_URL = process.env.REACT_APP_API_URL ;
 
 function ManagerAlertPage() {
   const [activeTab, setActiveTab] = useState("expire");

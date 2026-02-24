@@ -14,7 +14,7 @@ import "./ManagerDashboard.css";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:3001";
+const API_BASE_URL = process.env.REACT_APP_API_URL ;
 
 function ManagerDashboard({ viewDate }) {
     const [todayData, setTodayData] = useState([]);
