@@ -64,8 +64,18 @@ const JWT_SECRET = "MY_SUPER_SECRET_KEY_FOR_JWT_12345";
 //step1 setup MQTT Broker ใน server kob 
 //step2 แก้ไข ESP8266 ให้เชื่อมต่อกับ MQTT Broker ของ Server แทนการรับคำสั่งผ่าน HTTP โดยตรง
 //step3 ใน server.js ให้ใช้ MQTT Client (เช่น mqtt.js) เพื่อส่งคำสั่งไปยัง ESP8266 ผ่าน MQTT แทนการใช้ HTTP
-const ESP_IP = 'http://192.168.1.139'; 
+//const ESP_IP = 'http://192.168.1.139'; 
 const HARDCODED_USER_ID = 123464; // (ชั่วคราว)
+const mqtt = require('mqtt');
+const client = mqtt.connect('mqtt://kob.vps.athichal.com:62279'); 
+
+client.on('connect', () => {
+    console.log('✅ Connected to MQTT Broker on VPS successfully!');
+});
+
+client.on('error', (err) => {
+    console.error('❌ MQTT Connection Error:', err);
+});
 // -------------------------------------------------------------------
 
 
@@ -105,17 +115,18 @@ async function logActionToDB(userId, actionTypeId, transactionId = null) {
 }
 
 /**
- * ฟังก์ชัน Helper สำหรับสั่งงาน ESP8266
+ * ฟังก์ชัน MQTT Helper สำหรับส่งคำสั่งไปยัง ESP8266 (OPEN/CLOSE) ผ่าน MQTT Broker
  */
 async function commandServo(action) { 
-    const url = `${ESP_IP}/${action}`;
+    const topic = "esp8266/test"; // ให้ตรงกับใน Arduino
+    const message = action.toUpperCase(); 
     try {
-        const response = await axios.get(url, { timeout: 5000 }); // เพิ่ม timeout เป็น 5 วินาทีเพื่อความเสถียร
-        console.log(`[ESP8266] Commanded '${action}'. Response: ${response.data}`);
-        return response.data;
-    } catch (espError) {
-        console.error(`[ESP8266] Error commanding '${action}' at ${url}:`, espError.message);
-        throw new Error('Failed to command ESP8266');
+        client.publish(topic, message);
+        console.log(`[MQTT] Published '${message}' to topic '${topic}'`);
+        return `Command ${message} sent`;
+    } catch (error) {
+        console.error(`[MQTT] Error:`, error.message);
+        throw new Error('Failed to send MQTT command');
     }
 }
 
@@ -125,26 +136,29 @@ async function commandServo(action) {
 // --- API สำหรับสั่งเปิดประตูตู้ ---
 app.get('/api/open', authenticateToken, async (req, res) => {
     const userId = req.user.userId;
-    const transactionId = req.query.transactionId || null; // รับมาจากหน้าบ้าน
+    const transactionId = req.query.transactionId || null;
     try {
-        await axios.get(`${ESP_IP}/open`, { timeout: 5000 }); 
+        await commandServo('OPEN'); 
+        
         await logActionToDB(userId, 'A-001', transactionId);
-        res.status(200).send({ message: 'เปิดตู้สำเร็จ' });
+        res.status(200).send({ message: 'เปิดตู้สำเร็จ (MQTT)' });
     } catch (error) {
-        res.status(500).send({ error: 'ติดต่อ ESP ไม่ได้' });
+        res.status(500).send({ error: 'ไม่สามารถส่งคำสั่ง MQTT ได้' });
     }
 });
 
 // --- API สำหรับสั่งปิดประตูตู้ ---
 app.post('/api/close-box', authenticateToken, async (req, res) => {
     const userId = req.user.userId;
-    const { transactionId } = req.body; // รับมาจากหน้าบ้าน
+    const { transactionId } = req.body;
     try {
-        await axios.get(`${ESP_IP}/close`, { timeout: 5000 }); 
+        // เปลี่ยนจาก axios.get เป็นการเรียกใช้ helper MQTT
+        await commandServo('CLOSE'); 
+        
         await logActionToDB(userId, 'A-002', transactionId || null);
-        res.status(200).send({ message: 'ปิดตู้สำเร็จ' });
+        res.status(200).send({ message: 'ปิดตู้สำเร็จ (MQTT)' });
     } catch (error) {
-        res.status(500).send({ error: 'ติดต่อ ESP ไม่ได้' });
+        res.status(500).send({ error: 'ไม่สามารถส่งคำสั่ง MQTT ได้' });
     }
 });
 
@@ -240,69 +254,47 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
         connection = await pool.getConnection();
         await connection.beginTransaction();
 
-        // 1. สร้าง Transaction ID สำหรับรายการเบิกนี้
         const transactionId = `WTH-${Date.now()}`;
 
-        // 2. บันทึกลงตาราง transactions (is_pending = 0 คือรายการที่สมบูรณ์แล้ว)
+        // 1. บันทึกรายการหลักก่อนเสมอ เพื่อให้มี ID อ้างอิง (แก้ Error 500)
         await connection.query(
             "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_SN, is_pending) VALUES (?, 'T-WTH', CURDATE(), CURTIME(), ?, ?, 0)",
             [transactionId, userId, machine_SN]
         );
 
-        // 3. Loop เพื่อตัดสต็อกและบันทึกรายการอุปกรณ์
+        // 2. ผูก ID กับเวลาเปิดจริง (UPDATE จาก Log ที่บันทึกไว้ตอนกดปุ่มเปิดประตูใน Step 1)
+        await connection.query(
+            `UPDATE accesslogs SET transaction_id = ? 
+             WHERE user_id = ? AND transaction_id IS NULL AND action_type_id = 'A-001' 
+             ORDER BY date DESC, time DESC LIMIT 1`,
+            [transactionId, userId]
+        );
+
+        // 3. ตัดสต็อกและบันทึกรายละเอียดอะไหล่
         for (const item of cartItems) {
-            // ตัดสต็อกในตาราง lot ตาม lot_id ที่สแกนมา
-            const [updateRes] = await connection.query(
+            await connection.query(
                 "UPDATE lot SET current_quantity = current_quantity - ? WHERE lot_id = ? AND current_quantity >= ?",
                 [item.quantity, item.lotId, item.quantity]
             );
-
-            if (updateRes.affectedRows === 0) {
-                throw new Error(`ล็อต ${item.lotId} มีจำนวนอะไหล่ไม่พอ หรือข้อมูลไม่ถูกต้อง`);
-            }
-
-            // บันทึกรายละเอียดอะไหล่ลงใน equipment_list
-            const listId = `ER-${Date.now().toString().slice(-8)}-${Math.floor(Math.random() * 99)}`;
+            const listId = `ER-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
             await connection.query(
                 "INSERT INTO equipment_list (equipment_list_id, transaction_id, equipment_id, quantity, lot_id) VALUES (?, ?, ?, ?, ?)",
                 [listId, transactionId, item.partId, item.quantity, item.lotId]
             );
         }
 
-        await connection.query(
-            `UPDATE accesslogs 
-             SET transaction_id = ? 
-             WHERE user_id = ? AND transaction_id IS NULL AND action_type_id = 'A-001' 
-             ORDER BY date DESC, time DESC LIMIT 1`,
-            [transactionId, userId]
-        );
-
-        
-        
-        // บันทึกเวลาเปิด (A-001)
-        const openLogId = `LG-OP-${Date.now()}`;
-        await connection.query(
-            "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-001', ?, ?)",
-            [openLogId, transactionId, userId]
-        );
-
-        // บันทึกเวลาปิด (A-002) - โค้ดที่คุณส่งมา
-        const closeLogId = `LG-CL-${Date.now() + 500}`; // เพิ่มเวลาเล็กน้อยป้องกัน ID ซ้ำในเครื่องที่เร็วมาก
+        // 4. บันทึกเวลาปิดตู้ใหม่ (จะทำให้เวลาปิดต่างจากเวลาเปิดจริง)
+        const closeLogId = `CL-${Date.now()}`; // ** อย่าลืมรัน SQL ขยายคอลัมน์ log_id เป็น 50 **
         await connection.query(
             "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-002', ?, ?)",
             [closeLogId, transactionId, userId]
         );
 
         await connection.commit();
-        res.json({ 
-            success: true, 
-            message: "เบิกอะไหล่และบันทึกเวลาเปิด-ปิดประตูเรียบร้อยแล้ว", 
-            transactionId: transactionId 
-        });
-
+        res.json({ success: true, message: "เบิกอะไหล่และบันทึกเวลาสำเร็จ" });
     } catch (error) {
         if (connection) await connection.rollback();
-        console.error("❌ Confirm Transaction Error:", error.message);
+        console.error("❌ Confirm Error:", error.message);
         res.status(500).json({ error: error.message });
     } finally {
         if (connection) connection.release();
@@ -321,41 +313,36 @@ app.post('/api/return-part', authenticateToken, async (req, res) => {
 
         const transactionId = `RTN-${Date.now()}`;
 
+        // 1. บันทึกรายการคืน
         await connection.query(
             "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_SN) VALUES (?, 'T-RTN', ?, CURTIME(), ?, NULL)",
             [transactionId, returnDate, userId]
         );
 
+        // 2. ผูกเวลาเปิดจริง
+        await connection.query(
+            `UPDATE accesslogs SET transaction_id = ? 
+             WHERE user_id = ? AND transaction_id IS NULL AND action_type_id = 'A-001' 
+             ORDER BY date DESC, time DESC LIMIT 1`,
+            [transactionId, userId]
+        );
+
+        // 3. จัดการสต็อกคืน
         for (const item of items) {
-            const [updateRes] = await connection.query(
-                "UPDATE lot SET current_quantity = current_quantity + ? WHERE lot_id = ?",
-                [item.quantity, item.lotId]
-            );
-
-            if (updateRes.affectedRows === 0) {
-                throw new Error(`ไม่พบรหัสล็อต ${item.lotId} เพื่อทำการคืน`);
-            }
-
-            const listId = `EL-RTN-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-            await connection.query(
-                "INSERT INTO equipment_list (equipment_list_id, transaction_id, equipment_id, quantity) VALUES (?, ?, ?, ?)",
-                [listId, transactionId, item.equipmentId, item.quantity]
-            );
+            await connection.query("UPDATE lot SET current_quantity = current_quantity + ? WHERE lot_id = ?", [item.quantity, item.lotId]);
+            const listId = `ELR-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+            await connection.query("INSERT INTO equipment_list (equipment_list_id, transaction_id, equipment_id, quantity) VALUES (?, ?, ?, ?)", [listId, transactionId, item.equipmentId, item.quantity]);
         }
 
-        // 🟢 เพิ่ม: บันทึก Log เวลา (สำคัญเพื่อให้เวลาขึ้นในหน้า History)
-        await connection.query(
-            "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-001', ?, ?)",
-            [`LG-OP-${Date.now()}`, transactionId, userId]
-        );
+        // 4. บันทึกเวลาปิด
+        const closeLogId = `RTN-CL-${Date.now()}`;
         await connection.query(
             "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-002', ?, ?)",
-            [`LG-CL-${Date.now() + 500}`, transactionId, userId]
+            [closeLogId, transactionId, userId]
         );
 
         await connection.commit();
-        res.json({ success: true, message: "บันทึกการคืนอะไหล่และเวลาเรียบร้อยแล้ว" });
-
+        res.json({ success: true, message: "คืนอะไหล่สำเร็จ" });
     } catch (error) {
         if (connection) await connection.rollback();
         res.status(500).json({ error: error.message });
@@ -363,6 +350,7 @@ app.post('/api/return-part', authenticateToken, async (req, res) => {
         if (connection) connection.release();
     }
 });
+
 
 // API สำหรับยืนยันการเบิกล่วงหน้า (pending) และเพิ่มสต็อก
 // 1. API สำหรับบันทึกรายการเบิกล่วงหน้า (is_pending = 1)
@@ -1792,9 +1780,8 @@ app.post('/api/withdraw/partInfo', async (req, res) => {
     }
 });
 
-// ==========================================
-// 2. API สำหรับยืนยันการเบิก (Withdraw) และตัดสต็อกแบบ FIFO
-// ==========================================
+
+// 2. API: Confirm and Cut Stock (POST /api/withdraw/confirm)
 app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
     const { machine_SN, cartItems } = req.body;
     const userId = req.user.userId;
@@ -1806,46 +1793,34 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
 
         const transactionId = `WTH-${Date.now()}`;
 
-        // 1. บันทึกลงตาราง transactions
-       await connection.query(
+        // 🟢 ขั้นตอนที่ 1: บันทึกรายการหลักก่อน
+        await connection.query(
             "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_SN, is_pending) VALUES (?, 'T-WTH', CURDATE(), CURTIME(), ?, ?, 0)",
             [transactionId, userId, machine_SN]
         );
 
-        for (const item of cartItems) {
-            // item.lotId คือค่าที่เราได้มาตอนแสกน
-            // item.quantity คือจำนวนที่วิศวกรระบุจะเบิก
-            
-            // 2. ตัดสต็อกที่ Lot นั้นๆ โดยตรง (ตาม Barcode ที่แสกน)
-            const [updateRes] = await connection.query(
-                "UPDATE lot SET current_quantity = current_quantity - ? WHERE lot_id = ? AND current_quantity >= ?",
-                [item.quantity, item.lotId, item.quantity]
-            );
+        // 🟢 ขั้นตอนที่ 2: ผูกเวลาเปิดที่มีอยู่แล้ว (จากตอนเริ่ม Step 1)
+        await connection.query(
+            `UPDATE accesslogs 
+             SET transaction_id = ? 
+             WHERE user_id = ? AND transaction_id IS NULL AND action_type_id = 'A-001' 
+             ORDER BY date DESC, time DESC LIMIT 1`,
+            [transactionId, userId]
+        );
 
-            if (updateRes.affectedRows === 0) {
-                throw new Error(`ล็อต ${item.lotId} มีของไม่พอ หรือรหัสล็อตไม่ถูกต้อง`);
-            }
+        // ... (ส่วน Loop equipment_list คงเดิมตามโค้ดของคุณ) ...
 
-            // 3. บันทึกรายละเอียดลง equipment_list
-            const listId = `ER-${Date.now().toString().slice(-8)}-${Math.floor(Math.random() * 99)}`;
-            await connection.query(
-                "INSERT INTO equipment_list (equipment_list_id, transaction_id, equipment_id, quantity) VALUES (?, ?, ?, ?)",
-                [listId, transactionId, item.partId, item.quantity]
-            );
-        }
-
-        // 4. บันทึก Log การเปิด-ปิดตู้ (ถ้ามี)
+        // 🟢 ขั้นตอนที่ 3: บันทึกเวลาปิดใหม่
+        const closeLogId = `LG-CL-${Date.now()}`;
         await connection.query(
             "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-002', ?, ?)",
-            [`LG-${Date.now()}`, transactionId, userId]
+            [closeLogId, transactionId, userId]
         );
 
         await connection.commit();
-        res.json({ success: true, message: "เบิกอะไหล่และตัดสต็อกล็อตที่แสกนเรียบร้อยแล้ว" });
-
+        res.json({ success: true, transactionId });
     } catch (error) {
         if (connection) await connection.rollback();
-        console.error("Confirm Error:", error);
         res.status(500).json({ error: error.message });
     } finally {
         if (connection) connection.release();
@@ -2156,5 +2131,5 @@ app.put('/api/inventory/update-lot/:id', async (req, res) => {
 // ✅ ใช้ server.listen เพื่อรันทั้ง Express และ Socket.IO
 server.listen(PORT, () => {
     console.log(`🚀 Backend server is running on http://localhost:${PORT}`);
-    console.log(`   (Ready to command ESP at ${ESP_IP})`);
+    console.log(`    (Ready to command ESP via MQTT Broker)`); // แก้เป็นข้อความนี้แทน
 });

@@ -10,8 +10,6 @@ import './WithdrawPage.css';
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 function WithdrawPage({ user }) { 
-    
-    
     const [currentStep, setCurrentStep] = useState(1);
     const [assetId, setAssetId] = useState('');
     const [currentPartId, setCurrentPartId] = useState('');
@@ -20,11 +18,20 @@ function WithdrawPage({ user }) {
     const [isProcessing, setIsProcessing] = useState(false);
     const [showScanner, setShowScanner] = useState(false);
     const [previewImage, setPreviewImage] = useState(null);
-
     const [machineSuggestions, setMachineSuggestions] = useState([]);
     const [partSuggestions, setPartSuggestions] = useState([]);
 
-    // --- 1. ฟังก์ชันควบคุมประตู (ESP8266) ---
+    // ฟังก์ชันสำหรับ Reset ข้อมูลแทนการ Reload หน้าจอ
+    const handleResetForm = () => {
+        setCurrentStep(1);
+        setAssetId('');
+        setCartItems([]);
+        setCurrentPartId('');
+        setError('');
+        setShowScanner(false);
+    };
+
+    // --- 1. ฟังก์ชันควบคุมประตู (ESP8266 ผ่าน Backend) ---
     const handleOpenDoor = async () => {
         setIsProcessing(true);
         setError('');
@@ -49,7 +56,8 @@ function WithdrawPage({ user }) {
             await axios.post(`${API_BASE}/api/close-box`, {}, { 
                 headers: { Authorization: `Bearer ${token}` } 
             });
-            window.location.reload();
+            // 🟢 เปลี่ยนจาก reload เป็น reset state เพื่อแก้ปัญหา Message Channel
+            handleResetForm();
         } catch (err) {
             setError('คำสั่งปิดประตูขัดข้อง');
         } finally {
@@ -62,7 +70,10 @@ function WithdrawPage({ user }) {
         setAssetId(val);
         if (val.length > 0) {
             try {
-                const res = await axios.get(`${API_BASE}/api/search/machines?term=${val}`);
+                const token = localStorage.getItem('token');
+                const res = await axios.get(`${API_BASE}/api/search/machines?term=${val}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
                 setMachineSuggestions(res.data);
             } catch (err) { console.error(err); }
         } else {
@@ -74,23 +85,15 @@ function WithdrawPage({ user }) {
         setCurrentPartId(val);
         if (val.length > 0) {
             try {
-                const res = await axios.get(`${API_BASE}/api/search/parts?term=${val}`);
+                const token = localStorage.getItem('token'); 
+                const res = await axios.get(`${API_BASE}/api/search/parts?term=${val}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
                 setPartSuggestions(res.data);
             } catch (err) { console.error(err); }
         } else {
             setPartSuggestions([]);
         }
-    };
-
-    const updateItemQuantity = (index, delta) => {
-        setCartItems(prev => {
-            const newItems = [...prev];
-            const newQty = newItems[index].quantity + delta;
-            if (newQty > 0) {
-                newItems[index] = { ...newItems[index], quantity: newQty };
-            }
-            return newItems;
-        });
     };
 
     const handleAddItemToCart = useCallback(async (scannedId, quantity = 1) => {
@@ -102,7 +105,11 @@ function WithdrawPage({ user }) {
         setIsProcessing(true);
         setError('');
         try {
-            const response = await axios.post(`${API_BASE}/api/withdraw/partInfo`, { partId: idToSearch });
+            const token = localStorage.getItem('token');
+            const response = await axios.post(`${API_BASE}/api/withdraw/partInfo`, 
+                { partId: idToSearch },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
             const partInfo = response.data;
             
             setCartItems(prev => {
@@ -129,15 +136,32 @@ function WithdrawPage({ user }) {
             const token = localStorage.getItem('token');
             const payload = { 
                 machine_SN: assetId, 
-                cartItems: cartItems.map(item => ({ lotId: item.lotId, partId: item.partId, quantity: item.quantity })) 
+                cartItems: cartItems.map(item => ({ 
+                    lotId: item.lotId, 
+                    partId: item.partId, 
+                    quantity: item.quantity 
+                })) 
             };
-            await axios.post(`${API_BASE}/api/withdraw/confirm`, payload, { headers: { Authorization: `Bearer ${token}` } });
+            await axios.post(`${API_BASE}/api/withdraw/confirm`, payload, { 
+                headers: { Authorization: `Bearer ${token}` } 
+            });
             setCurrentStep(5);
         } catch (err) {
             setError('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
         } finally {
             setIsProcessing(false);
         }
+    };
+
+    const updateItemQuantity = (index, delta) => {
+        setCartItems(prev => {
+            const newItems = [...prev];
+            const newQty = newItems[index].quantity + delta;
+            if (newQty > 0) {
+                newItems[index] = { ...newItems[index], quantity: newQty };
+            }
+            return newItems;
+        });
     };
 
     useEffect(() => {
@@ -184,8 +208,6 @@ function WithdrawPage({ user }) {
                 {currentStep === 2 && (
                     <div className="step-content animate-fadeIn">
                         <h3 className="text-lg font-bold mb-4">2. ระบุอะไหล่</h3>
-                        
-                        {/* ส่วนครุภัณฑ์ */}
                         <div className="input-field-group relative">
                             <label className="input-label">เลขครุภัณฑ์ (Asset ID)</label>
                             <div className="input-with-icon">
@@ -205,7 +227,6 @@ function WithdrawPage({ user }) {
 
                         <div className="divider-or"><span>หรือสแกน</span></div>
 
-                        {/* ปุ่มสแกนแบบใหม่ */}
                         <div className="scanner-section">
                             {showScanner ? <div id="reader"></div> : 
                             <button onClick={() => setShowScanner(true)} className="btn-modern-scanner">
@@ -213,7 +234,6 @@ function WithdrawPage({ user }) {
                             </button>}
                         </div>
 
-                        {/* ส่วนเพิ่มอะไหล่ด้วยรหัส */}
                         <div className="input-field-group relative mt-4">
                             <label className="input-label">ระบุรหัสอะไหล่</label>
                             <div className="flex gap-2">
@@ -237,7 +257,6 @@ function WithdrawPage({ user }) {
                             )}
                         </div>
 
-                        {/* ตะกร้าอะไหล่ - ออกแบบใหม่ตามภาพที่แนบ */}
                         {cartItems.length > 0 && (
                             <div className="cart-section mt-6">
                                 <h4 className="cart-header">รายการในตะกร้า ({cartItems.length})</h4>
@@ -264,68 +283,46 @@ function WithdrawPage({ user }) {
                                         </div>
                                     ))}
                                 </div>
-                                <button onClick={() => setCurrentStep(3)} className="btn-action btn-open-gate mt-6">
-                                    ตรวจสอบรายการ ({cartItems.length})
-                                </button>
+                                <button onClick={() => setCurrentStep(3)} className="btn-action btn-open-gate mt-6">ตรวจสอบรายการ</button>
                             </div>
                         )}
                         {error && <p className="error-text-mini">{error}</p>}
                     </div>
                 )}
 
-                {/* STEP 3 & 4 & 5 ยังคงเดิมตาม Logic เดิมของคุณ */}
                 {currentStep === 3 && (
                     <div className="space-y-6 animate-fadeIn">
                         <div className="text-center">
-                            {/* 1. เอา FaListUl ออกแล้ว */}
                             <h3 className="text-2xl font-bold">3. ตรวจสอบข้อมูล</h3>
                             <p className="text-gray-400 text-sm">กรุณาตรวจสอบรายละเอียดก่อนบันทึก</p>
                         </div>
-
-                        {/* ข้อมูลเลขครุภัณฑ์ */}
                         <div className="asset-info-banner">
                             <div className="label">เลขครุภัณฑ์ (Asset ID)</div>
                             <div className="value">{assetId}</div>
                         </div>
-
-                        {/* รายการอะไหล่ที่เบิก */}
                         <div className="review-list-container">
-                            <h4 className="text-sm font-bold mb-3 text-gray-500 uppercase tracking-wider">รายการอะไหล่ที่เบิก</h4>
+                            <h4 className="text-sm font-bold mb-3 text-gray-500 uppercase">รายการอะไหล่ที่เบิก</h4>
                             {cartItems.map((item, idx) => (
                                 <div key={idx} className="review-item-card">
                                     <div className="item-img-box">
-                                        {item.imageUrl ? (
-                                            <img src={`${API_BASE}/uploads/${item.imageUrl}`} alt="part" />
-                                        ) : (
-                                            <div className="flex items-center justify-center w-full h-full bg-gray-50 text-gray-300">
-                                                <FaPlus size={16} />
-                                            </div>
-                                        )}
+                                        {item.imageUrl ? <img src={`${API_BASE}/uploads/${item.imageUrl}`} alt="part" /> : <FaPlus size={16} className="text-gray-300" />}
                                     </div>
                                     <div className="item-main-info">
                                         <div className="item-name-row">
                                             <span className="name">{item.partName}</span>
-                                            {/* 2. ปรับโครงสร้างจำนวนและหน่วยให้อยู่บรรทัดเดียวกัน */}
                                             <div className="qty-display-group">
                                                 <span className="qty-val">x {item.quantity}</span>
                                                 <span className="unit-val">{item.unit || 'ชิ้น'}</span>
                                             </div>
                                         </div>
-                                        <div className="item-sub-info">
-                                            <span className="tag-lot">Lot: {item.lotId}</span>
-                                        </div>
+                                        <div className="item-sub-info"><span className="tag-lot">Lot: {item.lotId}</span></div>
                                     </div>
                                 </div>
                             ))}
                         </div>
-
                         <div className="flex gap-3 mt-8">
-                            <button onClick={() => setCurrentStep(2)} className="btn-review-edit">
-                                แก้ไขรายการ
-                            </button>
-                            <button onClick={() => setCurrentStep(4)} className="btn-review-confirm">
-                                บันทึกข้อมูล
-                            </button>
+                            <button onClick={() => setCurrentStep(2)} className="btn-review-edit">แก้ไขรายการ</button>
+                            <button onClick={() => setCurrentStep(4)} className="btn-review-confirm">บันทึกข้อมูล</button>
                         </div>
                     </div>
                 )}
@@ -354,7 +351,7 @@ function WithdrawPage({ user }) {
                 <div className="image-viewer-overlay" onClick={() => setPreviewImage(null)}>
                     <div className="image-viewer-content">
                         <img src={previewImage} alt="Preview" />
-                        <button className="close-image-btn"><FaTimes /></button>
+                        <button className="close-image-btn" onClick={() => setPreviewImage(null)}><FaTimes /></button>
                     </div>
                 </div>
             )}
