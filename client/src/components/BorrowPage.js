@@ -16,7 +16,7 @@ function BorrowPage({ user }) {
     const [currentStep, setCurrentStep] = useState(1); 
     const [borrowDate, setBorrowDate] = useState(() => {
         const now = new Date();
-        const tzOffset = now.getTimezoneOffset() * 60000; // ปรับชดเชยเวลาตาม Timezone
+        const tzOffset = now.getTimezoneOffset() * 60000; 
         const localISOTime = (new Date(now - tzOffset)).toISOString().slice(0, 10);
         return localISOTime;
     });
@@ -28,7 +28,14 @@ function BorrowPage({ user }) {
     const [previewImage, setPreviewImage] = useState(null);
     const [partSuggestions, setPartSuggestions] = useState([]);
 
-    // --- 1. ควบคุมฮาร์ดแวร์ ---
+    // --- 1. ฟังก์ชันจัดการจำนวน (วางไว้ใน Component เพื่อแก้ eslint no-undef) ---
+    const updateQty = (index, delta) => {
+        setBorrowItems(prev => prev.map((item, i) => 
+            i === index ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
+        ));
+    };
+
+    // --- 2. ควบคุมฮาร์ดแวร์ ---
     const handleOpenDoor = async () => {
         setIsProcessing(true);
         setError('');
@@ -61,14 +68,14 @@ function BorrowPage({ user }) {
         }
     };
 
-    // --- 2. ระบบค้นหาและจัดการตะกร้า ---
+    // --- 3. ระบบค้นหาและจัดการตะกร้า ---
     const handlePartSearch = async (val) => {
         setManualPartId(val);
         if (val.length > 0) {
             try {
-                const token = localStorage.getItem('token'); // ดึง Token มาใช้งาน
+                const token = localStorage.getItem('token');
                 const res = await axios.get(`${API_BASE}/api/search/parts?term=${val}`, {
-                    headers: { Authorization: `Bearer ${token}` } // แนบ Token ไปด้วย
+                    headers: { Authorization: `Bearer ${token}` }
                 });
                 setPartSuggestions(res.data);
             } catch (err) { 
@@ -87,10 +94,10 @@ function BorrowPage({ user }) {
         setIsProcessing(true);
         setError('');
         try {
-            const token = localStorage.getItem('token'); // เพิ่มบรรทัดนี้เพื่อดึง Token
+            const token = localStorage.getItem('token');
             const response = await axios.post(`${API_BASE}/api/withdraw/partInfo`, 
                 { partId: idToSearch },
-                { headers: { Authorization: `Bearer ${token}` } } // แนบ Header ให้ถูกต้อง
+                { headers: { Authorization: `Bearer ${token}` } }
             );
             const partInfo = response.data;
 
@@ -134,29 +141,23 @@ function BorrowPage({ user }) {
         }
 
         setIsProcessing(true);
+        setError('');
         try {
             const token = localStorage.getItem('token');
             await axios.post(`${API_BASE}/api/borrow/pending`, {
                 userId: activeUser.user_id,
                 borrowDate: borrowDate,
                 items: borrowItems.map(item => ({
-                    equipmentId: item.partId,
                     lotId: item.lotId,
                     quantity: item.quantity
                 }))
             }, { headers: { Authorization: `Bearer ${token}` } });
             setCurrentStep(5);
         } catch (err) {
-            setError('เกิดข้อผิดพลาดในการบันทึกรายการ');
+            setError(err.response?.data?.error || 'เกิดข้อผิดพลาดในการบันทึกรายการ');
         } finally {
             setIsProcessing(false);
         }
-    };
-
-    const updateQty = (index, delta) => {
-        setBorrowItems(prev => prev.map((item, i) => 
-            i === index ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
-        ));
     };
 
     return (
@@ -176,29 +177,24 @@ function BorrowPage({ user }) {
             </div>
 
             <div className="return-card mt-2">
-                {/* STEP 1: เปิดประตู */}
                 {currentStep === 1 && (
                     <div className="step-content animate-fade text-center py-4">
                         <div className="status-icon-wrapper mb-6"><FaLockOpen size={50} className="text-pink-500" /></div>
                         <h3 className="step-title font-bold text-2xl mb-2">1. เปิดประตูกล่อง</h3>
                         <p className="step-desc text-gray-400 mb-8">กดยืนยันเพื่อเปิดกล่องและหยิบอะไหล่</p>
-                        
                         <div className="input-group-modern mb-8">
                             <label className="input-label">วันที่เบิกยืม</label>
                             <input type="date" className="modern-input" value={borrowDate} onChange={(e) => setBorrowDate(e.target.value)} />
                         </div>
-                        
                         <button onClick={handleOpenDoor} disabled={isProcessing} className="btn-action-primary w-full">
                             {isProcessing ? <span className="loader"></span> : 'เปิดประตูตู้'}
                         </button>
                     </div>
                 )}
 
-                {/* STEP 2: เลือกอะไหล่ */}
                 {currentStep === 2 && (
                     <div className="step-content animate-fade">
                         <h3 className="text-lg font-bold mb-4">2. ระบุอะไหล่ที่หยิบ</h3>
-                        
                         <div className="scanner-section mb-6">
                             {isScanning ? (
                                 <div className="scanner-container">
@@ -211,9 +207,7 @@ function BorrowPage({ user }) {
                                 </button>
                             )}
                         </div>
-
                         <div className="divider-text mb-6"><span>หรือค้นหารหัส</span></div>
-
                         <div className="relative mb-6">
                             <div className="flex gap-2">
                                 <input 
@@ -238,7 +232,6 @@ function BorrowPage({ user }) {
                                 </ul>
                             )}
                         </div>
-
                         {borrowItems.length > 0 && (
                             <div className="cart-section mt-8">
                                 <h4 className="section-title-sm mb-4">รายการในตะกร้า ({borrowItems.length})</h4>
@@ -272,19 +265,16 @@ function BorrowPage({ user }) {
                     </div>
                 )}
 
-                {/* STEP 3: ตรวจสอบข้อมูล */}
                 {currentStep === 3 && (
                     <div className="step-content animate-fade">
                         <div className="text-center mb-6">
                              <h3 className="font-bold text-2xl">3. ตรวจสอบข้อมูล</h3>
                              <p className="text-gray-400 text-sm">กรุณาตรวจสอบรายละเอียดก่อนบันทึก</p>
                         </div>
-
                         <div className="asset-info-banner mb-6">
                             <div className="label">วันที่เบิกยืมล่วงหน้า</div>
                             <div className="value">{new Date(borrowDate).toLocaleDateString('th-TH')}</div>
                         </div>
-
                         <div className="review-list-container mb-8">
                             <h4 className="text-sm font-bold mb-3 text-gray-500 uppercase">รายการอะไหล่</h4>
                             {borrowItems.map((item, idx) => (
@@ -300,14 +290,11 @@ function BorrowPage({ user }) {
                                                 <span className="unit-val">{item.unit || 'ชิ้น'}</span>
                                             </div>
                                         </div>
-                                        <div className="item-sub-info">
-                                            <span className="tag-lot">Lot: {item.lotId}</span>
-                                        </div>
+                                        <div className="item-sub-info"><span className="tag-lot">Lot: {item.lotId}</span></div>
                                     </div>
                                 </div>
                             ))}
                         </div>
-
                         <div className="flex gap-4">
                             <button onClick={() => setCurrentStep(2)} className="btn-review-edit flex-1">แก้ไขรายการ</button>
                             <button onClick={() => setCurrentStep(4)} className="btn-review-confirm flex-2">ไปหน้ายืนยัน</button>
@@ -315,18 +302,15 @@ function BorrowPage({ user }) {
                     </div>
                 )}
 
-                {/* STEP 4: ยืนยันขั้นตอนสุดท้าย */}
                 {currentStep === 4 && (
                     <div className="text-center py-4 space-y-6 animate-fade">
                         <FaClipboardCheck size={60} className="mx-auto text-blue-500 mb-2" />
                         <h3 className="text-2xl font-bold">4. ยืนยันการบันทึก</h3>
-                        
                         <div className="summary-box-blue bg-blue-50 p-6 rounded-3xl border border-blue-100 text-left">
                             <p className="text-xs text-blue-600 font-bold uppercase mb-1">สรุปการเบิกยืมล่วงหน้า</p>
                             <p className="text-sm text-gray-700"><b>ผู้เบิก:</b> {activeUser.fullname}</p>
                             <p className="text-sm text-gray-700"><b>จำนวนรายการ:</b> {borrowItems.length} รายการ</p>
                         </div>
-
                         <div className="flex gap-4">
                             <button onClick={() => setCurrentStep(3)} className="btn-review-edit flex-1">กลับ</button>
                             <button onClick={handleFinalConfirm} disabled={isProcessing} className="btn-action-primary flex-2">
@@ -336,7 +320,6 @@ function BorrowPage({ user }) {
                     </div>
                 )}
 
-                {/* STEP 5: สำเร็จ & สั่งปิดตู้ */}
                 {currentStep === 5 && (
                     <div className="text-center py-6 animate-fadeIn">
                         <div className="success-badge bg-green-100 text-green-700 p-4 rounded-2xl mb-8 flex items-center gap-3 justify-center">
@@ -344,8 +327,6 @@ function BorrowPage({ user }) {
                         </div>
                         <h3 className="font-bold text-2xl mb-3">5. สั่งปิดประตู</h3>
                         <p className="text-gray-500 mb-8">ตรวจสอบสิ่งกีดขวางแล้วกดปุ่มเพื่อล็อกตู้</p>
-                        
-                        {/* แก้ไข loading เป็น isProcessing เรียบร้อยแล้ว */}
                         <button onClick={handleCloseDoor} disabled={isProcessing} className="btn-action-dark w-full">
                             {isProcessing ? <span className="loader"></span> : <><FaLock className="mr-2" /> สั่งปิดประตูกล่อง</>}
                         </button>
@@ -353,7 +334,6 @@ function BorrowPage({ user }) {
                 )}
             </div>
 
-            {/* Overlay สำหรับดูรูปใหญ่ */}
             {previewImage && (
                 <div className="image-viewer-overlay" onClick={() => setPreviewImage(null)}>
                     <div className="image-viewer-content">

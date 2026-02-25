@@ -13,7 +13,7 @@ function ProfileENG({ user }) {
           return <div className="loading-text">กำลังโหลดข้อมูลโปรไฟล์...</div>;
     }
 
-    const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3001";
+    const API_URL = process.env.REACT_APP_API_URL ;
     const displayUserId = user.user_id ?? "N/A";
     const displayFullname = user.fullname ;
     const displayRole = user.role_name || user.role;

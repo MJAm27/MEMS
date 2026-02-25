@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import './LoginPage.css'; 
 import logo from './logo/download.jpg'; 
-// const API_BASE_URL = "http://localhost:3001";
+
 function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');

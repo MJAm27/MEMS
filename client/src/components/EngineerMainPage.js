@@ -32,7 +32,6 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // ฟังก์ชันดึงรายการที่ยืมล่วงหน้าและยังไม่ได้สรุป
     const fetchPendingBorrows = useCallback(async () => {
         if (!user?.user_id) return;
         try {
@@ -69,7 +68,31 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
 
     const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
-    // ฟังก์ชันประมวลผลการใช้จริงหรือคืนคลัง
+    // ฟังก์ชันสำหรับการคืนตามจำนวนที่ระบุ (Partial Return)
+    const handlespecificReturn = (item, uniqueKey) => {
+        const input = finalizeData[uniqueKey] || {};
+        // ดึงค่าจากช่อง "จำนวนที่ใช้จริง/คืน" หากไม่มีให้ใช้ยอดทั้งหมด
+        const qtyToReturn = parseInt(input.usedQty) > 0 ? parseInt(input.usedQty) : item.borrow_qty;
+
+        if (qtyToReturn > item.borrow_qty) {
+            return alert("จำนวนที่คืนห้ามเกินจำนวนที่มีอยู่ในมือ");
+        }
+
+        if (window.confirm(`ต้องการคืนอะไหล่ ${item.equipment_name} จำนวน ${qtyToReturn} ชิ้น?`)) {
+            navigate("/dashboard/engineer/return", { 
+                state: { 
+                    preloadedItem: {
+                        partId: item.equipment_id,
+                        partName: item.equipment_name,
+                        lotId: item.lot_id,
+                        quantity: qtyToReturn,
+                        borrowId: item.borrow_id, 
+                        isFixed: true 
+                    }
+                } 
+            });
+        }
+    };
     const handleProcessBorrow = async (item, actionType, uniqueKey) => {
         const input = finalizeData[uniqueKey] || {}; 
         const snInput = input.machineSN ? input.machineSN.trim() : "";
@@ -95,34 +118,14 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                     lotId: item.lot_id
                 }, { headers: { Authorization: `Bearer ${token}` } });
 
-            } else {
-                if (!window.confirm(`ยืนยันการคืนอะไหล่ ${item.equipment_name} จำนวน ${item.borrow_qty} ชิ้น เข้าสู่คลัง?`)) {
-                    return;
-                }
-
-                await axios.post(`${API_BASE}/api/borrow/return-all`, {
-                    transactionId: item.borrow_id,
-                    equipmentId: item.equipment_id,
-                    lotId: item.lot_id,
-                    qtyToReturn: item.borrow_qty
-                }, { headers: { Authorization: `Bearer ${token}` } });
+                alert("ดำเนินการสำเร็จและบันทึกประวัติเรียบร้อยแล้ว");
+                fetchPendingBorrows();
             }
-
-            setFinalizeData(prev => {
-                const newData = { ...prev };
-                delete newData[uniqueKey];
-                return newData;
-            });
-
-            alert("ดำเนินการสำเร็จและบันทึกประวัติเรียบร้อยแล้ว");
-            fetchPendingBorrows(); // อัปเดตยอดคงเหลือบนหน้าจอทันที
-            
         } catch (err) { 
             alert("เกิดข้อผิดพลาด: " + (err.response?.data?.error || err.message)); 
         }
     };
 
-    // UI ส่วนรายการค้างสรุป (แก้ไขให้ตัวแปรนี้มีอยู่จริง)
     const pendingBorrowListUI = (
         <div className="pending-container fade-in">
             <div className="section-title">
@@ -138,6 +141,8 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                 <div className="pending-grid">
                     {pendingItems.map((item, index) => {
                         const uniqueKey = `${item.borrow_id}-${index}`;
+                        const displayQtyToReturn = finalizeData[uniqueKey]?.usedQty || item.borrow_qty;
+                        
                         return (
                             <div key={uniqueKey} className="pending-card">
                                 <div className="pending-info">
@@ -155,7 +160,7 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                                         onChange={(e) => handleInputChange(uniqueKey, 'machineSN', e.target.value)}
                                     />
                                     
-                                    <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>จำนวนที่ใช้จริง:</label>
+                                    <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>จำนวนที่ใช้จริง/คืน:</label>
                                     <div className="action-row">
                                         <input 
                                             type="number" 
@@ -172,10 +177,10 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
 
                                     <button 
                                         className="btn-return-part" 
-                                        onClick={() => handleProcessBorrow(item, 'RETURN', uniqueKey)} 
+                                        onClick={() => handlespecificReturn(item, uniqueKey)} 
                                         style={{ marginTop: '5px', width: '100%' }}
                                     >
-                                        <FaReply /> คืนคลังทั้งหมด ({item.borrow_qty} ชิ้น)
+                                        <FaReply /> คืนคลัง ({displayQtyToReturn} ชิ้น)
                                     </button>
                                 </div>
                             </div>
@@ -197,16 +202,13 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                 <button className="action-button secondary-action" onClick={() => navigate("/dashboard/engineer/withdraw")}>
                     <FaBoxOpen className="action-icon" /> <span>เบิกอะไหล่</span>
                 </button>
-                
                 <button className="action-button secondary-action" onClick={() => navigate("/dashboard/engineer/return")}>
                     <FaReply className="action-icon" /> <span>คืนอะไหล่</span>
                 </button>
-                
                 <button className="action-button secondary-action" onClick={() => navigate("/dashboard/engineer/borrow")}>
                     <FaHandHolding className="action-icon" /> <span>เบิกอะไหล่ล่วงหน้า</span>
                 </button>
             </div>
-
             {pendingBorrowListUI} 
         </div>
     );
@@ -237,11 +239,7 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                         <span className="user-name">{user?.fullname}</span>
                         <div className="avatar-circle">
                             {user?.profile_img ? (
-                                <img 
-                                    src={`${API_BASE}/profile-img/${user.profile_img}`} 
-                                    alt="Profile" 
-                                    className="profile-img-circle" 
-                                />
+                                <img src={`${API_BASE}/profile-img/${user.profile_img}`} alt="Profile" className="profile-img-circle" />
                             ) : (
                                 user.fullname?.charAt(0).toUpperCase()
                             )}
@@ -250,25 +248,17 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                 </header>
                 <div className="content-body">
                     <Routes>
-                        {/* หน้าแรกเมื่อเข้ามาที่ /dashboard/engineer */}
                         <Route index element={HomeContent} />
-                        
-                        {/* ระบุ path เต็มเพื่อให้ตรงกับ URL ใน Browser */}
                         <Route path="engineer/home" element={HomeContent} />
                         <Route path="engineer/withdraw" element={<WithdrawPage user={user} />} />
                         <Route path="engineer/return" element={<ReturnPartPage user={user} />} />
                         <Route path="engineer/history" element={<HistoryPage user={user} />} />
                         <Route path="engineer/borrow" element={<BorrowPage user={user} />} />
-                        
-                        {/* Profile และ Sub-route สำหรับแก้ไข */}
                         <Route path="engineer/profile" element={<ProfileENG user={user} handleLogout={handleLogout} refreshUser={refreshUser} />}>
                             <Route path="edit" element={<ProfileEditENG user={user} refreshUser={refreshUser} />} />
                             <Route path="change-passwordENG" element={<ChangePasswordENG />} />
                         </Route>
-                        
                         <Route path="engineer/search" element={< SearchPartPageENG/>} />
-                        
-                        {/* กรณีไม่พบหน้า */}
                         <Route path="*" element={<h2>ไม่พบหน้าที่คุณต้องการ</h2>} />
                     </Routes>
                 </div>

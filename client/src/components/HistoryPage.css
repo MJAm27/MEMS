@@ -1,274 +1,60 @@
-/* ===================================================
-   1. คอนเทนเนอร์หลักและฟอนต์
-   =================================================== */
-.history-container { 
-    padding: 20px; 
-    max-width: 1200px; 
-    margin: 0 auto; 
-    font-family: 'Prompt', sans-serif;
-    background-color: #f8fafc;
-    min-height: 100vh;
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --primary: #db2777; --withdraw: #10b981; --return: #f43f5e;
+    --pending: #f59e0b; --bg-main: #f8fafc; --text-dark: #1e293b; --text-muted: #64748b;
 }
 
-.fade-in {
-    animation: fadeIn 0.5s ease-in;
-}
+.history-container { padding: 1.5rem; font-family: 'Prompt', sans-serif; background: var(--bg-main); min-height: 100vh; }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
+/* Header & Filters */
+.history-header { background: white; padding: 1.5rem; border-radius: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 1.5rem; }
+.title-section { display: flex; align-items: center; gap: 10px; color: var(--primary); margin-bottom: 1rem; }
+.history-filters-wrapper { display: flex; flex-wrap: wrap; gap: 1rem; }
+.filter-item { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 150px; }
+.modern-input, .modern-select { border: 1px solid #e2e8f0; padding: 0.6rem; border-radius: 0.5rem; font-family: 'Prompt'; background: #fff1f8; }
 
-/* ===================================================
-   2. ส่วนหัวและระบบกรอง (Header & Filters) - Responsive
-   =================================================== */
-.history-header { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    margin-bottom: 25px; 
-    flex-wrap: wrap; /* ตกบรรทัดเมื่อจอแคบ */
-    gap: 20px;
-}
+/* Table View (Laptop) */
+.history-card { background: white; border-radius: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow: hidden; }
+.history-table { width: 100%; border-collapse: collapse; }
+.history-table th { background: #fff1f8; padding: 1rem; text-align: left; color: var(--primary); font-size: 0.9rem; }
+.history-table td { padding: 1rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; font-size: 0.85rem; }
+.date-column { min-width: 110px; }
+.tx-id-badge { font-family: monospace; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; color: var(--text-muted); }
+.ref-link-badge { font-size: 0.65rem; background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-block; }
 
-.title-section { 
-    display: flex; 
-    align-items: center; 
-    gap: 12px; 
-    color: #db2777; 
-}
+/* Access Logs */
+.access-log-container { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; gap: 2px; min-width: 120px; }
+.time-row { display: flex; justify-content: space-between; font-size: 0.75rem; }
+.time-label-open { background: #fef3c7; color: #92400e; padding: 1px 4px; border-radius: 3px; font-weight: 600; }
+.time-label-close { background: #dcfce7; color: #166534; padding: 1px 4px; border-radius: 3px; font-weight: 600; }
+.duration-row { border-top: 1px dashed #cbd5e1; text-align: center; font-size: 0.7rem; color: #3b82f6; font-weight: 700; margin-top: 3px; }
 
-.history-filters-wrapper {
-    display: flex;
-    flex-wrap: wrap; 
-    align-items: center;
-    width: 100%;
-    margin-top: 10px;
-}
+/* Mobile View Styles */
+.mobile-only { display: none; padding: 10px; }
+.history-mobile-card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid #e2e8f0; border-left: 5px solid var(--primary); }
+.mobile-card-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+.m-date { font-weight: 700; display: block; }
+.m-time { font-size: 0.8rem; color: var(--text-muted); }
+.m-id-badge { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px; }
+.m-items-list { background: #fdf2f8; padding: 10px; border-radius: 8px; margin: 10px 0; }
+.m-item-row { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 3px; }
+.m-qty { color: var(--primary); font-weight: 700; }
+.m-footer { display: flex; justify-content: space-between; font-size: 0.8rem; border-top: 1px solid #eee; pt: 8px; }
 
-/* --- ส่วนเลือกวันที่ (Date Picker Group) --- */
-.history-date-picker-group {
-    display: flex;
-    align-items: center;
-    background: #ffffff;
-    padding: 6px 12px;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    border: 1px solid #e2e8f0;
-    gap: 10px;
-    flex: 1; 
-    min-width: 280px;
-}
+/* Badges */
+.type-badge { padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+.type-withdraw { background: #ecfdf5; color: var(--withdraw); }
+.type-return { background: #fff1f2; color: var(--return); }
+.type-return.linked { border: 1px dashed #fda4af; }
+.type-pending { background: #fffbeb; color: var(--pending); }
 
-.date-input-wrapper {
-    display: flex;
-    align-items: center;
-    background: #f8fafc;
-    border-radius: 8px;
-    padding: 0 8px;
-}
-
-.input-icon {
-    color: #64748b;
-    font-size: 14px;
-}
-
-.history-date-input {
-    border: none;
-    background: transparent;
-    padding: 8px 5px;
-    font-size: 13px;
-    font-family: 'Prompt';
-    outline: none;
-    cursor: pointer;
-    color: #1e293b;
-}
-
-.date-separator {
-    font-size: 12px;
-    color: #94a3b8;
-    font-weight: 500;
-}
-
-/* --- ส่วนกรองประเภท (Select Filter) --- */
-.filter-group { 
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: white;
-    padding: 5px 15px;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    border: 1px solid #e2e8f0;
-    height: 44px;
-}
-
-.filter-icon { color: #64748b; }
-
-.history-select { 
-    padding: 8px 5px; 
-    border: none; 
-    outline: none; 
-    font-weight: 600;
-    color: #475569;
-    cursor: pointer;
-    background: transparent;
-    font-family: 'Prompt';
-}
-
-/* ===================================================
-   3. การแสดงผลแบบ Desktop (Table View)
-   =================================================== */
-.history-card { 
-    background: white; 
-    border-radius: 20px; 
-    box-shadow: 0 10px 30px rgba(0,0,0,0.05); 
-    overflow: hidden; 
-}
-
-/* สำคัญ: ให้ตารางเลื่อนซ้ายขวาได้ในมือถือ */
-.table-wrapper {
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-}
-
-.history-table { 
-    width: 100%; 
-    min-width: 900px; /* บังคับความกว้างขั้นต่ำไม่ให้เบียดกัน */
-    border-collapse: collapse; 
-    text-align: left; 
-}
-
-.history-table th { 
-    padding: 18px 15px; 
-    background: #fdf2f8; 
-    color: #db2777; 
-    font-size: 14px; 
-    font-weight: 600;
-    border-bottom: 2px solid #fce7f3;
-}
-
-.history-table td { 
-    padding: 15px; 
-    border-bottom: 1px solid #f1f5f9; 
-    vertical-align: middle; 
-    font-size: 14px;
-}
-
-.history-table tbody tr:hover {
-    background-color: #fff9fc;
-}
-
-/* จัดการวันที่และเวลาในตาราง */
-.date-text { font-weight: 600; color: #1e293b; }
-.time-text { font-size: 12px; color: #94a3b8; }
-
-/* รายการอะไหล่ภายในตาราง */
-.item-row-detail {
-    padding: 2px 0;
-    color: #475569;
-    font-size: 13.5px;
-}
-
-.item-qtys-column .item-row-detail {
-    text-align: center;
-    color: #db2777;
-    font-weight: 700;
-}
-
-/* Badge ประเภทรายการ */
-.type-badge { 
-    padding: 6px 14px; 
-    border-radius: 50px; 
-    font-weight: 700; 
-    display: inline-flex; 
-    align-items: center; 
-    gap: 8px; 
-    font-size: 12px;
-    text-transform: uppercase;
-}
-
-.type-badge.T-WTH { background: #fff1f2; color: #e11d48; }
-.type-badge.T-RTN { background: #f0fdf4; color: #16a34a; }
-
-/* เวลาเปิด-ปิดตู้ */
-.status-timeline { display: flex; flex-direction: column; gap: 5px; }
-
-.time-badge {
-    background: #f8fafc;
-    padding: 3px 10px;
-    border-radius: 6px;
-    font-size: 11px;
-    color: #64748b;
-    border: 1px solid #e2e8f0;
-    display: flex;
-    justify-content: space-between;
-}
-
-.time-badge.active-open { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
-.time-badge.active-close { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
-
-/* ===================================================
-   4. Media Queries สำหรับมือถือ
-   =================================================== */
+/* Responsive Switch */
 @media (max-width: 768px) {
-    .history-container { padding: 15px; }
-
-    .history-header {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .history-filters-wrapper {
-        flex-direction: column; 
-        align-items: stretch;
-    }
-
-    .history-date-picker-group {
-        width: 100%;
-        justify-content: space-between;
-        padding: 10px;
-    }
-
-    .filter-group {
-        justify-content: space-between;
-    }
-    
-    .date-input-wrapper {
-        flex: 1;
-    }
-
-    .history-date-input {
-        width: 100%; 
-        font-size: 13px;
-    }
-
-    .filter-group {
-        width: 100%;
-        justify-content: flex-start;
-    }
-    
-    .history-select {
-        flex: 1;
-    }
-
-    /* ตกแต่ง Card Mobile (ถ้าไฟล์ JS มีส่วน Mobile แยกไว้) */
-    .history-mobile-card {
-        background: white;
-        border-radius: 16px;
-        padding: 15px;
-        margin-bottom: 12px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.04);
-        border-left: 4px solid #cbd5e1;
-    }
-
-    .border-left-T-WTH { border-left-color: #e11d48; }
-    .border-left-T-RTN { border-left-color: #16a34a; }
+    .desktop-only { display: none; }
+    .mobile-only { display: block; }
+    .history-filters-wrapper { flex-direction: column; }
+    .history-container { padding: 10px; }
 }
 
-/* ===================================================
-   5. Utility Classes
-   =================================================== */
-.text-center { text-align: center; }
-.font-bold { font-weight: 700; }
+.loading-state, .empty-row { text-align: center; padding: 3rem; color: var(--text-muted); }

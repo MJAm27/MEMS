@@ -4,7 +4,7 @@ import axios from 'axios';
 import './Setup2FA.css';
 import { QRCodeSVG } from 'qrcode.react';
 
-// const API_BASE_URL = "http://localhost:3001";
+
 
 function Setup2FA() {
     const navigate = useNavigate();
