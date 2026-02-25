@@ -12,13 +12,9 @@ import ManagerDashboard from "./ManagerDashboard";
 import ManagerAlertPage from "./ManagerAlertPage";
 import ManagerReportPage from "./ManagerReportPage";
 import ManagerEquipmentPage from "./ManagerEquipmentPage";
-<<<<<<< HEAD
-import ManagerHistoryPage from "./ManagerHistoryPage";
-=======
 import ProfileENG from './ProfileENG';
 import ProfileEditENG from './ProfileEditENG';
 import ChangePasswordENG from './ChangePasswordENG';
->>>>>>> 415dd79edc54f20fccb428f87abdb4160c6070b9
 
 const API_BASE_URL = process.env.REACT_APP_API_URL ;
 
