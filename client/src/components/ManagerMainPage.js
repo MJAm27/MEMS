@@ -11,8 +11,8 @@ import "./ManagerMainPage.css";
 import ManagerDashboard from "./ManagerDashboard";
 import ManagerAlertPage from "./ManagerAlertPage";
 import ManagerReportPage from "./ManagerReportPage";
-import HistoryPage from "./HistoryPage";
 import ManagerEquipmentPage from "./ManagerEquipmentPage";
+import ManagerHistoryPage from "./ManagerHistoryPage";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL ;
 
@@ -89,7 +89,7 @@ function ManagerMainPage({ user, handleLogout }) {
                     <button className="nav-link" onClick={() => navigate("/dashboard/manager/equipment")}>
                         <FaBoxOpen /> <span>ข้อมูลอะไหล่ทั้งหมด</span>
                     </button>
-                    <button className="nav-link" onClick={() => navigate("/dashboard/manager/history")}>
+                    <button className="nav-link" onClick={() => navigate("/dashboard/manager/managerhistoryr")}>
                         <FaHistory /> <span>ประวัติการใช้งาน</span>
                     </button>
                 </nav>
@@ -145,7 +145,7 @@ function ManagerMainPage({ user, handleLogout }) {
                         <Route path="home" element={<ManagerDashboard viewDate={selectedDate} />} />
                         <Route path="reports" element={<ManagerReportPage viewDate={selectedDate} />} />
                         <Route path="alerts" element={<ManagerAlertPage />} />
-                        <Route path="history" element={<HistoryPage user={user} viewDate={selectedDate} />} />
+                        <Route path="managerhistoryr" element={<ManagerHistoryPage user={user} viewDate={selectedDate} />} />
                         <Route path="equipment" element={<ManagerEquipmentPage />} />
                         <Route index element={<Navigate to="home" replace />} />
                         <Route path="*" element={<h2 className="text-center mt-10">ไม่พบหน้าที่คุณต้องการ</h2>} />
