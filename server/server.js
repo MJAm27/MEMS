@@ -1022,12 +1022,19 @@ app.get('/api/history/full', authenticateToken, async (req, res) => {
                 t.time,
                 t.machine_SN,
                 u.fullname, 
-                (SELECT JSON_ARRAYAGG(JSON_OBJECT('name', et.equipment_name, 'qty', el.quantity))
+                -- ดึงรายการอะไหล่แบบ JSON โดยเชื่อมโยงผ่าน lot และ equipment ให้ครบถ้วน
+                (SELECT JSON_ARRAYAGG(
+                    JSON_OBJECT(
+                        'name', et.equipment_name, 
+                        'qty', el.quantity
+                    )
+                )
                  FROM equipment_list el
                  INNER JOIN lot l ON el.lot_id = l.lot_id
                  INNER JOIN equipment e ON l.equipment_id = e.equipment_id
                  INNER JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
                  WHERE el.transaction_id = t.transaction_id) as items_json,
+                -- ดึงเวลาเปิด-ปิดจาก accesslogs
                 (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-001' LIMIT 1) as open_time,
                 (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-002' LIMIT 1) as close_time
             FROM transactions t
@@ -1040,8 +1047,6 @@ app.get('/api/history/full', authenticateToken, async (req, res) => {
             sql += " WHERE t.date BETWEEN ? AND ? ";
             params.push(startDate, endDate);
         }
-
-        // เรียงลำดับเพื่อให้รายการ "ลูก" แสดงต่อจากรายการ "แม่" และเรียงตามความล่าสุด
         sql += ` ORDER BY COALESCE(t.parent_transaction_id, t.transaction_id) DESC, t.date DESC, t.time DESC`;
 
         const [rows] = await pool.query(sql, params);
@@ -1873,52 +1878,6 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
     }
 });
 
-// ==========================================
-// หน้าประวัติการใช้งานแบบละเอียด (Full History)
-// ==========================================
-app.get('/api/history/full', authenticateToken, async (req, res) => {
-    try {
-        const sql = `
-            SELECT 
-                t.transaction_id, 
-                tt.transaction_type_name as type_name,
-                t.transaction_type_id,
-                t.date, 
-                t.time,
-                t.machine_SN,
-                u.fullname, 
-                (
-                    SELECT JSON_ARRAYAGG(
-                        JSON_OBJECT(
-                            'name', et.equipment_name,
-                            'qty', el.quantity
-                        )
-                    )
-                    FROM equipment_list el
-                    JOIN equipment e ON el.equipment_id = e.equipment_id
-                    JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
-                    WHERE el.transaction_id = t.transaction_id
-                ) as items_json,
-                (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-001' LIMIT 1) as open_time,
-                (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-002' LIMIT 1) as close_time
-            FROM transactions t
-            LEFT JOIN transactions_type tt ON t.transaction_type_id = tt.transaction_type_id
-            LEFT JOIN users u ON t.user_id = u.user_id 
-            GROUP BY t.transaction_id
-            ORDER BY t.date DESC, t.time DESC
-        `;
-        const params = [];
-        if(startDate&&endDate) {
-            sql += " WHERE t.date BETWEEN ? AND ?";
-            params.push(startDate, endDate);
-        }
-        sql += ` ORDER BY t.date DESC, t.time DESC`;
-        const [rows] = await pool.query(sql, params);
-        res.json(rows);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
 
 app.get('/api/reports/equipment-usage', async (req, res) => {
     try {
