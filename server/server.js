@@ -1022,6 +1022,8 @@ app.get('/api/history/full', authenticateToken, async (req, res) => {
                 t.time,
                 t.machine_SN,
                 u.fullname, 
+                u.profile_img, 
+                t.user_id,
                 -- ดึงรายการอะไหล่แบบ JSON โดยเชื่อมโยงผ่าน lot และ equipment ให้ครบถ้วน
                 (SELECT JSON_ARRAYAGG(
                     JSON_OBJECT(

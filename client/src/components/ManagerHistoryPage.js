@@ -51,12 +51,15 @@ function ManagerHistoryPage({ viewDate }) {
     }, [fetchData]);
 
     const filteredData = history.filter(item => {
+
         const matchType = filter === 'ALL' 
             ? true 
             : filter === 'PENDING' 
                 ? (item.is_pending === 1 && item.transaction_type_id === 'T-WTH')
                 : (item.transaction_type_id === filter && item.is_pending === 0);
-        const matchUser = selectedUser === 'ALL' ? true : item.user_id === selectedUser;
+        const matchUser = selectedUser === 'ALL' 
+            ? true 
+            : String(item.user_id) === String(selectedUser); 
         return matchType && matchUser;
     });
 
@@ -159,7 +162,18 @@ function ManagerHistoryPage({ viewDate }) {
                                     <td className="user-column">
                                         <div className="user-info-cell">
                                             <div className="user-avatar-mini">
-                                                {row.profile_img ? <img src={`${API_BASE}/uploads/${row.profile_img}`} alt="p" /> : <span>{row.fullname ? row.fullname.charAt(0).toUpperCase() : "?"}</span>}
+                                                {row.profile_img ? (
+                                                    <img 
+                                                        src={`${API_BASE}/uploads/${row.profile_img}`} 
+                                                        alt="profile" 
+                                                        onError={(e) => { e.target.src = 'https://via.placeholder.com/40'; }} // กันรูปโหลดไม่ขึ้น
+                                                    />
+                                                ) : (
+
+                                                    <div className="avatar-placeholder">
+                                                        {row.fullname ? row.fullname.charAt(0).toUpperCase() : "?"}
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="user-name-text">{row.fullname || "ไม่ระบุชื่อ"}</div>
                                         </div>
