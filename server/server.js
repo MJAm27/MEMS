@@ -543,12 +543,13 @@ app.post('/api/borrow/finalize-v2', authenticateToken, async (req, res) => {
 // 📌 API สำหรับสรุปการใช้จริง (หักยอดในมือ + ปิด job เมื่อหมด)
 // ==========================================
 app.post('/api/borrow/finalize-partial', authenticateToken, async (req, res) => {
-    const { transactionId, machineSN, usedQty, lotId, equipmentId } = req.body;
+    const { transactionId, machineSN, usedQty, lotId } = req.body;
     let connection;
     try {
         connection = await pool.getConnection();
         await connection.beginTransaction();
 
+        // 1. ตรวจสอบจำนวนคงเหลือในมือจากรายการเบิกต้นทาง
         const [rows] = await connection.query(
             "SELECT quantity FROM equipment_list WHERE transaction_id = ? AND lot_id = ?",
             [transactionId, lotId]
@@ -561,18 +562,20 @@ app.post('/api/borrow/finalize-partial', authenticateToken, async (req, res) => 
             throw new Error(`จำนวนที่บันทึก (${usedQty}) มากกว่าจำนวนที่มีอยู่ในมือ (${currentInHand})`);
         }
 
+        // 2. สร้าง Transaction ใหม่สำหรับการใช้จริง และผูก parent_transaction_id
         const realTxId = `W-REAL-${Date.now().toString().slice(-8)}`;
         await connection.query(
-            "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_SN, is_pending) VALUES (?, 'T-WTH', CURDATE(), CURTIME(), ?, ?, 0)",
-            [realTxId, req.user.userId, machineSN]
+            "INSERT INTO transactions (transaction_id, parent_transaction_id, transaction_type_id, date, time, user_id, machine_SN, is_pending) VALUES (?, ?, 'T-WTH', CURDATE(), CURTIME(), ?, ?, 0)",
+            [realTxId, transactionId, req.user.userId, machineSN]
         );
 
+        // 3. บันทึกรายละเอียดอะไหล่ (ลบ equipment_id ออกเพื่อให้ตรงกับโครงสร้างตารางจริง)
         await connection.query(
-            "INSERT INTO equipment_list (equipment_list_id, transaction_id, equipment_id, quantity, lot_id) VALUES (?, ?, ?, ?, ?)",
-            [`ELR-${Date.now().toString().slice(-5)}`, realTxId, equipmentId, usedQty, lotId]
+            "INSERT INTO equipment_list (equipment_list_id, transaction_id, quantity, lot_id) VALUES (?, ?, ?, ?)",
+            [`ELR-${Date.now().toString().slice(-5)}`, realTxId, usedQty, lotId]
         );
 
-        // 🟢 เพิ่ม: บันทึก Log เวลาสำหรับรายการที่นำไปใช้จริง
+        // 4. บันทึก Log เวลาเปิด-ปิดอัตโนมัติสำหรับรายการสรุปผล
         await connection.query(
             "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-001', ?, ?)",
             [`LG-OP-${Date.now()}`, realTxId, req.user.userId]
@@ -582,6 +585,7 @@ app.post('/api/borrow/finalize-partial', authenticateToken, async (req, res) => 
             [`LG-CL-${Date.now() + 500}`, realTxId, req.user.userId]
         );
 
+        // 5. อัปเดตยอดคงเหลือในมือ หรือลบทิ้งหากใช้หมดแล้ว
         const newRemainingQty = currentInHand - usedQty;
         if (newRemainingQty > 0) {
             await connection.query(
@@ -592,16 +596,18 @@ app.post('/api/borrow/finalize-partial', authenticateToken, async (req, res) => 
             await connection.query("DELETE FROM equipment_list WHERE transaction_id = ? AND lot_id = ?", [transactionId, lotId]);
         }
 
+        // 6. ตรวจสอบว่าใบเบิกต้นทาง (Parent) เหลืออะไหล่อื่นอีกไหม ถ้าไม่มีให้ปิด is_pending
         const [check] = await connection.query("SELECT COUNT(*) as itemCount FROM equipment_list WHERE transaction_id = ?", [transactionId]);
         if (check[0].itemCount === 0) {
             await connection.query("UPDATE transactions SET is_pending = 0 WHERE transaction_id = ?", [transactionId]);
         }
 
         await connection.commit();
-        res.json({ success: true, message: "บันทึกใช้จริงสำเร็จ" });
+        res.json({ success: true, message: "บันทึกใช้จริงและเชื่อมโยงประวัติสำเร็จ" });
 
     } catch (error) {
         if (connection) await connection.rollback();
+        console.error("Finalize Partial Error:", error.message);
         res.status(500).json({ error: error.message });
     } finally {
         if (connection) connection.release();
@@ -1015,11 +1021,13 @@ app.get('/api/history/full', authenticateToken, async (req, res) => {
             params.push(startDate, endDate);
         }
 
+        // เรียงลำดับเพื่อให้รายการ "ลูก" แสดงต่อจากรายการ "แม่" และเรียงตามความล่าสุด
         sql += ` ORDER BY COALESCE(t.parent_transaction_id, t.transaction_id) DESC, t.date DESC, t.time DESC`;
 
         const [rows] = await pool.query(sql, params);
         res.json(rows);
     } catch (error) {
+        console.error("Fetch History Error:", error.message);
         res.status(500).json({ error: error.message });
     }
 });
