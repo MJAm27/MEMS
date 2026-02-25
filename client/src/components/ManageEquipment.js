@@ -10,11 +10,12 @@ const API_BASE_URL = process.env.REACT_APP_API_URL;
 function ManageEquipment() {
   const navigate = useNavigate();
   const [inventory, setInventory] = useState([]); 
+  const [equipmentTypes, setEquipmentTypes] = useState([]);
+  const [isNewType, setIsNewType] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   
-  // +++ รวม State ให้เหลือแค่ฟอร์มของอะไหล่ +++
   const [formData, setFormData] = useState({
     equipment_id: "",
     equipment_type_id: "",
@@ -30,6 +31,7 @@ function ManageEquipment() {
 
   useEffect(() => {
     fetchData();
+    fetchTypes();
   }, []);
 
   const fetchData = async () => {
@@ -39,7 +41,24 @@ function ManageEquipment() {
     } catch (error) { console.error("Error fetching inventory:", error); }
   };
 
-  // +++ ฟังก์ชันอัปโหลดรูปภาพ (รับชื่อไฟล์กลับมา) +++
+  const fetchTypes = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/equipment-types`);
+      setEquipmentTypes(res.data);
+    } catch (error) { console.error("Error fetching types:", error); }
+  };
+
+  const handleTypeChange = (e) => {
+    const selectedId = e.target.value;
+    const selectedType = equipmentTypes.find(t => t.equipment_type_id === selectedId);
+    
+    setFormData({ 
+      ...formData, 
+      equipment_type_id: selectedId, 
+      equipment_name: selectedType 
+    });
+  };
+
   const handleImageUpload = async (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -64,6 +83,7 @@ function ManageEquipment() {
 
   const handleAddNew = () => {
     setIsEditMode(false);
+    setIsNewType(false);
     setFormData({
       equipment_id: "", equipment_type_id: "", equipment_name: "", 
       model_size: "", alert_quantity: 10, unit: "", img: ""
@@ -205,7 +225,6 @@ function ManageEquipment() {
         </table>
       </div>
 
-      {/* Modal ฟอร์ม เพิ่ม/แก้ไข ข้อมูลอะไหล่ */}
       {showModal && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '500px' }}>
@@ -216,7 +235,6 @@ function ManageEquipment() {
                 </div>
                 <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
                     
-                    {/* ส่วนอัปโหลดรูปภาพ */}
                     <div className="form-group" style={{ marginBottom: '15px', textAlign: 'center' }}>
                         <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>รูปภาพอะไหล่ (img)</label>
                         {formData.img && (
@@ -230,35 +248,89 @@ function ManageEquipment() {
                         {isUploading && <span style={{ color: 'blue', fontSize: '0.8rem' }}>กำลังอัปโหลด...</span>}
                     </div>
 
-                    <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                        <div style={{ flex: 1 }}>
-                            <label>รหัสประเภท (Type ID) *</label>
-                            <input type="text" className="form-control" name="equipment_type_id" value={formData.equipment_type_id} onChange={handleChange} required />
+                    <div className="form-group" style={{ 
+                        backgroundColor: isNewType ? '#f8fbff' : 'transparent', 
+                        padding: isNewType ? '15px' : '0', 
+                        borderRadius: '8px', 
+                        border: isNewType ? '1px solid #cce5ff' : 'none', 
+                        marginBottom: '15px', 
+                        transition: 'all 0.3s ease' 
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                            <label style={{ margin: 0, fontWeight: 'bold' }}>ประเภทอะไหล่ *</label>
+                            <button 
+                                type="button" 
+                                className="btn-link-toggle" 
+                                onClick={() => {
+                                    setIsNewType(!isNewType);
+                                    // เคลียร์ค่า ID และ Name เมื่อกดสลับโหมด
+                                    setFormData({ ...formData, equipment_type_id: "", equipment_name: "" });
+                                }}
+                                style={{ color: '#007bff', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontSize: '0.85rem' }}
+                            >
+                                {isNewType ? "← เลือกจากที่มีอยู่" : "+ เพิ่มประเภทใหม่"}
+                            </button>
                         </div>
-                        <div style={{ flex: 1 }}>
-                            <label>ประเภทอะไหล่ (Name) *</label>
-                            <input type="text" className="form-control" name="equipment_name" value={formData.equipment_name} onChange={handleChange} required />
-                        </div>
+
+                        {isNewType ? (
+                            <div className="input-group-animate" style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ fontSize: '0.85rem', color: '#555', marginBottom: '5px', display: 'block' }}>รหัสประเภทใหม่ *</label>
+                                    <input
+                                        type="text"
+                                        className="form-control highlight-input"
+                                        value={formData.equipment_type_id || ""}
+                                        onChange={(e) => setFormData({ ...formData, equipment_type_id: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div style={{ flex: 2 }}>
+                                    <label style={{ fontSize: '0.85rem', color: '#555', marginBottom: '5px', display: 'block' }}>ชื่อประเภทใหม่ *</label>
+                                    <input
+                                        type="text"
+                                        className="form-control highlight-input"
+                                        value={formData.equipment_name || ""}
+                                        onChange={(e) => setFormData({ ...formData, equipment_name: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                            </div>
+                        ) : (
+                            <select
+                                className="form-control"
+                                name="equipment_type_id"
+                                value={formData.equipment_type_id}
+                                onChange={handleTypeChange} // <--- ใช้ฟังก์ชันใหม่ที่เราสร้างขึ้น
+                                required
+                            >
+                                <option value="">-- เลือกประเภท --</option>
+                                {equipmentTypes.map((type) => (
+                                    <option key={type.equipment_type_id} value={type.equipment_type_id}>
+                                        {type.equipment_type_id} - {type.equipment_name}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
                     </div>
 
                     <div style={{ marginBottom: '10px' }}>
-                        <label>รหัสอะไหล่ (Equipment ID) *</label>
+                        <label>รหัสอะไหล่ *</label>
                         <input type="text" className="form-control" name="equipment_id" value={formData.equipment_id} onChange={handleChange} required disabled={isEditMode} style={{ backgroundColor: isEditMode ? '#f4f4f4' : 'white' }} />
                     </div>
 
                     <div style={{ marginBottom: '10px' }}>
-                        <label>รุ่น / ขนาด (Model/Size) *</label>
+                        <label>รุ่น / ขนาด  *</label>
                         <input type="text" className="form-control" name="model_size" value={formData.model_size} onChange={handleChange} required />
                     </div>
 
                     <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
                         <div style={{ flex: 1 }}>
-                            <label>จำนวนแจ้งเตือน (Alert Qty)</label>
+                            <label>จำนวนแจ้งเตือน</label>
                             <input type="number" className="form-control" name="alert_quantity" value={formData.alert_quantity} onChange={handleChange} required min="0" />
                         </div>
                         <div style={{ flex: 1 }}>
-                            <label>หน่วยนับ (Unit) *</label>
-                            <input type="text" className="form-control" name="unit" value={formData.unit} onChange={handleChange} placeholder="เช่น ชิ้น, กล่อง" required />
+                            <label>หน่วยนับ *</label>
+                            <input type="text" className="form-control" name="unit" value={formData.unit} onChange={handleChange} required />
                         </div>
                     </div>
 
