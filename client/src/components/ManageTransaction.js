@@ -202,7 +202,7 @@ function ManageTransaction() {
               <th>ประเภท</th>
               <th>ผู้ดำเนินการ</th>
               <th>ครุภัณฑ์</th>
-              <th style={{textAlign:'center'}}>จำนวน</th>
+              <th style={{textAlign:'center'}}>จำนวนรายการ</th>
               <th style={{textAlign:'center'}}>ดูข้อมูล</th>
             </tr>
           </thead>
@@ -267,7 +267,7 @@ function ManageTransaction() {
                                     <tr key={idx}>
                                         <td>{item.equipment_name}</td>
                                         <td>{item.model_size}</td>
-                                        <td style={{fontWeight:'bold'}}>{item.quantity}</td>
+                                        <td style={{fontWeight:'bold'}}>{item.quantity} {item.unit}</td>
                                     </tr>
                                 ))}
                             </tbody>

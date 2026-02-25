@@ -49,8 +49,11 @@ function ManageLot() {
   
   const filteredLots = lotData.filter(item => {
     if (!item.lot_id) return false;
-    item.lot_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (item.supplier_name && item.supplier_name.toLowerCase().includes(searchTerm.toLowerCase()))
+    const searchLower = searchTerm.toLowerCase();
+    const matchLot = item.lot_id.toLowerCase().includes(searchLower);
+    const matchSupplier = item.supplier_name && item.supplier_name.toLowerCase().includes(searchLower);
+
+    return matchLot || matchSupplier;
   });
 
   const handleExportExcel = () => {
@@ -245,7 +248,7 @@ function ManageLot() {
             <form onSubmit={handleSubmit}>
               <div className="modal-body">
                 <div className="form-group" style={{ marginBottom: '15px' }}>
-                  <label>รหัส Lot (Lot ID)</label>
+                  <label>รหัส Lot</label>
                   <input 
                     type="text" 
                     className="form-control" 
@@ -259,7 +262,7 @@ function ManageLot() {
                 </div>
 
                 <div className="form-group" style={{ marginBottom: '15px' }}>
-                  <label>บริษัท (Supplier)</label>
+                  <label>บริษัทนำเข้าอะไหล่</label>
                   <select 
                     className="form-control" 
                     name="supplier_id"
@@ -289,7 +292,7 @@ function ManageLot() {
                     />
                   </div>
                   <div className="form-group" style={{ flex: 1 }}>
-                    <label>วันที่หมดอายุ (ถ้ามี)</label>
+                    <label>วันที่หมดอายุ </label>
                     <input 
                       type="date" 
                       className="form-control" 
@@ -302,7 +305,7 @@ function ManageLot() {
 
                 <div style={{ display: 'flex', gap: '15px', marginBottom: '15px' }}>
                   <div className="form-group" style={{ flex: 1 }}>
-                    <label>จำนวน (ชิ้น/หน่วย)</label>
+                    <label>จำนวน </label>
                     <input 
                       type="number" 
                       className="form-control" 
@@ -314,7 +317,7 @@ function ManageLot() {
                     />
                   </div>
                   <div className="form-group" style={{ flex: 1 }}>
-                    <label>ราคาต้นทุน (บาท)</label>
+                    <label>ราคา</label>
                     <input 
                       type="number" 
                       className="form-control" 

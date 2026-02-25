@@ -404,3 +404,21 @@
         right: 0;
     }
 }
+
+.btn-link-toggle {
+    background: none;
+    border: none;
+    color: #e900af;
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-decoration: underline;
+    transition: color 0.2s;
+    padding: 0;
+}
+
+.btn-link-toggle:hover {
+    color: #bd028f;
+}
+
+
+

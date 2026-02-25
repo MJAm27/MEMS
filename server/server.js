@@ -1523,7 +1523,7 @@ app.get("/api/transactions", async (req, res) => {
 // 2. ดึงรายละเอียดของ Transaction นั้นๆ (รายการของที่เบิก)
 app.get("/api/transactions/:id/items", async (req, res) => {
     const sql = `
-        SELECT el.*, et.equipment_name, e.model_size FROM equipment_list el JOIN equipment e ON el.equipment_id = e.equipment_id JOIN equipment_type et ON et.equipment_type_id = e.equipment_type_id
+        SELECT el.*, et.equipment_name,et.unit, e.model_size FROM equipment_list el JOIN equipment e ON el.equipment_id = e.equipment_id JOIN equipment_type et ON et.equipment_type_id = e.equipment_type_id
         WHERE el.transaction_id = ?
     `;
     try {
@@ -2034,23 +2034,54 @@ app.delete('/api/equipment/:id', async (req, res) => {
         connection = await pool.getConnection();
         await connection.beginTransaction();
 
-        // ลบข้อมูลจากตาราง equipment
+        const [rows] = await connection.query(
+            "SELECT equipment_type_id FROM equipment WHERE equipment_id = ?", 
+            [equipment_id]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "ไม่พบข้อมูลอะไหล่ที่ต้องการลบ" });
+        }
+
+        const typeIdToDelete = rows[0].equipment_type_id;
+
         await connection.query("DELETE FROM equipment WHERE equipment_id = ?", [equipment_id]);
 
+        const [remaining] = await connection.query(
+            "SELECT COUNT(*) as count FROM equipment WHERE equipment_type_id = ?", 
+            [typeIdToDelete]
+        );
+
+        if (remaining[0].count === 0) {
+            await connection.query(
+                "DELETE FROM equipment_type WHERE equipment_type_id = ?", 
+                [typeIdToDelete]
+            );
+        }
+
         await connection.commit();
-        res.json({ success: true, message: "ลบข้อมูลสำเร็จ" });
+        res.json({ success: true, message: "ลบข้อมูลอะไหล่ (และประเภทอะไหล่ที่ว่าง) สำเร็จ" });
+
     } catch (error) {
         if (connection) await connection.rollback();
         console.error("Delete Equipment Error:", error);
         
-        // เช็คว่าลบไม่ได้เพราะติด Foreign Key (เช่น ยังมี Lot ของอะไหล่นี้อยู่ในสต็อก)
         if (error.code === 'ER_ROW_IS_REFERENCED_2' || error.errno === 1451) {
-            res.status(400).json({ error: "ไม่สามารถลบได้ เนื่องจากมีสต็อก (Lot) ของอะไหล่นี้ค้างอยู่ในระบบ กรุณาลบ Lot ให้หมดก่อน" });
+            res.status(400).json({ error: "ไม่สามารถลบได้ เนื่องจากข้อมูลถูกใช้งานอยู่ในส่วนอื่น (เช่น ตาราง Stock/Lot)" });
         } else {
             res.status(500).json({ error: error.message });
         }
     } finally {
         if (connection) connection.release();
+    }
+});
+
+app.get('/api/equipment-types', async (req, res) => {
+    try {
+        const [rows] = await pool.query("SELECT equipment_type_id,equipment_name FROM equipment_type;");
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
 
