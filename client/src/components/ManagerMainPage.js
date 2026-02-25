@@ -12,6 +12,7 @@ import ManagerDashboard from "./ManagerDashboard";
 import ManagerAlertPage from "./ManagerAlertPage";
 import ManagerReportPage from "./ManagerReportPage";
 import ManagerEquipmentPage from "./ManagerEquipmentPage";
+import ManagerHistoryPage from "./ManagerHistoryPage";
 import ProfileENG from './ProfileENG';
 import ProfileEditENG from './ProfileEditENG';
 import ChangePasswordENG from './ChangePasswordENG';
@@ -91,7 +92,7 @@ function ManagerMainPage({ user, handleLogout, refreshUser }) {
                     <button className="nav-link" onClick={() => navigate("/dashboard/manager/equipment")}>
                         <FaBoxOpen /> <span>ข้อมูลอะไหล่ทั้งหมด</span>
                     </button>
-                    <button className="nav-link" onClick={() => navigate("/dashboard/manager/managerhistoryr")}>
+                    <button className="nav-link" onClick={() => navigate("/dashboard/manager/managerhistory")}>
                         <FaHistory /> <span>ประวัติการใช้งาน</span>
                     </button>
                     <button className="nav-link" onClick={() => navigate("/dashboard/manager/profile")}>
@@ -150,7 +151,7 @@ function ManagerMainPage({ user, handleLogout, refreshUser }) {
                         <Route path="home" element={<ManagerDashboard viewDate={selectedDate} />} />
                         <Route path="reports" element={<ManagerReportPage viewDate={selectedDate} />} />
                         <Route path="alerts" element={<ManagerAlertPage />} />
-                        <Route path="managerhistoryr" element={<ManagerHistoryPage user={user} viewDate={selectedDate} />} />
+                        <Route path="managerhistory" element={<ManagerHistoryPage user={user} viewDate={selectedDate} />} />
                         <Route path="equipment" element={<ManagerEquipmentPage />} />
                         <Route path="profile" element={<ProfileENG user={user}/>}>
                             <Route path="edit" element={<ProfileEditENG user={user} refreshUser={refreshUser} />} />
