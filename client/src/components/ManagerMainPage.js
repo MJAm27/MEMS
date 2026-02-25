@@ -148,17 +148,16 @@ function ManagerMainPage({ user, handleLogout, refreshUser }) {
                 <div className="content-body">
                     <Routes>
                         {/* ส่ง selectedDate ไปให้หน้าลูกเพื่อกรองข้อมูลรายวัน */}
-                        <Route path="home" element={<ManagerDashboard viewDate={selectedDate} />} />
-                        <Route path="reports" element={<ManagerReportPage viewDate={selectedDate} />} />
-                        <Route path="alerts" element={<ManagerAlertPage />} />
-                        <Route path="history" element={<HistoryPage user={user} viewDate={selectedDate} />} />
-                        <Route path="equipment" element={<ManagerEquipmentPage />} />
-                        <Route path="profile" element={<ProfileENG user={user}/>}>
-                            <Route path="edit" element={<ProfileEditENG user={user} refreshUser={refreshUser} />} />
-                            <Route path="change-passwordENG" element={<ChangePasswordENG user={user}/>} />
-                        </Route>
-                        <Route index element={<Navigate to="home" replace />} />
-                        <Route path="*" element={<h2 className="text-center mt-10">ไม่พบหน้าที่คุณต้องการ</h2>} />
+                        <Route path="manager/home" element={<ManagerDashboard viewDate={selectedDate} />} />
+                        <Route path="manager/reports" element={<ManagerReportPage viewDate={selectedDate} />} />
+                        <Route path="manager/alerts" element={<ManagerAlertPage />} />
+                        <Route path="manager/history" element={<HistoryPage user={user} viewDate={selectedDate} />} />
+                        <Route path="manager/equipment" element={<ManagerEquipmentPage />} />
+                        <Route path="manager/profile" element={<ProfileENG user={user}/>} />
+                        <Route path="manager/profile/edit" element={<ProfileEditENG user={user} refreshUser={refreshUser}/>} />
+                        <Route path="manager/profile/change-passwordENG" element={<ChangePasswordENG user={user}/>} />
+                        <Route index element={<Navigate to="manager/home" replace />} />
+                        <Route path="manager/*" element={<h2 className="text-center mt-10">ไม่พบหน้าที่คุณต้องการ</h2>} />
                     </Routes>
                 </div>
             </main>
