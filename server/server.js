@@ -68,7 +68,7 @@ const JWT_SECRET = "MY_SUPER_SECRET_KEY_FOR_JWT_12345";
 const HARDCODED_USER_ID = 123464; // (ชั่วคราว)
 const mqtt = require('mqtt');
 const client = mqtt.connect('mqtt://kob.vps.athichal.com:62279'); 
-
+const SECRET_PASSKEY = "MEMS_AMKOB";
 client.on('connect', () => {
     console.log('✅ Connected to MQTT Broker on VPS successfully!');
 });
@@ -118,15 +118,14 @@ async function logActionToDB(userId, actionTypeId, transactionId = null) {
  * ฟังก์ชัน MQTT Helper สำหรับส่งคำสั่งไปยัง ESP8266 (OPEN/CLOSE) ผ่าน MQTT Broker
  */
 async function commandServo(action) { 
-    const topic = "esp8266/test"; // ให้ตรงกับใน Arduino
-    const message = action.toUpperCase(); 
+    const topic = "esp8266/test"; 
+    const message = `${action.toUpperCase()}:${SECRET_PASSKEY}`; 
     try {
         client.publish(topic, message);
-        console.log(`[MQTT] Published '${message}' to topic '${topic}'`);
-        return `Command ${message} sent`;
+        console.log(`[MQTT] Verified command '${action}' sent`);
+        return `Command sent`;
     } catch (error) {
-        console.error(`[MQTT] Error:`, error.message);
-        throw new Error('Failed to send MQTT command');
+        throw new Error('MQTT Publish failed');
     }
 }
 

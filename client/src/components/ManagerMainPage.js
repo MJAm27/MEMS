@@ -11,8 +11,8 @@ import "./ManagerMainPage.css";
 import ManagerDashboard from "./ManagerDashboard";
 import ManagerAlertPage from "./ManagerAlertPage";
 import ManagerReportPage from "./ManagerReportPage";
-import HistoryPage from "./HistoryPage";
 import ManagerEquipmentPage from "./ManagerEquipmentPage";
+import ManagerHistoryPage from "./ManagerHistoryPage";
 import ProfileENG from './ProfileENG';
 import ProfileEditENG from './ProfileEditENG';
 import ChangePasswordENG from './ChangePasswordENG';
@@ -92,7 +92,7 @@ function ManagerMainPage({ user, handleLogout, refreshUser }) {
                     <button className="nav-link" onClick={() => navigate("/dashboard/manager/equipment")}>
                         <FaBoxOpen /> <span>ข้อมูลอะไหล่ทั้งหมด</span>
                     </button>
-                    <button className="nav-link" onClick={() => navigate("/dashboard/manager/history")}>
+                    <button className="nav-link" onClick={() => navigate("/dashboard/manager/managerhistory")}>
                         <FaHistory /> <span>ประวัติการใช้งาน</span>
                     </button>
                     <button className="nav-link" onClick={() => navigate("/dashboard/manager/profile")}>
