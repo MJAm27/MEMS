@@ -276,10 +276,11 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
                 "UPDATE lot SET current_quantity = current_quantity - ? WHERE lot_id = ? AND current_quantity >= ?",
                 [item.quantity, item.lotId, item.quantity]
             );
+
             const listId = `ER-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
             await connection.query(
-                "INSERT INTO equipment_list (equipment_list_id, transaction_id, equipment_id, quantity, lot_id) VALUES (?, ?, ?, ?, ?)",
-                [listId, transactionId, item.partId, item.quantity, item.lotId]
+                "INSERT INTO equipment_list (equipment_list_id, transaction_id, quantity, lot_id) VALUES (?, ?, ?, ?)",
+                [listId, transactionId, item.quantity, item.lotId]
             );
         }
 
@@ -441,7 +442,17 @@ app.post('/api/borrow/pending', authenticateToken, async (req, res) => {
                 [listId, transactionId, item.quantity, item.lotId]
             );
         }
+        const logIdOpen = `LG-OP-${Date.now()}`;
+        const logIdClose = `LG-CL-${Date.now() + 100}`;
+        await connection.query(
+            "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-001', ?, ?)",
+            [logIdOpen, transactionId, userId]
+        );
 
+        await connection.query(
+    "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-002', ?, ?)",
+    [logIdClose, transactionId, userId]
+);
         await connection.commit();
         res.json({ success: true, message: "บันทึกรายการเบิกล่วงหน้าและตัดสต็อกเรียบร้อย" });
     } catch (error) {
