@@ -40,7 +40,7 @@
 .m-items-list { background: #fdf2f8; padding: 10px; border-radius: 8px; margin: 10px 0; }
 .m-item-row { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 3px; }
 .m-qty { color: var(--primary); font-weight: 700; }
-.m-footer { display: flex; justify-content: space-between; font-size: 0.8rem; border-top: 1px solid #eee; pt: 8px; }
+.m-footer { display: flex; justify-content: space-between; font-size: 0.8rem; border-top: 1px solid #eee; padding-top: 8px; }
 
 /* Badges */
 .type-badge { padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
