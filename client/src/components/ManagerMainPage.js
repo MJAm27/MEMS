@@ -151,7 +151,7 @@ function ManagerMainPage({ user, handleLogout, refreshUser }) {
                         <Route path="manager/home" element={<ManagerDashboard viewDate={selectedDate} />} />
                         <Route path="manager/reports" element={<ManagerReportPage viewDate={selectedDate} />} />
                         <Route path="manager/alerts" element={<ManagerAlertPage />} />
-                        <Route path="manager/history" element={<HistoryPage user={user} viewDate={selectedDate} />} />
+                        <Route path="manager/managerhistory" element={<ManagerHistoryPage user={user} viewDate={selectedDate} />} />
                         <Route path="manager/equipment" element={<ManagerEquipmentPage />} />
                         <Route path="manager/profile" element={<ProfileENG user={user}/>} />
                         <Route path="manager/profile/edit" element={<ProfileEditENG user={user} refreshUser={refreshUser}/>} />
