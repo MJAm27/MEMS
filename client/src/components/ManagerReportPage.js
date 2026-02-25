@@ -42,6 +42,7 @@ function ManagerReportPage() {
             setSummary(summaryRes.data);
             setRawInventory(invRes.data);
             setRawUsage(useRes.data);
+
         } catch (err) { 
             console.error("Error fetching report data:", err); 
         } finally { 
@@ -167,7 +168,7 @@ function ManagerReportPage() {
                             </thead>
                             <tbody>
                                 {filteredInventory.map((item, i) => {
-                                    const current = item.quantity || 0;
+                                    const current = item.quantity - item.used_quantity || 0;
                                     const total = item.total_quantity || 0;
                                     const percent = total > 0 ? (current / total) * 100 : 0;
                                     const isLow = current <= (item.alert_quantity || 0);

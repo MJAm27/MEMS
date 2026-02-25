@@ -64,7 +64,7 @@ window.addEventListener('error', debounce(resizeObserverErr));
                 {/* ส่ง handleLogout เป็น Prop ไปให้ Manager */}
                 <Route 
                     path="/dashboard/manager/*" 
-                    element={<ManagerMainPage user={user} handleLogout={handleLogout} />} 
+                    element={<ManagerMainPage user={user} handleLogout={handleLogout} refreshUser={refreshUser} />} 
                 />
 
                 <Route path="/dashboard/*" element={<DashboardPage />} /> 
