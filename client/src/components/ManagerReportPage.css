@@ -133,3 +133,18 @@
         display: none; /* ซ่อนคำว่า "ช่วงเวลาหลัก" ในมือถือเพื่อประหยัดที่ */
     }
 }
+
+.mini-bar {
+    width: 100%;
+    height: 6px;          /* สำคัญมาก */
+    background-color: #e5e7eb;
+    border-radius: 4px;
+    margin-top: 6px;
+    overflow: hidden;
+}
+
+.mini-bar .fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
