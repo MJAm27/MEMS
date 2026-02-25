@@ -104,10 +104,15 @@ function ManagerAlertPage() {
               highValueList.map((item) => (
                 <div key={item.lot_id || item.equipment_id} className="alert-item-card high-value-border">
                   <div className="item-image">
-                    <img 
-                        src={item.img && item.img !== "NULL" ? item.img : "/default-image.png"} 
+                    {item.img ? (
+                      <img 
+                        src={`${API_BASE_URL}/uploads/${item.img}`} 
                         alt={item.equipment_name} 
-                    />
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+                      />
+                    ) : (
+                      <div style={{ color: '#ccc', fontSize: '0.8rem', textAlign: 'center' }}>ไม่มีรูป</div>
+                    )}
                   </div>
                   <div className="item-details">
                     <h4 className="text-success">ราคาหน่วยละ : {Number(item.price).toLocaleString()} บาท</h4>
@@ -129,8 +134,16 @@ function ManagerAlertPage() {
                 expireList.map((item) => (
                     <div key={item.lot_id} className="alert-item-card">
                         <div className="item-image">
-                            <img src={item.img && item.img !== "NULL" ? item.img : "https://via.placeholder.com/150"} alt={item.equipment_name} />
-                        </div>
+                    {item.img ? (
+                      <img 
+                        src={`${API_BASE_URL}/uploads/${item.img}`} 
+                        alt={item.equipment_name} 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+                      />
+                    ) : (
+                      <div style={{ color: '#ccc', fontSize: '0.8rem', textAlign: 'center' }}>ไม่มีรูป</div>
+                    )}
+                  </div>
                         <div className="item-details">
                             <h4 className="text-danger">จำนวน : {item.current_quantity} {item.unit || "หน่วย"}</h4>
                             <h3>{item.equipment_name}</h3>
@@ -151,8 +164,16 @@ function ManagerAlertPage() {
                 stockList.map((item) => (
                     <div key={item.equipment_id} className="alert-item-card">
                         <div className="item-image">
-                            <img src={item.img && item.img !== "NULL" ? item.img : "https://via.placeholder.com/150"} alt={item.equipment_name} />
-                        </div>
+                    {item.img ? (
+                      <img 
+                        src={`${API_BASE_URL}/uploads/${item.img}`} 
+                        alt={item.equipment_name} 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+                      />
+                    ) : (
+                      <div style={{ color: '#ccc', fontSize: '0.8rem', textAlign: 'center' }}>ไม่มีรูป</div>
+                    )}
+                  </div>
                         <div className="item-details">
                             <h4 className="text-danger">เหลือปัจจุบัน : {item.total_stock} {item.unit || "หน่วย"}</h4>
                             <h3>{item.equipment_name}</h3>

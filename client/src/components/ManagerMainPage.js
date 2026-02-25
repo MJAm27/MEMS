@@ -12,15 +12,21 @@ import ManagerDashboard from "./ManagerDashboard";
 import ManagerAlertPage from "./ManagerAlertPage";
 import ManagerReportPage from "./ManagerReportPage";
 import ManagerEquipmentPage from "./ManagerEquipmentPage";
+<<<<<<< HEAD
 import ManagerHistoryPage from "./ManagerHistoryPage";
+=======
+import ProfileENG from './ProfileENG';
+import ProfileEditENG from './ProfileEditENG';
+import ChangePasswordENG from './ChangePasswordENG';
+>>>>>>> 415dd79edc54f20fccb428f87abdb4160c6070b9
 
 const API_BASE_URL = process.env.REACT_APP_API_URL ;
 
-function ManagerMainPage({ user, handleLogout }) {
+function ManagerMainPage({ user, handleLogout, refreshUser }) {
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
     const [alertCount, setAlertCount] = useState(0);
-    
+    console.log(user);
     // --- ส่วนที่เพิ่ม: การจัดการวันที่รายวัน ---
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
@@ -92,6 +98,9 @@ function ManagerMainPage({ user, handleLogout }) {
                     <button className="nav-link" onClick={() => navigate("/dashboard/manager/managerhistoryr")}>
                         <FaHistory /> <span>ประวัติการใช้งาน</span>
                     </button>
+                    <button className="nav-link" onClick={() => navigate("/dashboard/manager/profile")}>
+                        <FaUserCircle /> <span>โปรไฟล์</span>
+                    </button>
                 </nav>
 
                 <button className="logout-btn-top" onClick={localHandleLogout}>
@@ -147,6 +156,10 @@ function ManagerMainPage({ user, handleLogout }) {
                         <Route path="alerts" element={<ManagerAlertPage />} />
                         <Route path="managerhistoryr" element={<ManagerHistoryPage user={user} viewDate={selectedDate} />} />
                         <Route path="equipment" element={<ManagerEquipmentPage />} />
+                        <Route path="profile" element={<ProfileENG user={user}/>}>
+                            <Route path="edit" element={<ProfileEditENG user={user} refreshUser={refreshUser} />} />
+                            <Route path="change-passwordENG" element={<ChangePasswordENG user={user}/>} />
+                        </Route>
                         <Route index element={<Navigate to="home" replace />} />
                         <Route path="*" element={<h2 className="text-center mt-10">ไม่พบหน้าที่คุณต้องการ</h2>} />
                     </Routes>

@@ -94,9 +94,11 @@ function ProfileEditENG({ user, refreshUser }) {
                 throw new Error(errorData.message || 'Failed to update profile');
             }
             
+            if (refreshUser) {
+                refreshUser();
+            }
 
             alert("บันทึกข้อมูลสำเร็จ!");
-            // if (refreshUser) refreshUser(); 
             const role = user?.role_id || user?.role;
             console.log(role);
             if (role === 'R-ADM') {

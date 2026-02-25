@@ -862,25 +862,35 @@ app.get("/api/inventoryBalanceReportChart", async (req, res) => {
             SELECT
                 et.equipment_type_id,
                 et.equipment_name,
+                -- จำนวนคงเหลือในคลังปัจจุบัน (จากตาราง lot)
                 COALESCE(SUM(l.current_quantity), 0) AS quantity,
+                
+                -- จำนวนทั้งหมด (ของในคลัง + ของที่ถูกเบิกไปแบบ Pending)
                 COALESCE(SUM(l.current_quantity), 0) + COALESCE((
-                    SELECT SUM(el.quantity)
-                    FROM equipment_list el
-                    WHERE el.lot_id IN (SELECT lot_id FROM lot WHERE equipment_id = e.equipment_id)
+                    SELECT SUM(el_sub.quantity)
+                    FROM equipment_list el_sub
+                    INNER JOIN lot l_sub ON el_sub.lot_id = l_sub.lot_id
+                    JOIN transactions t_sub ON el_sub.transaction_id = t_sub.transaction_id
+                    WHERE l_sub.equipment_id = e.equipment_id 
+                    AND t_sub.is_pending = 1
                 ), 0) AS total_quantity,
+                
                 COALESCE(e.alert_quantity, 0) AS alert_quantity,
+                
+                -- จำนวนที่ใช้ไปจริง (หักจากรายการที่ปิด Job แล้ว)
                 COALESCE((
-                    SELECT SUM(el.quantity)
-                    FROM equipment_list el
-                    JOIN transactions t ON el.transaction_id = t.transaction_id
-                    WHERE el.equipment_id = e.equipment_id 
-                    AND t.transaction_type_id = 'T-WTH'
-                    AND t.is_pending = 0
+                    SELECT SUM(el_used.quantity)
+                    FROM equipment_list el_used
+                    INNER JOIN lot l_used ON el_used.lot_id = l_used.lot_id
+                    JOIN transactions t_used ON el_used.transaction_id = t_used.transaction_id
+                    WHERE l_used.equipment_id = e.equipment_id 
+                    AND t_used.transaction_type_id = 'T-WTH'
+                    AND t_used.is_pending = 0
                 ), 0) AS used_quantity
             FROM equipment_type et
             LEFT JOIN equipment e ON e.equipment_type_id = et.equipment_type_id
             LEFT JOIN lot l ON l.equipment_id = e.equipment_id
-            GROUP BY et.equipment_type_id, et.equipment_name, e.equipment_id;
+            GROUP BY et.equipment_type_id, et.equipment_name
         `;
 
         const [rows] = await pool.query(sql);
@@ -1916,10 +1926,11 @@ app.get('/api/reports/equipment-usage', async (req, res) => {
         const sql = `
             SELECT et.equipment_name, SUM(el.quantity) as total_usage
             FROM equipment_list el
-            JOIN equipment e ON el.equipment_id = e.equipment_id
+            JOIN lot l ON l.lot_id = el.lot_id
+            JOIN equipment e ON l.equipment_id = e.equipment_id
             JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
             GROUP BY et.equipment_name
-            ORDER BY total_usage DESC
+            ORDER BY total_usage DESC;
         `;
         const [rows] = await pool.query(sql);
         res.json(rows);
