@@ -23,7 +23,6 @@ function ManagerMainPage({ user, handleLogout, refreshUser }) {
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
     const [alertCount, setAlertCount] = useState(0);
-    console.log(user);
     // --- ส่วนที่เพิ่ม: การจัดการวันที่รายวัน ---
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 

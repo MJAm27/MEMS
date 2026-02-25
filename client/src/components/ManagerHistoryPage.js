@@ -159,7 +159,7 @@ function ManagerHistoryPage({ viewDate }) {
                                     <td className="user-column">
                                         <div className="user-info-cell">
                                             <div className="user-avatar-mini">
-                                                {row.profile_img ? <img src={`${API_BASE}/uploads/${row.profile_img}`} alt="p" /> : <FaUserCircle className="text-gray-300" />}
+                                                {row.profile_img ? <img src={`${API_BASE}/uploads/${row.profile_img}`} alt="p" /> : <span>{row.fullname ? row.fullname.charAt(0).toUpperCase() : "?"}</span>}
                                             </div>
                                             <div className="user-name-text">{row.fullname || "ไม่ระบุชื่อ"}</div>
                                         </div>
