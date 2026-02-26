@@ -140,6 +140,7 @@ app.get('/api/open', authenticateToken, async (req, res) => {
         await commandServo('OPEN'); 
         
         await logActionToDB(userId, 'A-001', transactionId);
+        
         res.status(200).send({ message: 'เปิดตู้สำเร็จ (MQTT)' });
     } catch (error) {
         res.status(500).send({ error: 'ไม่สามารถส่งคำสั่ง MQTT ได้' });
@@ -684,7 +685,7 @@ app.post("/api/login", async (req, res) => {
         if (users.length === 0) return res.status(401).json({ message: "Email หรือ Password ไม่ถูกต้อง" });
 
         const user = users[0];
-        const isPasswordMatch = await bcrypt.compare(password, user.password_hash); //
+        const isPasswordMatch = await bcrypt.compare(password, user.password_hash);
         
         if (!isPasswordMatch) return res.status(401).json({ message: "Email หรือ Password ไม่ถูกต้อง" });
         
@@ -808,23 +809,26 @@ app.post("/api/verify-2fa", async (req, res) => {
     }
 });
 
-
 /**
  * Endpoint 5: Get Current User (Protected)
  */
 app.get("/api/auth/me", authenticateToken, async (req, res) => {
-    // req.user มาจาก middleware (มี userId, email, fullname, role)
-    const userIdFromToken = req.user.userId; 
-
     try {
-        const [users] = await pool.execute("SELECT * FROM users WHERE user_id = ?", [userIdFromToken]);
-        if (users.length === 0) return res.status(404).json({ message: "User not found" });
+        // req.user ได้มาจาก middleware authenticateToken
+        const userIdFromToken = req.user.userId; 
+
+        const [users] = await pool.execute(
+            "SELECT user_id, email, fullname, position, phone_number, profile_img FROM users WHERE user_id = ?", 
+            [userIdFromToken]
+        );
+
+        if (users.length === 0) {
+            return res.status(404).json({ message: "ไม่พบผู้ใช้งาน" });
+        }
 
         const user = users[0];
-
-        // ส่งข้อมูลที่ครบถ้วนกลับไป
         res.json({
-            user_id: user.user_id, 
+            user_id: user.user_id,
             fullname: user.fullname,
             email: user.email,
             phone_number: user.phone_number,
@@ -835,7 +839,82 @@ app.get("/api/auth/me", authenticateToken, async (req, res) => {
 
     } catch (error) {
         console.error("Get Me Error:", error);
-        res.status(500).json({ message: "Server Error", error: error.message });
+        res.status(500).json({ message: "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์" });
+    }
+});
+
+/**
+ * Endpoint 6: Get Current User (Protected)
+ */
+// 1. API ตรวจสอบว่ามีอีเมลในระบบหรือไม่
+app.post("/api/forgot-password/check", async (req, res) => {
+    const { email } = req.body;
+    try {
+        const [users] = await pool.execute("SELECT email FROM users WHERE email = ?", [email]);
+        if (users.length === 0) return res.status(404).json({ message: "ไม่พบผู้ใช้งานนี้ในระบบ" });
+        res.json({ message: "พบบัญชีผู้ใช้" });
+    } catch (error) {
+        res.status(500).json({ message: "เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์" });
+    }
+});
+
+// 2. API ตรวจสอบรหัส OTP และสร้าง Reset Token ชั่วคราว
+app.post("/api/forgot-password/verify-otp", async (req, res) => {
+    const { email, token } = req.body;
+    try {
+        const [users] = await pool.execute("SELECT user_id, totp_secret FROM users WHERE email = ?", [email]);
+        if (users.length === 0) return res.status(404).json({ message: "ไม่พบผู้ใช้งาน" });
+
+        const user = users[0];
+        
+        // ตรวจสอบรหัส 6 หลักจากแอป Authenticator
+        const verified = speakeasy.totp.verify({
+            secret: user.totp_secret,
+            encoding: 'base32',
+            token: token,
+            window: 1 
+        });
+
+        if (verified) {
+            const resetToken = Buffer.from(`${user.user_id}-${Date.now()}`).toString('base64');
+            res.json({ resetToken });
+        } else {
+            res.status(401).json({ message: "รหัส OTP ไม่ถูกต้อง" });
+        }
+    } catch (error) {
+        res.status(500).json({ message: "Server Error" });
+    }
+});
+
+/**
+ * Endpoint 7: Reset Password 
+ */
+app.post("/api/reset-password", async (req, res) => {
+    const { token, newPassword } = req.body;
+    try {
+        const decoded = Buffer.from(token, 'base64').toString();
+        
+        // แก้ไข: ตัดเอาเฉพาะ timestamp ส่วนท้ายออกเพื่อให้เหลือ userId ที่สมบูรณ์ (เช่น U-5873579593)
+        const userId = decoded.slice(0, decoded.lastIndexOf('-')); 
+
+        // ต้องทำการ Hash รหัสผ่านใหม่ด้วย bcrypt เสมอ
+        const saltRounds = 10;
+        const passwordHash = await bcrypt.hash(newPassword, saltRounds);
+
+        // อัปเดตลงคอลัมน์ password_hash ให้ตรงกับชื่อในตารางจริง
+        const [result] = await pool.execute(
+            "UPDATE users SET password_hash = ? WHERE user_id = ?",
+            [passwordHash, userId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "ไม่พบผู้ใช้งานหรือลิงก์ไม่ถูกต้อง" });
+        }
+
+        res.json({ message: "เปลี่ยนรหัสผ่านสำเร็จ" });
+    } catch (error) {
+        console.error("Reset Password Error:", error);
+        res.status(500).json({ message: "ไม่สามารถเปลี่ยนรหัสผ่านได้" });
     }
 });
 
