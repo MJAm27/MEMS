@@ -12,16 +12,12 @@ import SearchPartPageENG from './components/SearchPartPageENG';
 import InventoryBalanceReportChart from './components/InventoryBalanceReportChart';
 import EquipmentUsageReportChart from './components/EquipmentUsageReportChart';
 import EquipmentAgeReportChart from './components/EquipmentAgeReportChart';
-
+import ForgotPasswordPage from './components/ForgotPasswordPage';
+import ResetPasswordPage from './components/ResetPasswordPage';
 function App() {
     const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || null);
 
-    // const handleLogout = () => {
-    //     localStorage.removeItem('token');
-    //     localStorage.removeItem('user');
-    //     window.location.href = "/login";
-    // };
-    // ฟังก์ชันนี้จะทำหน้าที่อัปเดต state user เมื่อมีการแก้ไขข้อมูล
+
     const refreshUser = () => {
         const updatedUser = JSON.parse(localStorage.getItem('user'));
         setUser(updatedUser);
@@ -60,7 +56,8 @@ window.addEventListener('error', debounce(resizeObserverErr));
                 <Route path="/register" element={<RegisterPage />} /> 
                 <Route path="/verify" element={<VerifyPage />} />
                 <Route path="/setup-2fa" element={<Setup2FAPage />} />
-              
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/dashboard/*" element={<DashboardPage />} /> 
                 <Route path="/profile" element={<ProfileENG user={user} />}>
                     <Route path="edit" element={<ProfileEditENG user={user} refreshUser={refreshUser} />} />
