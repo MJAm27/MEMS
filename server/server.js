@@ -1086,7 +1086,7 @@ app.get('/api/search/parts', authenticateToken, async (req, res) => {
 
 
 // 📌 API สำหรับดึงประวัติ 
-// server.js
+
 app.get('/api/history/full', authenticateToken, async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
