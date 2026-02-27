@@ -18,9 +18,9 @@ function HistoryPage({ user }) {
     const fetchHistory = useCallback(async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('token'); //
             const res = await axios.get(`${API_BASE}/api/history/full`, {
-                headers: { Authorization: `Bearer ${token}` },
+                headers: { Authorization: `Bearer ${token}` }, // ส่ง Token ไปเพื่อให้ Backend ทราบว่าเป็นใคร
                 params: { startDate, endDate }
             });
             

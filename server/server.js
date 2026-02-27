@@ -1090,6 +1090,7 @@ app.get('/api/search/parts', authenticateToken, async (req, res) => {
 app.get('/api/history/full', authenticateToken, async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
+        const userIdFromToken = req.user.userId;
         let sql = `
             SELECT 
                 t.transaction_id, 
@@ -1103,7 +1104,6 @@ app.get('/api/history/full', authenticateToken, async (req, res) => {
                 u.fullname, 
                 u.profile_img, 
                 t.user_id,
-                -- ดึงรายการอะไหล่แบบ JSON โดยเชื่อมโยงผ่าน lot และ equipment ให้ครบถ้วน
                 (SELECT JSON_ARRAYAGG(
                     JSON_OBJECT(
                         'name', et.equipment_name, 
@@ -1115,20 +1115,21 @@ app.get('/api/history/full', authenticateToken, async (req, res) => {
                  INNER JOIN equipment e ON l.equipment_id = e.equipment_id
                  INNER JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
                  WHERE el.transaction_id = t.transaction_id) as items_json,
-                -- ดึงเวลาเปิด-ปิดจาก accesslogs
                 (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-001' LIMIT 1) as open_time,
                 (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-002' LIMIT 1) as close_time
             FROM transactions t
             LEFT JOIN transactions_type tt ON t.transaction_type_id = tt.transaction_type_id
             LEFT JOIN users u ON t.user_id = u.user_id
-        `;
+            WHERE t.user_id = ? `;
 
-        const params = [];
+        const params = [userIdFromToken]; //
+
         if (startDate && endDate) {
-            sql += " WHERE t.date BETWEEN ? AND ? ";
+            sql += " AND t.date BETWEEN ? AND ? ";
             params.push(startDate, endDate);
         }
-        sql += ` ORDER BY COALESCE(t.parent_transaction_id, t.transaction_id) DESC, t.date DESC, t.time DESC`;
+        
+        sql += ` ORDER BY t.date DESC, t.time DESC`;
 
         const [rows] = await pool.query(sql, params);
         res.json(rows);
