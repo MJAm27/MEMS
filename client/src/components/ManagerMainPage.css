@@ -1,29 +1,120 @@
-.nav-left-section {
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --primary-color: #ff4d94;
+    --primary-gradient: linear-gradient(135deg, #ff4d94 0%, #d946ef 100%);
+    --primary-light: #fff0f6;
+    --bg-body: #f8fafc;
+    --bg-white: #ffffff;
+    --text-dark: #1e293b;
+    --text-muted: #64748b;
+    --sidebar-width: 280px;
+    --header-height: 70px;
+    --radius-md: 16px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==================== Layout & Sidebar Overlay ==================== */
+.layout-wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar-container {
+    width: var(--sidebar-width);
+    height: 100vh;
+    background: var(--bg-white);
+    border-right: 1px solid #f1f5f9;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1100;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s var(--transition);
+}
+
+@media (max-width: 768px) {
+    .sidebar-container {
+        width: 80%;
+        max-width: 300px;
+        transform: translateX(-100%); /* ซ่อน sidebar */
+    }
+    .sidebar-open .sidebar-container {
+        transform: translateX(0); /* แสดง sidebar */
+        box-shadow: 20px 0 50px rgba(0, 0, 0, 0.1);
+    }
+}
+
+/* ✅ ฉากหลังเมื่อเปิด Sidebar บนมือถือ */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.2); /* ไม่เบลอตามคำขอ */
+    z-index: 1050;
+}
+
+@media (max-width: 768px) {
+    .sidebar-open .sidebar-overlay {
+        display: block;
+    }
+}
+
+.main-content-wrapper {
+    flex-grow: 1;
+    margin-left: var(--sidebar-width);
+    transition: margin 0.3s ease;
+    min-width: 0;
+}
+
+@media (max-width: 768px) {
+    .main-content-wrapper {
+        margin-left: 0 !important;
+    }
+}
+
+/* ==================== Top Navbar ==================== */
+.top-navbar {
+    height: var(--header-height);
+    background: rgba(255, 255, 255, 0.9);
     display: flex;
     align-items: center;
-    gap: 20px;
+    justify-content: space-between;
+    padding: 0 20px;
+    position: sticky;
+    top: 0;
+    z-index: 900;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.nav-left-section { display: flex; align-items: center; gap: 15px; }
+
+.sidebar-toggle-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-dark);
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
 }
 
 .daily-filter-container {
     display: flex;
     align-items: center;
     background: #f1f5f9;
-    padding: 8px 15px;
+    padding: 6px 12px;
     border-radius: 50px;
-    gap: 10px;
+    gap: 8px;
     border: 1px solid #e2e8f0;
 }
 
-.calendar-icon {
-    color: #ff4d94;
-    font-size: 0.9rem;
-}
-
-.filter-text {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #64748b;
-}
+.calendar-icon { color: var(--primary-color); font-size: 0.9rem; }
+.filter-text { font-size: 0.85rem; font-weight: 600; color: #64748b; }
 
 .daily-date-input {
     border: none;
@@ -33,9 +124,53 @@
     font-weight: 700;
     outline: none;
     cursor: pointer;
+    font-size: 14px;
 }
 
-/* ปรับสี Notification Badge ให้เด่นขึ้น */
+/* ==================== Sidebar Styling ==================== */
+.sidebar-header { padding: 30px 20px; text-align: center; }
+.manager-logo h2 { font-size: 20px; font-weight: 800; color: var(--primary-color); margin: 0; }
+
+.sidebar-nav { flex-grow: 1; padding: 0 15px; }
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 12px 15px;
+    margin-bottom: 6px;
+    border-radius: var(--radius-md);
+    color: var(--text-muted);
+    border: none;
+    background: none;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    font-family: 'Prompt';
+}
+
+.nav-link:hover { background: var(--primary-light); color: var(--primary-color); }
+.nav-link svg { margin-right: 12px; font-size: 1.1rem; }
+
+.logout-btn-sidebar {
+    margin: 20px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid #fee2e2;
+    background: #fff;
+    color: #ef4444;
+    font-family: 'Prompt';
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.logout-btn-sidebar:hover { background: #fee2e2; }
+
 .notification-badge-inline {
     background: #ef4444;
     color: white;
@@ -45,24 +180,26 @@
     margin-left: auto;
 }
 
-/* ManagerMainPage.css */
+/* ==================== User Profile Nav ==================== */
+.user-profile-display { display: flex; align-items: center; gap: 10px; }
+.user-text { text-align: right; }
+.user-text .name { display: block; font-weight: 600; font-size: 0.9rem; color: var(--text-dark); }
+.user-text .role { font-size: 0.75rem; color: var(--text-muted); }
+
+.avatar-circle {
+    width: 38px;
+    height: 38px;
+    background: var(--primary-gradient);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+/* Responsive adjustments */
 @media (max-width: 768px) {
-    .daily-filter-container {
-        padding: 5px 8px;
-        gap: 5px;
-    }
-
-    .filter-text {
-        display: none; 
-    }
-
-    .daily-date-input {
-        width: 115px;
-        font-size: 12px;
-        padding: 4px;
-    }
-    
-    .calendar-icon {
-        font-size: 14px;
-    }
+    .filter-text, .user-text { display: none; }
+    .daily-date-input { width: 110px; font-size: 12px; }
 }

@@ -23,11 +23,16 @@ function ManagerMainPage({ user, handleLogout, refreshUser }) {
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
     const [alertCount, setAlertCount] = useState(0);
-    // --- ส่วนที่เพิ่ม: การจัดการวันที่รายวัน ---
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
     useLayoutEffect(() => {
-        const handleResize = () => setSidebarOpen(window.innerWidth > 768);
+        const handleResize = () => {
+            if (window.innerWidth > 768) {
+                setSidebarOpen(true);
+            } else {
+                setSidebarOpen(false);
+            }
+        };
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
@@ -51,6 +56,14 @@ function ManagerMainPage({ user, handleLogout, refreshUser }) {
         return () => clearInterval(interval);
     }, [fetchAlertCount]);
 
+    // ✅ ฟังก์ชันสำหรับเปลี่ยนหน้าและปิด Sidebar อัตโนมัติ (สำหรับมือถือ)
+    const goTo = (path) => {
+        navigate(path);
+        if (window.innerWidth <= 768) {
+            setSidebarOpen(false);
+        }
+    };
+
     const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
     const localHandleLogout = () => {
@@ -67,6 +80,9 @@ function ManagerMainPage({ user, handleLogout, refreshUser }) {
     return (
         <div className={`layout-wrapper ${sidebarOpen ? "sidebar-open" : "sidebar-closed"}`}>
             
+            {/* ✅ Overlay สำหรับมือถือ (แตะเพื่อปิด sidebar) */}
+            <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>
+
             <aside className="sidebar-container">
                 <div className="sidebar-header">
                     <div className="manager-logo">
@@ -75,31 +91,32 @@ function ManagerMainPage({ user, handleLogout, refreshUser }) {
                 </div>
                 
                 <nav className="sidebar-nav">
-                    <button className="nav-link" onClick={() => navigate("/dashboard/manager/home")}>
+                    {/* ✅ เปลี่ยนจาก navigate เป็น goTo เพื่อให้ sidebar ปิดบนมือถือ */}
+                    <button className="nav-link" onClick={() => goTo("/dashboard/manager/home")}>
                         <FaHome /> <span>แผงควบคุมหลัก</span>
                     </button>
-                    <button className="nav-link" onClick={() => navigate("/dashboard/manager/reports")}>
+                    <button className="nav-link" onClick={() => goTo("/dashboard/manager/reports")}>
                         <FaChartBar /> <span>รายงานสรุปคลัง</span>
                     </button>
-                    <button className="nav-link" onClick={() => navigate("/dashboard/manager/alerts")}>
+                    <button className="nav-link" onClick={() => goTo("/dashboard/manager/alerts")}>
                         <div className="nav-link-content">
                             <FaBell /> 
                             <span>รายการแจ้งเตือน</span>
                             {alertCount > 0 && <span className="notification-badge-inline">{alertCount}</span>}
                         </div>
                     </button>
-                    <button className="nav-link" onClick={() => navigate("/dashboard/manager/equipment")}>
+                    <button className="nav-link" onClick={() => goTo("/dashboard/manager/equipment")}>
                         <FaBoxOpen /> <span>ข้อมูลอะไหล่ทั้งหมด</span>
                     </button>
-                    <button className="nav-link" onClick={() => navigate("/dashboard/manager/managerhistory")}>
+                    <button className="nav-link" onClick={() => goTo("/dashboard/manager/managerhistory")}>
                         <FaHistory /> <span>ประวัติการใช้งาน</span>
                     </button>
-                    <button className="nav-link" onClick={() => navigate("/dashboard/manager/profile")}>
+                    <button className="nav-link" onClick={() => goTo("/dashboard/manager/profile")}>
                         <FaUserCircle /> <span>โปรไฟล์</span>
                     </button>
                 </nav>
 
-                <button className="logout-btn-top" onClick={localHandleLogout}>
+                <button className="logout-btn-sidebar" onClick={localHandleLogout}>
                     <FaSignOutAlt /> <span>ออกจากระบบ</span>
                 </button>
             </aside>
@@ -110,24 +127,15 @@ function ManagerMainPage({ user, handleLogout, refreshUser }) {
                         <button className="sidebar-toggle-btn" onClick={toggleSidebar}>
                             <FaBars />
                         </button>
-                        <div className="daily-filter-container" style={{ display: 'flex', alignItems: 'center', marginLeft: '15px', gap: '10px' }}>
-                        <FaCalendarDay className="calendar-icon" style={{ color: '#3498db' }} />
-                        <span className="filter-text" style={{ fontSize: '14px', fontWeight: '500', color: '#2c3e50' }}>มุมมองรายวัน:</span>
-                        <input 
-                            type="date" 
-                            id="manager-daily-date"
-                            name="selectedDate"
-                            value={selectedDate} 
-                            onChange={(e) => setSelectedDate(e.target.value)} // เรียกใช้งานที่นี่
-                            className="daily-date-input"
-                            style={{
-                                padding: '5px 10px',
-                                borderRadius: '8px',
-                                border: '1px solid #e2e8f0',
-                                outline: 'none',
-                                fontFamily: 'inherit'
-                            }}
-                        />
+                        <div className="daily-filter-container">
+                            <FaCalendarDay className="calendar-icon" />
+                            <span className="filter-text">มุมมองรายวัน:</span>
+                            <input 
+                                type="date" 
+                                value={selectedDate} 
+                                onChange={(e) => setSelectedDate(e.target.value)} 
+                                className="daily-date-input"
+                            />
                         </div>
                     </div>
                     
@@ -146,7 +154,6 @@ function ManagerMainPage({ user, handleLogout, refreshUser }) {
 
                 <div className="content-body">
                     <Routes>
-                        {/* ส่ง selectedDate ไปให้หน้าลูกเพื่อกรองข้อมูลรายวัน */}
                         <Route path="manager/home" element={<ManagerDashboard viewDate={selectedDate} />} />
                         <Route path="manager/reports" element={<ManagerReportPage viewDate={selectedDate} />} />
                         <Route path="manager/alerts" element={<ManagerAlertPage />} />

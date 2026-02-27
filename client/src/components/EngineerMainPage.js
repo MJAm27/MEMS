@@ -4,7 +4,7 @@ import axios from "axios";
 import {
     FaBars, FaHome, FaSearch, FaHistory, FaSignOutAlt,
     FaBoxOpen, FaReply, FaHandHolding, FaUserEdit, FaCheckCircle,
-    FaExclamationTriangle 
+    FaExclamationTriangle, FaTimes 
 } from "react-icons/fa";
 import "./EngineerMainPage.css";
 
@@ -26,11 +26,26 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
     const [pendingItems, setPendingItems] = useState([]); 
     const [finalizeData, setFinalizeData] = useState({}); 
 
+    // จัดการการเปิด-ปิด Sidebar ตามขนาดหน้าจอ
     useLayoutEffect(() => {
-        const handleResize = () => setSidebarOpen(window.innerWidth > 768);
+        const handleResize = () => {
+            if (window.innerWidth > 768) {
+                setSidebarOpen(true);
+            } else {
+                setSidebarOpen(false);
+            }
+        };
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    // ฟังก์ชันสำหรับเปลี่ยนหน้าและปิด Sidebar อัตโนมัติ (สำหรับมือถือ)
+    const goTo = (path) => {
+        navigate(path);
+        if (window.innerWidth <= 768) {
+            setSidebarOpen(false);
+        }
+    };
 
     const fetchPendingBorrows = useCallback(async () => {
         if (!user?.user_id) return;
@@ -68,10 +83,8 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
 
     const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
-    // ฟังก์ชันสำหรับการคืนตามจำนวนที่ระบุ (Partial Return)
     const handlespecificReturn = (item, uniqueKey) => {
         const input = finalizeData[uniqueKey] || {};
-        // ดึงค่าจากช่อง "จำนวนที่ใช้จริง/คืน" หากไม่มีให้ใช้ยอดทั้งหมด
         const qtyToReturn = parseInt(input.usedQty) > 0 ? parseInt(input.usedQty) : item.borrow_qty;
 
         if (qtyToReturn > item.borrow_qty) {
@@ -91,8 +104,10 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                     }
                 } 
             });
+            if (window.innerWidth <= 768) setSidebarOpen(false);
         }
     };
+
     const handleProcessBorrow = async (item, actionType, uniqueKey) => {
         const input = finalizeData[uniqueKey] || {}; 
         const snInput = input.machineSN ? input.machineSN.trim() : "";
@@ -106,10 +121,6 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                 if (!snInput || qtyInput <= 0) {
                     return alert("กรุณากรอกเลขครุภัณฑ์และจำนวนที่ใช้จริงให้ถูกต้อง");
                 }
-                if (qtyInput > item.borrow_qty) {
-                    return alert(`จำนวนที่ใช้จริง (${qtyInput}) ห้ามเกินจำนวนที่มีอยู่ในมือ (${item.borrow_qty})`);
-                }
-
                 await axios.post(`${API_BASE}/api/borrow/finalize-partial`, {
                     transactionId: item.borrow_id,
                     equipmentId: item.equipment_id,
@@ -118,7 +129,7 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                     lotId: item.lot_id
                 }, { headers: { Authorization: `Bearer ${token}` } });
 
-                alert("ดำเนินการสำเร็จและบันทึกประวัติเรียบร้อยแล้ว");
+                alert("ดำเนินการสำเร็จ");
                 fetchPendingBorrows();
             }
         } catch (err) { 
@@ -132,17 +143,13 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                 <FaExclamationTriangle className="warn-icon" />
                 <h3>รายการยืมล่วงหน้าที่รอการสรุป</h3>
             </div>
-            
             {pendingItems.length === 0 ? (
-                <div className="empty-pending-card" style={{ textAlign: 'center', padding: '40px', background: '#fff', borderRadius: '16px', color: '#999' }}>
-                    ไม่มีรายการอะไหล่ค้างจ่าย
-                </div>
+                <div className="empty-pending-card">ไม่มีรายการอะไหล่ค้างจ่าย</div>
             ) : (
                 <div className="pending-grid">
                     {pendingItems.map((item, index) => {
                         const uniqueKey = `${item.borrow_id}-${index}`;
                         const displayQtyToReturn = finalizeData[uniqueKey]?.usedQty || item.borrow_qty;
-                        
                         return (
                             <div key={uniqueKey} className="pending-card">
                                 <div className="pending-info">
@@ -150,36 +157,15 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                                     <p>คงเหลือในมือ: <b style={{ color: '#e91e63' }}>{item.borrow_qty}</b> ชิ้น</p>
                                     <small>วันที่เบิก: {new Date(item.borrow_date).toLocaleDateString('th-TH')}</small>
                                 </div>
-
                                 <div className="finalize-form">
-                                    <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>ระบุเลขครุภัณฑ์:</label>
-                                    <input 
-                                        type="text" 
-                                        placeholder="เช่น C-001..."
-                                        value={finalizeData[uniqueKey]?.machineSN || ''} 
-                                        onChange={(e) => handleInputChange(uniqueKey, 'machineSN', e.target.value)}
-                                    />
-                                    
-                                    <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>จำนวนที่ใช้จริง/คืน:</label>
+                                    <label>ระบุเลขครุภัณฑ์:</label>
+                                    <input type="text" placeholder="เช่น C-001..." value={finalizeData[uniqueKey]?.machineSN || ''} onChange={(e) => handleInputChange(uniqueKey, 'machineSN', e.target.value)} />
+                                    <label>จำนวนที่ใช้จริง/คืน:</label>
                                     <div className="action-row">
-                                        <input 
-                                            type="number" 
-                                            placeholder="จำนวน..."
-                                            min="1"
-                                            max={item.borrow_qty}
-                                            value={finalizeData[uniqueKey]?.usedQty || ''}
-                                            onChange={(e) => handleInputChange(uniqueKey, 'usedQty', e.target.value)}
-                                        />
-                                        <button className="btn-use-part" onClick={() => handleProcessBorrow(item, 'USE', uniqueKey)}>
-                                            <FaCheckCircle /> บันทึกการใช้
-                                        </button>
+                                        <input type="number" placeholder="จำนวน..." min="1" max={item.borrow_qty} value={finalizeData[uniqueKey]?.usedQty || ''} onChange={(e) => handleInputChange(uniqueKey, 'usedQty', e.target.value)} />
+                                        <button className="btn-use-part" onClick={() => handleProcessBorrow(item, 'USE', uniqueKey)}><FaCheckCircle /> บันทึกการใช้</button>
                                     </div>
-
-                                    <button 
-                                        className="btn-return-part" 
-                                        onClick={() => handlespecificReturn(item, uniqueKey)} 
-                                        style={{ marginTop: '5px', width: '100%' }}
-                                    >
+                                    <button className="btn-return-part" onClick={() => handlespecificReturn(item, uniqueKey)} style={{ marginTop: '5px', width: '100%' }}>
                                         <FaReply /> คืนคลัง ({displayQtyToReturn} ชิ้น)
                                     </button>
                                 </div>
@@ -197,17 +183,10 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                 <h1>หน้าหลักวิศวกร</h1>
                 <p>เลือกเมนูเพื่อดำเนินการจัดการอะไหล่</p>
             </div>
-
             <div className="main-actions-container">
-                <button className="action-button secondary-action" onClick={() => navigate("/dashboard/engineer/withdraw")}>
-                    <FaBoxOpen className="action-icon" /> <span>เบิกอะไหล่</span>
-                </button>
-                <button className="action-button secondary-action" onClick={() => navigate("/dashboard/engineer/return")}>
-                    <FaReply className="action-icon" /> <span>คืนอะไหล่</span>
-                </button>
-                <button className="action-button secondary-action" onClick={() => navigate("/dashboard/engineer/borrow")}>
-                    <FaHandHolding className="action-icon" /> <span>เบิกอะไหล่ล่วงหน้า</span>
-                </button>
+                <button className="action-button" onClick={() => goTo("/dashboard/engineer/withdraw")}><FaBoxOpen className="action-icon" /> <span>เบิกอะไหล่</span></button>
+                <button className="action-button" onClick={() => goTo("/dashboard/engineer/return")}><FaReply className="action-icon" /> <span>คืนอะไหล่</span></button>
+                <button className="action-button" onClick={() => goTo("/dashboard/engineer/borrow")}><FaHandHolding className="action-icon" /> <span>เบิกอะไหล่ล่วงหน้า</span></button>
             </div>
             {pendingBorrowListUI} 
         </div>
@@ -217,32 +196,31 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
 
     return (
         <div className={`layout-wrapper ${sidebarOpen ? "sidebar-open" : "sidebar-closed"}`}>
-            <aside className="sidebar-container" style={{ left: sidebarOpen ? 0 : "-260px", transition: "0.3s" }}>
+            {/* Sidebar Overlay สำหรับมือถือ */}
+            <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>
+
+            <aside className="sidebar-container">
                 <div className="sidebar-header"><div className="brand"><h2>MEMS ENGINEER</h2></div></div>
                 <nav className="sidebar-nav">
-                    <button className="nav-link" onClick={() => navigate("/dashboard/engineer/home")}><FaHome /> <span>หน้าหลัก</span></button>
-                    <button className="nav-link" onClick={() => navigate("/dashboard/engineer/search")}><FaSearch /> <span>ค้นหาอะไหล่</span></button>
-                    <button className="nav-link" onClick={() => navigate("/dashboard/engineer/history")}><FaHistory /> <span>ประวัติการทำรายการ</span></button>
-                    <button className="nav-link" onClick={() => navigate("/dashboard/engineer/profile")}><FaUserEdit /> <span>แก้ไขโปรไฟล์</span></button>
+                    <button className="nav-link" onClick={() => goTo("/dashboard/engineer/home")}><FaHome /> <span>หน้าหลัก</span></button>
+                    <button className="nav-link" onClick={() => goTo("/dashboard/engineer/search")}><FaSearch /> <span>ค้นหาอะไหล่</span></button>
+                    <button className="nav-link" onClick={() => goTo("/dashboard/engineer/history")}><FaHistory /> <span>ประวัติการทำรายการ</span></button>
+                    <button className="nav-link" onClick={() => goTo("/dashboard/engineer/profile")}><FaUserEdit /> <span>แก้ไขโปรไฟล์</span></button>
                     <div className="nav-divider"></div>
-                    <button className="nav-link withdraw-link" onClick={() => navigate("/dashboard/engineer/withdraw")}><FaBoxOpen /> <span>เบิกอะไหล่</span></button>
-                    <button className="nav-link return-link" onClick={() => navigate("/dashboard/engineer/return")}><FaReply /> <span>คืนอะไหล่</span></button>
-                    <button className="nav-link borrow-link" onClick={() => navigate("/dashboard/engineer/borrow")}><FaHandHolding /> <span>เบิกอะไหล่ล่วงหน้า</span></button>
+                    <button className="nav-link" onClick={() => goTo("/dashboard/engineer/withdraw")}><FaBoxOpen /> <span>เบิกอะไหล่</span></button>
+                    <button className="nav-link" onClick={() => goTo("/dashboard/engineer/return")}><FaReply /> <span>คืนอะไหล่</span></button>
+                    <button className="nav-link" onClick={() => goTo("/dashboard/engineer/borrow")}><FaHandHolding /> <span>เบิกอะไหล่ล่วงหน้า</span></button>
                 </nav>
                 <button className="logout-btn-sidebar" onClick={localHandleLogout}><FaSignOutAlt /> ออกจากระบบ</button>
             </aside>
 
-            <main className="main-content-wrapper" style={{ marginLeft: sidebarOpen && window.innerWidth > 768 ? "260px" : "0" }}>
+            <main className="main-content-wrapper">
                 <header className="top-navbar">
                     <button className="sidebar-toggle-btn" onClick={toggleSidebar}><FaBars /></button>
                     <div className="user-profile-nav">
                         <span className="user-name">{user?.fullname}</span>
                         <div className="avatar-circle">
-                            {user?.profile_img ? (
-                                <img src={`${API_BASE}/profile-img/${user.profile_img}`} alt="Profile" className="profile-img-circle" />
-                            ) : (
-                                user.fullname?.charAt(0).toUpperCase()
-                            )}
+                            {user?.profile_img ? <img src={`${API_BASE}/profile-img/${user.profile_img}`} alt="Profile" className="profile-img-circle" /> : user.fullname?.charAt(0).toUpperCase()}
                         </div>
                     </div>
                 </header>
@@ -258,8 +236,7 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                             <Route path="edit" element={<ProfileEditENG user={user} refreshUser={refreshUser} />} />
                             <Route path="change-passwordENG" element={<ChangePasswordENG />} />
                         </Route>
-                        <Route path="engineer/search" element={< SearchPartPageENG/>} />
-                        <Route path="*" element={<h2>ไม่พบหน้าที่คุณต้องการ</h2>} />
+                        <Route path="engineer/search" element={<SearchPartPageENG/>} />
                     </Routes>
                 </div>
             </main>
