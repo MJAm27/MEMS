@@ -1085,8 +1085,7 @@ app.get('/api/search/parts', authenticateToken, async (req, res) => {
 });
 
 
-// 📌 API สำหรับดึงประวัติ 
-
+// 📌 API สำหรับดึงประวัติ ENG
 app.get('/api/history/full', authenticateToken, async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
@@ -1135,6 +1134,88 @@ app.get('/api/history/full', authenticateToken, async (req, res) => {
         res.json(rows);
     } catch (error) {
         console.error("Fetch History Error:", error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// API สำหรับ Manager ดูประวัติทั้งหมด (ไม่กรอง userId)
+
+app.get('/api/history/manager/full', authenticateToken, async (req, res) => {
+    try {
+        let { startDate, endDate } = req.query;
+        let sql = `
+            SELECT 
+                t.*, 
+                tt.transaction_type_name as type_name, 
+                u.fullname, 
+                u.profile_img,
+                (SELECT JSON_ARRAYAGG(
+                    JSON_OBJECT('name', et.equipment_name, 'qty', el.quantity)
+                )
+                 FROM equipment_list el
+                 INNER JOIN lot l ON el.lot_id = l.lot_id
+                 INNER JOIN equipment e ON l.equipment_id = e.equipment_id
+                 INNER JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
+                 WHERE el.transaction_id = t.transaction_id) as items_json,
+                (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-001' LIMIT 1) as open_time,
+                (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-002' LIMIT 1) as close_time
+            FROM transactions t
+            LEFT JOIN transactions_type tt ON t.transaction_type_id = tt.transaction_type_id
+            LEFT JOIN users u ON t.user_id = u.user_id
+            WHERE 1=1 `; 
+
+        const params = [];
+        if (startDate && endDate && startDate !== 'undefined' && endDate !== 'undefined') {
+            sql += " AND t.date BETWEEN ? AND ? ";
+            params.push(startDate, endDate);
+        }
+        
+        sql += ` ORDER BY t.date DESC, t.time DESC`;
+
+        const [rows] = await pool.query(sql, params);
+        res.json(rows);
+    } catch (error) { 
+        console.error("Backend Error:", error.message);
+        res.status(500).json({ error: error.message }); 
+    }
+});
+
+// ✅ API สำหรับ Manager ดูประวัติกิจกรรมรายวัน (ดึงได้ทุกคน)
+app.get('/api/history/manager/daily', authenticateToken, async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        // หมายเหตุ: ที่นี่เราไม่ใส่ WHERE user_id = ? เพื่อให้เห็นข้อมูลพนักงานทุกคน
+
+        let sql = `
+            SELECT 
+                t.transaction_id, 
+                tt.transaction_type_name as type_name,
+                t.transaction_type_id,
+                t.date, 
+                t.time,
+                u.fullname, 
+                t.machine_SN,
+                (SELECT JSON_ARRAYAGG(
+                    JSON_OBJECT('name', et.equipment_name, 'qty', el.quantity)
+                )
+                 FROM equipment_list el
+                 INNER JOIN lot l ON el.lot_id = l.lot_id
+                 INNER JOIN equipment e ON l.equipment_id = e.equipment_id
+                 INNER JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
+                 WHERE el.transaction_id = t.transaction_id) as items_json,
+                (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-001' LIMIT 1) as open_time,
+                (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-002' LIMIT 1) as close_time
+            FROM transactions t
+            LEFT JOIN transactions_type tt ON t.transaction_type_id = tt.transaction_type_id
+            LEFT JOIN users u ON t.user_id = u.user_id
+            WHERE t.date BETWEEN ? AND ?
+            ORDER BY t.date DESC, t.time DESC
+        `;
+
+        const [rows] = await pool.query(sql, [startDate, endDate]);
+        res.json(rows);
+    } catch (error) {
+        console.error("Fetch Manager Daily Error:", error.message);
         res.status(500).json({ error: error.message });
     }
 });

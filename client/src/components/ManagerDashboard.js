@@ -27,7 +27,7 @@ function ManagerDashboard({ viewDate }) {
             // กำหนดวันที่เป้าหมาย ถ้าไม่มีให้ใช้วันที่ปัจจุบัน
             const targetDate = viewDate || new Date().toISOString().split('T')[0];
 
-            const res = await axios.get(`${API_BASE_URL}/api/history/full`, {
+            const res = await axios.get(`${API_BASE_URL}/api/history/manager/daily`, {
                 headers: { Authorization: `Bearer ${token}` },
                 params: { startDate: targetDate, endDate: targetDate }
             });

@@ -14,6 +14,8 @@ function ManagerHistoryPage({ viewDate }) {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('ALL');
     const [selectedUser, setSelectedUser] = useState('ALL');
+    
+    // ตั้งค่าเริ่มต้นของวันที่ให้ตรงกับ viewDate ที่ส่งมาจาก ManagerMainPage
     const [startDate, setStartDate] = useState(viewDate || new Date().toISOString().split('T')[0]);
     const [endDate, setEndDate] = useState(viewDate || new Date().toISOString().split('T')[0]);
 
@@ -25,41 +27,47 @@ function ManagerHistoryPage({ viewDate }) {
     }, [viewDate]);
 
     const fetchData = useCallback(async () => {
+        if (!startDate || !endDate) return;
+
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
+
             const [historyRes, usersRes] = await Promise.all([
-                axios.get(`${API_BASE}/api/history/full`, {
+                axios.get(`${API_BASE}/api/history/manager/full`, {
                     headers: { Authorization: `Bearer ${token}` },
-                    params: { startDate, endDate }
+                    params: { startDate, endDate } // ส่ง startDate และ endDate ไปกรองที่ Backend
                 }),
                 axios.get(`${API_BASE}/api/users`, {
                     headers: { Authorization: `Bearer ${token}` }
                 })
             ]);
+            
             setHistory(historyRes.data);
             setUsers(usersRes.data);
         } catch (err) {
             console.error("Fetch data error:", err);
+            setHistory([]); // ล้างข้อมูลเก่าถ้า Error เพื่อแสดง empty row
         } finally {
             setLoading(false);
         }
-    }, [startDate, endDate]);
+    }, [startDate, endDate]); // ให้ฟังก์ชันทำงานใหม่เมื่อวันที่เปลี่ยน
 
     useEffect(() => {
         fetchData();
     }, [fetchData]);
 
     const filteredData = history.filter(item => {
-
         const matchType = filter === 'ALL' 
             ? true 
             : filter === 'PENDING' 
                 ? (item.is_pending === 1 && item.transaction_type_id === 'T-WTH')
                 : (item.transaction_type_id === filter && item.is_pending === 0);
+        
         const matchUser = selectedUser === 'ALL' 
             ? true 
             : String(item.user_id) === String(selectedUser); 
+        
         return matchType && matchUser;
     });
 
@@ -70,9 +78,10 @@ function ManagerHistoryPage({ viewDate }) {
 
     const calculateDuration = (open, close) => {
         if (!open || !close) return null;
-        const start = new Date(`2026-01-01 ${open}`);
-        const end = new Date(`2026-01-01 ${close}`);
+        const start = new Date(`2000-01-01 ${open}`);
+        const end = new Date(`2000-01-01 ${close}`);
         const diffSec = Math.floor((end - start) / 1000);
+        if (diffSec < 0) return null;
         return diffSec < 60 ? `${diffSec} วิ` : `${Math.floor(diffSec / 60)} นาที ${diffSec % 60} วิ`;
     };
 
@@ -164,12 +173,11 @@ function ManagerHistoryPage({ viewDate }) {
                                             <div className="user-avatar-mini">
                                                 {row.profile_img ? (
                                                     <img 
-                                                        src={`${API_BASE}/uploads/${row.profile_img}`} 
+                                                        src={`${API_BASE}/profile-img/${row.profile_img}`} 
                                                         alt="profile" 
-                                                        onError={(e) => { e.target.src = 'https://via.placeholder.com/40'; }} // กันรูปโหลดไม่ขึ้น
+                                                        onError={(e) => { e.target.src = 'https://via.placeholder.com/40'; }} 
                                                     />
                                                 ) : (
-
                                                     <div className="avatar-placeholder">
                                                         {row.fullname ? row.fullname.charAt(0).toUpperCase() : "?"}
                                                     </div>
@@ -212,7 +220,7 @@ function ManagerHistoryPage({ viewDate }) {
                             <div className="mobile-card-header">
                                 <div className="user-info-mini">
                                     <div className="user-avatar-mini">
-                                        {row.profile_img ? <img src={`${API_BASE}/uploads/${row.profile_img}`} alt="p" /> : <FaUserCircle className="text-gray-300" />}
+                                        {row.profile_img ? <img src={`${API_BASE}/profile-img/${row.profile_img}`} alt="p" /> : <FaUserCircle className="text-gray-300" />}
                                     </div>
                                     <span className="m-user-name">{row.fullname}</span>
                                 </div>
