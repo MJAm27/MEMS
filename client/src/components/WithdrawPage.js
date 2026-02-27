@@ -153,6 +153,11 @@ function WithdrawPage({ user }) {
         }
     };
 
+    const handleCancelStep2 = () => {
+        if (window.confirm("คุณต้องการยกเลิกการทำรายการและปิดตู้ใช่หรือไม่?")) {
+            setCurrentStep(5);
+        }
+    };
     const updateItemQuantity = (index, delta) => {
         setCartItems(prev => {
             const newItems = [...prev];
@@ -255,6 +260,15 @@ function WithdrawPage({ user }) {
                                     ))}
                                 </ul>
                             )}
+
+                            <div className="cancel-step2-wrapper">
+                                <button 
+                                    onClick={handleCancelStep2}
+                                    className="btn-cancel-step2"
+                                >
+                                    ยกเลิกการทำรายการ
+                                </button>
+                            </div>
                         </div>
 
                         {cartItems.length > 0 && (
@@ -283,7 +297,14 @@ function WithdrawPage({ user }) {
                                         </div>
                                     ))}
                                 </div>
-                                <button onClick={() => setCurrentStep(3)} className="btn-action btn-open-gate mt-6">ตรวจสอบรายการ</button>
+                               
+                                <button 
+                                    onClick={() => setCurrentStep(3)} 
+                                    className="btn-action btn-open-gate" 
+                                    style={{ flex: 2, marginTop: 0 }}
+                                >
+                                    ตรวจสอบรายการ
+                                </button>
                             </div>
                         )}
                         {error && <p className="error-text-mini">{error}</p>}
