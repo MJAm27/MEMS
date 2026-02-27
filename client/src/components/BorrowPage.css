@@ -73,6 +73,25 @@
 }
 .btn-add-square { background: var(--primary-pink); color: white; width: 54px; border-radius: 16px; border: none; }
 
+.btn-action {
+    width: 100%;
+    padding: 16px;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.btn-open-gate { 
+    background: linear-gradient(135deg, #ff4d94 0%, #d946ef 100%); 
+    color: white; 
+}
+
 /* Cart & Items */
 .modern-part-card { display: flex; align-items: center; background: white; padding: 12px; border-radius: 20px; border: 1px solid #f1f5f9; margin-bottom: 12px; }
 .part-img { width: 50px; height: 50px; border-radius: 12px; overflow: hidden; margin-right: 12px; background: #f8fafc; cursor: pointer; }
@@ -115,4 +134,28 @@
 
 .error-badge { background: #fef2f2; color: #ef4444; padding: 10px; border-radius: 12px; font-size: 12px; text-align: center; }
 .animate-fade { animation: fadeIn 0.4s ease-out; }
+
+/* ===== Cancel Button Step 2 ===== */
+
+.cancel-step2-wrapper {
+    margin-top: 40px;
+    display: flex;
+    justify-content: center;
+}
+
+.btn-cancel-step2 {
+    background-color: #fff1f2;
+    color: #f43f5e;
+    border: 1px solid #ffe4e6;
+    padding: 10px 30px;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.btn-cancel-step2:hover {
+    background-color: #ffe4e6;
+    transform: translateY(-2px);
+}
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }

@@ -160,6 +160,12 @@ function BorrowPage({ user }) {
         }
     };
 
+    const handleCancelStep2 = () => {
+        if (window.confirm("คุณต้องการยกเลิกการทำรายการและปิดตู้ใช่หรือไม่?")) {
+            setCurrentStep(5);
+        }
+    };
+
     return (
         <div className="borrow-page-container">
             <div className="return-header-section text-center">
@@ -183,11 +189,16 @@ function BorrowPage({ user }) {
                         <h3 className="step-title font-bold text-2xl mb-2">1. เปิดประตูกล่อง</h3>
                         <p className="step-desc text-gray-400 mb-8">กดยืนยันเพื่อเปิดกล่องและหยิบอะไหล่</p>
                         <div className="input-group-modern mb-8">
-                            <label className="input-label">วันที่เบิกยืม</label>
-                            <input type="date" className="modern-input" value={borrowDate} onChange={(e) => setBorrowDate(e.target.value)} />
+                            <label className="input-label">วันที่เบิกล่วงหน้า</label>
+                            <input 
+                                type="date" 
+                                className="modern-input" 
+                                value={borrowDate} 
+                                disabled
+                            />
                         </div>
-                        <button onClick={handleOpenDoor} disabled={isProcessing} className="btn-action-primary w-full">
-                            {isProcessing ? <span className="loader"></span> : 'เปิดประตูตู้'}
+                        <button onClick={handleOpenDoor} disabled={isProcessing} className="btn-action btn-open-gate">
+                            {isProcessing ? <span className="loader"></span> : <><FaLockOpen /> เปิดประตู</>}
                         </button>
                     </div>
                 )}
@@ -195,6 +206,7 @@ function BorrowPage({ user }) {
                 {currentStep === 2 && (
                     <div className="step-content animate-fade">
                         <h3 className="text-lg font-bold mb-4">2. ระบุอะไหล่ที่หยิบ</h3>
+                        
                         <div className="scanner-section mb-6">
                             {isScanning ? (
                                 <div className="scanner-container">
@@ -261,6 +273,14 @@ function BorrowPage({ user }) {
                                 <button onClick={() => setCurrentStep(3)} className="btn-action-primary w-full mt-6 shadow-pink">ตรวจสอบรายการ</button>
                             </div>
                         )}
+                        <div className="cancel-step2-wrapper">
+                            <button 
+                                onClick={handleCancelStep2}
+                                className="btn-cancel-step2"
+                            >
+                                ยกเลิกการทำรายการ
+                            </button>
+                        </div>
                         {error && <p className="error-badge mt-4">{error}</p>}
                     </div>
                 )}

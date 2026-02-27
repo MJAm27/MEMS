@@ -512,6 +512,28 @@
 }
 
 .btn-review-confirm:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -4px rgba(255, 77, 148, 0.5); }
+
+.cancel-step2-wrapper {
+    margin-top: 40px;
+    display: flex;
+    justify-content: center;
+}
+
+.btn-cancel-step2 {
+    background-color: #fff1f2;
+    color: #f43f5e;
+    border: 1px solid #ffe4e6;
+    padding: 10px 30px;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.btn-cancel-step2:hover {
+    background-color: #ffe4e6;
+    transform: translateY(-2px);
+}
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }

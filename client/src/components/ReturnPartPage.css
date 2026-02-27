@@ -384,15 +384,23 @@
     cursor: pointer;
 }
 
-.btn-review-confirm {
+.btn-review-confirm,
+.btn-confirm-save {
     flex: 2;
-    padding: 14px;
-    border-radius: 16px;
+    padding: 16px;
+    border-radius: 18px;
     border: none;
     background: var(--primary-gradient);
     color: white;
     font-weight: 700;
-    box-shadow: 0 8px 15px -4px rgba(255, 77, 148, 0.4);
+    font-size: 1rem;
+    box-shadow: 0 10px 25px rgba(255, 77, 148, 0.35);
+    transition: all 0.25s ease;
+}
+
+.btn-review-confirm:hover,
+.btn-confirm-save:hover {
+    transform: translateY(-3px);
 }
 
 /* ส่วนแสดงผลจำนวนและหน่วยใน Review */
@@ -428,10 +436,28 @@
 }
 
 /* กล่องสรุปสีฟ้าใน Step 4 */
-.summary-box-blue {
-    background: #eff6ff;
-    border: 1px solid #dbeafe;
+.summary-box {
+    background: #f8fafc;
     border-radius: 24px;
+    padding: 24px;
+    border: 1px solid #e2e8f0;
+}
+
+.summary-box .summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px;
+    border-radius: 16px;
+    background: white;
+    margin-bottom: 12px;
+    border: 1px solid #f1f5f9;
+    transition: all 0.2s ease;
+}
+
+.summary-box .summary-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.06);
 }
 
 /* ปุ่มยืนยันสุดท้าย */
@@ -474,6 +500,40 @@
     justify-content: space-between;
     border: 1px solid #e2e8f0;
 }
+
+/* ===== Cancel Button Step 2 ===== */
+
+.cancel-step2-wrapper {
+    margin-top: 40px;
+    display: flex;
+    justify-content: center;
+}
+
+.btn-cancel-step2 {
+    background-color: #fff1f2;
+    color: #f43f5e;
+    border: 1px solid #ffe4e6;
+    padding: 10px 30px;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.btn-cancel-step2:hover {
+    background-color: #ffe4e6;
+    transform: translateY(-2px);
+}
+
+.success-badge {
+    background: #ecfdf5;
+    color: #059669;
+    padding: 16px;
+    border-radius: 20px;
+    font-weight: 700;
+}
+
+
 /* Animation */
 .animate-fade { animation: fadeIn 0.4s ease-out; }
 @keyframes fadeIn {
