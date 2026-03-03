@@ -117,7 +117,7 @@ function AdminMainPage({ user, handleLogout }) {
                     </button>
 
                     <button className="nav-link" onClick={() => navigate("/dashboard/admin/profile")}>
-                        <FaUserCircle /> <span>โปรไฟล์</span>
+                        <FaUserCircle /> <span>แก้ไขโปรไฟล์</span>
                     </button>
                 </nav>
 

@@ -35,8 +35,8 @@ function ManageSupplier() {
 
   // 2. ฟังก์ชันค้นหา
   const filteredSuppliers = suppliers.filter((item) =>
-    item.supplier_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.supplier_id.toLowerCase().includes(searchTerm.toLowerCase())
+    (item.supplier_name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+    String(item.supplier_id).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // 3. จัดการ Form Inputs
@@ -85,7 +85,7 @@ function ManageSupplier() {
 
   // 7. ลบข้อมูล
   const handleDelete = async (id) => {
-    if (window.confirm(`คุณต้องการลบ Supplier ID: ${id} ใช่หรือไม่?`)) {
+    if (window.confirm(`คุณต้องการลบ บริษัทนำเข้ารหัส : ${id} ใช่หรือไม่?`)) {
       try {
         await axios.delete(`${API_BASE_URL}/api/supplier/${id}`);
         fetchSuppliers();

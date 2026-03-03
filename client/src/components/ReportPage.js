@@ -84,7 +84,6 @@ function ReportPage() {
         <div 
             className="chart-widget-card clickable" 
             onClick={() => navigate('/report/inventory-balance')} 
-            title="คลิกเพื่อดูรายละเอียด"
         >
             <div className="widget-header">
                 <h4>ปริมาณคงเหลือ (Top 5)</h4>

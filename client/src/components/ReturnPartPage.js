@@ -322,7 +322,7 @@ function ReturnPartPage() {
                             disabled={isProcessing} 
                             className="btn-action btn-open-gate w-full shadow-pink"
                         >
-                            {isProcessing ? <span className="loader"></span> : <><FaLockOpen /> เปิดประตูตู้</>}
+                            {isProcessing ? <span className="loader"></span> : <><FaLockOpen /> เปิดประตูกล่อง</>}
                         </button>
 
                         <div className="cancel-step2-wrapper">

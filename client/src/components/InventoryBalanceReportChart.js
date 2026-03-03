@@ -63,7 +63,7 @@ function InventoryBalanceReportChart({ isPreview = false }) {
         font: { size: 20 },
       },
       tooltip: {
-        enabled: !isPreview, 
+        enabled: true, 
       },
     },
     scales: {
