@@ -5,12 +5,12 @@ import { Html5QrcodeScanner } from 'html5-qrcode';
 import axios from "axios";
 import './ReturnPartPage.css'; 
 
-const API_BASE = process.env.REACT_APP_API_URL ;
+const API_BASE = process.env.REACT_APP_API_URL;
 
 function ReturnPartPage() {
     const location = useLocation(); 
     const [currentStep, setCurrentStep] = useState(1); 
-    const [returnDate, setReturnDate] = useState(() => {
+    const [returnDate] = useState(() => { // แก้ไข warning: ลบ setReturnDate ออกถ้าไม่ได้ใช้
         const now = new Date();
         const tzOffset = now.getTimezoneOffset() * 60000;
         return (new Date(now - tzOffset)).toISOString().slice(0, 10);
@@ -20,6 +20,12 @@ function ReturnPartPage() {
     const [manualPartId, setManualPartId] = useState(''); 
     const [error, setError] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
+
+    // Helper Function สำหรับจัดการรูปภาพ
+    const getImageUrl = (url) => {
+        if (!url) return "https://placehold.co/60x60?text=No+Image";
+        return `${API_BASE}/uploads/${url}`;
+    };
 
     useEffect(() => {
         if (location.state && location.state.preloadedItem) {
@@ -89,20 +95,22 @@ function ReturnPartPage() {
                 { partId: idToSearch },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-            
-            // ✅ แก้ไข: ใช้ข้อมูลจาก response.data
+
             const partInfo = response.data; 
 
             setReturnItems(prev => {
-                const existing = prev.find(item => item.lotId === partInfo.lotId);
-                if (existing) {
-                    return prev.map(item => item.lotId === partInfo.lotId 
-                        ? { ...item, quantity: item.quantity + quantity } : item);
+                // แก้ไข Error: หา index ของ item ที่มีอยู่แล้ว
+                const existingIndex = prev.findIndex(item => item.lotId === partInfo.lotId);
+                
+                if (existingIndex !== -1) {
+                    return prev.map((item, i) => 
+                        i === existingIndex ? { ...item, quantity: item.quantity + quantity } : item
+                    );
                 }
                 return [...prev, { 
                     ...partInfo, 
                     partId: partInfo.partId || partInfo.equipment_id,
-                    // ✅ แก้ไข Syntax: ใช้ partInfo แทน data และเขียนให้อยู่ในบรรทัดเดียวกัน
+                    partName: partInfo.partName || partInfo.equipment_name,
                     imageUrl: partInfo.img || partInfo.imageUrl || null,
                     quantity: quantity 
                 }];
@@ -189,7 +197,6 @@ function ReturnPartPage() {
             </div>
 
             <div className="return-card mt-2">
-
                 {currentStep === 1 && (
                     <div className="step-content animate-fade">
                         <h3 className="text-lg font-bold mb-4">1. ระบุอะไหล่ที่คืน</h3>
@@ -211,6 +218,7 @@ function ReturnPartPage() {
                             <button onClick={() => handleAddItem()} className="btn-add-square"><FaPlus /></button>
                         </div>
                         {error && <p className="error-badge mb-4">{error}</p>}
+                        
                         {returnItems.length > 0 && (
                             <div className="cart-section mt-8">
                                 <h4 className="section-title-sm mb-4">ตะกร้าคืนอะไหล่ ({returnItems.length})</h4>
@@ -218,7 +226,11 @@ function ReturnPartPage() {
                                     {returnItems.map((item, index) => (
                                         <div key={index} className="modern-part-card">
                                             <div className="part-img">
-                                                <img src={`${API_BASE}/uploads/${item.imageUrl}`} alt="" onError={(e) => e.target.src="https://via.placeholder.com/60"} />
+                                                <img 
+                                                    src={getImageUrl(item.imageUrl)} 
+                                                    alt={item.partName} 
+                                                    onError={(e) => { e.target.src="https://placehold.co/60x60?text=Error" }} 
+                                                />
                                             </div>
                                             <div className="part-details">
                                                 <span className="part-name">{item.partName}</span>
@@ -228,23 +240,20 @@ function ReturnPartPage() {
                                                 <div className="modern-qty-control">
                                                     <button 
                                                         onClick={() => updateQty(index, -1)} 
-                                                        disabled={item.isFixed} // ✅ ล็อคปุ่มลบ
+                                                        disabled={item.isFixed} 
                                                         style={{ opacity: item.isFixed ? 0.5 : 1, cursor: item.isFixed ? 'not-allowed' : 'pointer' }}
                                                     >
                                                         <FaMinus size={10}/>
                                                     </button>
-                                                    
                                                     <span>{item.quantity}</span>
-                                                    
                                                     <button 
                                                         onClick={() => updateQty(index, 1)} 
-                                                        disabled={item.isFixed} // ✅ ล็อคปุ่มบวก
+                                                        disabled={item.isFixed} 
                                                         style={{ opacity: item.isFixed ? 0.5 : 1, cursor: item.isFixed ? 'not-allowed' : 'pointer' }}
                                                     >
                                                         <FaPlus size={10}/>
                                                     </button>
                                                 </div>
-                                                {/* ✅ ถ้าถูกฟิกมา ไม่ควรให้ลบรายการทิ้งได้ง่ายๆ */}
                                                 {!item.isFixed && (
                                                     <button className="btn-delete-item" onClick={() => setReturnItems(returnItems.filter((_, i) => i !== index))}>
                                                         <FaTrash size={12} />
@@ -260,6 +269,7 @@ function ReturnPartPage() {
                     </div>
                 )}
 
+                {/* Step 2-5 ยังคงเดิมตาม Logic เดิมของคุณ */}
                 {currentStep === 2 && (
                     <div className="space-y-6 animate-fadeIn">
                         <div className="text-center">
@@ -275,7 +285,11 @@ function ReturnPartPage() {
                             {returnItems.map((item, idx) => (
                                 <div key={idx} className="review-item-card">
                                     <div className="item-img-box">
-                                        {item.imageUrl ? <img src={`${API_BASE}/uploads/${item.imageUrl}`} alt="part" /> : <div className="flex items-center justify-center w-full h-full bg-gray-0 text-gray-300"><FaPlus size={16} /></div>}
+                                        <img 
+                                            src={getImageUrl(item.imageUrl)} 
+                                            alt="part" 
+                                            onError={(e) => { e.target.src = "https://placehold.co/60x60?text=Error"; }}
+                                        />
                                     </div>
                                     <div className="item-main-info">
                                         <div className="item-name-row">
@@ -297,13 +311,13 @@ function ReturnPartPage() {
                     </div>
                 )}
                 
+                {/* Step 3, 4, 5 (ย่อไว้เพื่อประหยัดพื้นที่ แต่คง Logic เดิมของคุณ) */}
                 {currentStep === 3 && (
                     <div className="step-content animate-fade text-center py-4">
                         <div className="status-icon-wrapper mb-6">
                             <FaLockOpen size={50} className="text-pink-500" />
                         </div>
-                        
-                        <h3 className="step-title font-bold text-2xl mb-2">1. เปิดประตูกล่อง</h3>
+                        <h3 className="step-title font-bold text-2xl mb-2">3. เปิดประตูกล่อง</h3>
                         <p className="step-desc text-gray-400 mb-8">กรุณากดปุ่มเพื่อเปิดกล่องและเตรียมการคืน</p>
 
                         <div className="mb-8">
@@ -324,15 +338,7 @@ function ReturnPartPage() {
                         >
                             {isProcessing ? <span className="loader"></span> : <><FaLockOpen /> เปิดประตูกล่อง</>}
                         </button>
-
-                        <div className="cancel-step2-wrapper">
-                            <button 
-                                onClick={handleCancelStep2}
-                                className="btn-cancel-step2"
-                            >
-                                ยกเลิกการทำรายการ
-                            </button>
-                        </div>
+                        <button onClick={handleCancelStep2} className="btn-cancel-step2 mt-4">ยกเลิกการทำรายการ</button>
                     </div>
                 )}
 
@@ -340,61 +346,28 @@ function ReturnPartPage() {
                     <div className="text-center py-4 space-y-6 animate-fadeIn">
                         <FaClipboardCheck size={60} className="mx-auto text-blue-500 mb-2" />
                         <h3 className="text-2xl font-bold">4. ยืนยันการบันทึก</h3>
-
                         <div className="summary-box bg-blue-50 p-6 rounded-3xl border border-blue-100 text-left">
-                            <p className="text-xs text-blue-600 font-bold uppercase mb-3">
-                                สรุปการคืนอะไหล่
-                            </p>
-
-                            <p className="text-sm text-gray-700 mb-4">
-                                <b>วันที่คืน:</b> {new Date(returnDate).toLocaleDateString('th-TH')}
-                            </p>
-
-                            {/* 🔥 แสดงรายการที่คืน */}
+                            <p className="text-xs text-blue-600 font-bold uppercase mb-3">สรุปการคืนอะไหล่</p>
+                            <p className="text-sm text-gray-700 mb-4"><b>วันที่คืน:</b> {new Date(returnDate).toLocaleDateString('th-TH')}</p>
                             <div className="space-y-3">
                                 {returnItems.map((item, index) => (
-                                    <div 
-                                        key={index} 
-                                        className="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm"
-                                    >
+                                    <div key={index} className="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm">
                                         <div>
-                                            <div className="font-semibold text-gray-800">
-                                                {item.partName}
-                                            </div>
-                                            <div className="text-xs text-gray-500">
-                                                Lot: {item.lotId}
-                                            </div>
+                                            <div className="font-semibold text-gray-800">{item.partName}</div>
+                                            <div className="text-xs text-gray-500">Lot: {item.lotId}</div>
                                         </div>
-
                                         <div className="text-right">
-                                            <div className="font-bold text-blue-600">
-                                                x {item.quantity}
-                                            </div>
-                                            <div className="text-xs text-gray-500">
-                                                {item.unit || 'ชิ้น'}
-                                            </div>
+                                            <div className="font-bold text-blue-600">x {item.quantity}</div>
+                                            <div className="text-xs text-gray-500">{item.unit || 'ชิ้น'}</div>
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         </div>
-
                         <div className="flex gap-4">
-                            <button 
-                                onClick={() => setCurrentStep(3)} 
-                                className="btn-review-edit"
-                            >
-                                กลับ
-                            </button>
-
-                            <button 
-                                onClick={handleFinalConfirm} 
-                                disabled={isProcessing} 
-                                className="btn-action btn-confirm-save flex-2"
-                            >
-                                {isProcessing 
-                                    ? <span className="loader"></span> 
-                                    : 'ยืนยันการคืนอะไหล่'}
+                            <button onClick={() => setCurrentStep(3)} className="btn-review-edit">กลับ</button>
+                            <button onClick={handleFinalConfirm} disabled={isProcessing} className="btn-action btn-confirm-save flex-2">
+                                {isProcessing ? <span className="loader"></span> : 'ยืนยันการคืนอะไหล่'}
                             </button>
                         </div>
                     </div>
@@ -406,7 +379,6 @@ function ReturnPartPage() {
                             <FaCheckCircle size={24} /> <p className="font-bold">บันทึกข้อมูลสำเร็จ!</p>
                         </div>
                         <h3 className="text-2xl font-bold mb-2">5. สั่งปิดประตู</h3>
-                        <p className="text-gray-500 mb-8">บันทึกข้อมูลการคืนเรียบร้อยแล้ว</p>
                         <button onClick={handleCloseDoor} disabled={isProcessing} className="btn-action btn-close-lock w-full" style={{ margin: '0 auto', maxWidth: '300px' }}>
                             {isProcessing ? <span className="loader"></span> : <><FaLock className="mr-2" /> ปิดประตูกล่อง</>}
                         </button>
