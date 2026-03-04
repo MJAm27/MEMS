@@ -3,159 +3,134 @@
 :root {
     --primary-pink: #ff4d94;
     --primary-gradient: linear-gradient(135deg, #ff4d94 0%, #d946ef 100%);
-    --dark-bg: #111827;
-    --radius-xl: 30px;
+    --bg-gray: #f8fafc;
+    --radius-lg: 30px;
 }
 
 .borrow-page-container {
     font-family: 'Prompt', sans-serif;
     min-height: 100vh;
-    padding: 40px 20px;
-    background-color: #f8fafc;
-}
-
-/* Stepper Modern */
-.step-progress-bar { display: flex; justify-content: center; align-items: center; }
-.step-number {
-    width: 38px; height: 38px; border-radius: 12px; background: #fff; color: #cbd5e1;
-    display: flex; align-items: center; justify-content: center; font-weight: 700;
-    border: 2px solid #f1f5f9; transition: all 0.3s;
-}
-.step-item.active .step-number {
-    background: var(--primary-pink); color: white; border-color: var(--primary-pink);
-    box-shadow: 0 4px 12px rgba(255, 77, 148, 0.3);
-}
-.step-line { height: 3px; width: 30px; background: #e2e8f0; margin: 0 10px; }
-.step-item.active .step-line { background: var(--primary-pink); }
-
-/* Card Design */
-.return-card {
-    background: #ffffff; width: 100%; max-width: 460px; border-radius: var(--radius-xl);
-    padding: 35px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05); margin: 0 auto;
-}
-
-/* Icon Styles */
-.icon-circle {
-    width: 80px; height: 80px; background: #fff1f2; color: var(--primary-pink);
-    border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;
-}
-
-/* Inputs */
-.modern-input {
-    width: 100%; padding: 14px 20px; border-radius: 16px; border: 1px solid #e2e8f0;
-    background: #f8fafc; font-size: 16px; outline: none;
-}
-.input-label { display: block; text-align: left; font-size: 13px; font-weight: 600; color: #94a3b8; margin-bottom: 8px; padding-left: 5px; }
-
-/* Buttons */
-.btn-action-primary {
-    background: var(--primary-gradient); color: white; padding: 16px; border-radius: 50px;
-    font-weight: 600; font-size: 17px; border: none; cursor: pointer;
-}
-.btn-action-dark {
-    background: #111827;
-    color: white;
-    padding: 16px;
-    border-radius: 50px;
-    border: none;
-    font-weight: 600;
+    padding: 30px 20px;
+    background-color: var(--bg-gray);
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 10px;
-    width: 100%;       
-    max-width: 320px;  
-    margin: 0 auto;    
 }
-.btn-scanner-trigger {
-    width: 100%; padding: 12px; background: #f1f5f9; border: 2px dashed #cbd5e1;
-    border-radius: 18px; color: #64748b; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;
-}
-.btn-add-square { background: var(--primary-pink); color: white; width: 54px; border-radius: 16px; border: none; }
 
-.btn-action {
+/* Stepper */
+.step-progress-bar { display: flex; align-items: center; justify-content: center; margin: 25px 0; }
+.step-circle {
+    width: 38px; height: 38px; border-radius: 12px; background: #e2e8f0;
+    color: #94a3b8; display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+}
+.step-item.active .step-circle { background: var(--primary-pink); color: white; box-shadow: 0 4px 12px rgba(255, 77, 148, 0.3); }
+.step-line { width: 30px; height: 3px; background: #e2e8f0; margin: 0 8px; }
+.step-line.active { background: var(--primary-pink); }
+
+/* Card */
+.withdraw-card {
+    background: #ffffff; width: 100%; max-width: 480px; border-radius: var(--radius-lg);
+    padding: 30px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06); margin: 0 auto;
+    display: flex; flex-direction: column; align-items: center;
+}
+
+/* Step 1: Unlock */
+.step-content-unlock { display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%; }
+.unlock-icon-container {
+    background: #fdf2f8; width: 100px; height: 100px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; margin-bottom: 24px; color: #db2777;
+}
+.btn-unlock-gate {
+    background: var(--primary-gradient); color: white; width: 100%; max-width: 320px;
+    padding: 18px; border-radius: 50px; font-weight: 700; border: none; cursor: pointer;
+}
+
+/* Step 2: Identify & Cart */
+.step-content-identify { display: flex; flex-direction: column; width: 100%; }
+.input-group-modern { margin-bottom: 20px; width: 100%; }
+.withdraw-input-modern {
+    width: 100%; padding: 14px 14px 14px 45px; border-radius: 15px;
+    border: 1px solid #f1f5f9; background: #f8fafc; font-size: 1rem; outline: none;
+}
+.part-input-row { display: flex; gap: 10px; align-items: flex-end; width: 100%; }
+.btn-add-part-modern {
+    background: var(--primary-pink); color: white; width: 52px; height: 52px;
+    border-radius: 16px; border: none; display: flex; align-items: center; justify-content: center;
+}
+
+/* Cart Items */
+.new-cart-item {
+    display: flex; flex-wrap: wrap; align-items: center; background: #fff;
+    border: 1px solid #f1f5f9; padding: 16px; border-radius: 20px; margin-bottom: 12px; gap: 12px;
+}
+.item-thumb { width: 48px; height: 48px; border-radius: 12px; overflow: hidden; border: 1px solid #f1f5f9; }
+.item-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.item-info { flex: 1; min-width: 150px; text-align: left; }
+.item-controls {
+    display: flex; align-items: center; justify-content: flex-end; width: 100%;
+    margin-top: 8px; padding-top: 8px; border-top: 1px dashed #f1f5f9; gap: 15px;
+}
+.qty-stepper { display: flex; align-items: center; background: #f1f5f9; padding: 4px; border-radius: 12px; gap: 8px; }
+.qty-stepper button { width: 28px; height: 28px; border-radius: 8px; border: none; background: white; cursor: pointer; }
+
+/* Step 3 */
+.step-content-review {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* จัดลูกๆ ให้อยู่กึ่งกลางแนวแกน X */
+    text-align: center;
     width: 100%;
-    padding: 16px;
-    border-radius: 50px;
-    font-weight: 600;
-    font-size: 1.1rem;
-    border: none;
-    cursor: pointer;
+}
+
+/* ปรับแบนเนอร์วันที่ให้อยู่กึ่งกลางและกว้างพอดี */
+.asset-info-banner {
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    padding: 15px;
+    border-radius: 20px;
+    text-align: center;
+    width: 100%;
+    max-width: 320px; /* จำกัดความกว้างเพื่อความสวยงาม */
+    margin: 0 auto 24px auto; /* จัดกึ่งกลางตัวเอง */
+}
+
+/* ปรับแต่งรายการรีวิวให้แสดงผลชื่อและจำนวนได้ชัดเจน */
+.review-item-card {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 10px;
+    gap: 15px;
+    background: white;
+    padding: 12px;
+    border-radius: 18px;
+    margin-bottom: 10px;
+    border: 1px solid #f1f5f9;
+    text-align: left; /* รายละเอียดข้างในชิดซ้ายเพื่อให้อ่านง่าย */
 }
 
-.btn-open-gate { 
-    background: linear-gradient(135deg, #ff4d94 0%, #d946ef 100%); 
-    color: white; 
-}
-
-/* Cart & Items */
-.modern-part-card { display: flex; align-items: center; background: white; padding: 12px; border-radius: 20px; border: 1px solid #f1f5f9; margin-bottom: 12px; }
-.part-img { width: 50px; height: 50px; border-radius: 12px; overflow: hidden; margin-right: 12px; background: #f8fafc; cursor: pointer; }
-.part-img img { width: 100%; height: 100%; object-fit: cover; }
-.part-details { flex: 1; display: flex; flex-direction: column; }
-.part-name { font-weight: 700; font-size: 14px; color: #1e293b; }
-.part-lot { font-size: 11px; color: #94a3b8; }
-.modern-qty-control { display: flex; align-items: center; background: #f1f5f9; border-radius: 10px; padding: 4px; margin-right: 8px; gap: 8px;}
-.modern-qty-control button { width: 24px; height: 24px; border-radius: 7px; border: none; background: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-.qty-number { font-weight: 700; min-width: 25px; text-align: center; }
-.btn-delete-item { background: #fff1f2; color: #f43f5e; width: 32px; height: 32px; border-radius: 10px; border: none; cursor: pointer;}
-
-/* Banner & Review */
-.asset-info-banner { background: #f8fafc; border: 1px dashed #cbd5e1; padding: 15px; border-radius: 20px; text-align: center; }
-.asset-info-banner .label { font-size: 0.75rem; color: #94a3b8; }
-.asset-info-banner .value { font-size: 1.25rem; font-weight: 800; color: #1e293b; }
-.review-item-card { display: flex; align-items: center; gap: 15px; background: white; padding: 12px; border-radius: 18px; margin-bottom: 10px; border: 1px solid #f1f5f9; }
-.item-img-box { width: 55px; height: 55px; border-radius: 12px; overflow: hidden; flex-shrink: 0; background: #f8fafc; display: flex; align-items: center; justify-content: center; }
-.item-img-box img { width: 100%; height: 100%; object-fit: cover; }
-.qty-display-group { display: flex; align-items: baseline; gap: 4px; color: var(--primary-pink); }
-.qty-val { font-weight: 800; font-size: 1.1rem; }
-.unit-val { font-weight: 600; font-size: 0.85rem; }
-.tag-lot { font-size: 0.7rem; padding: 2px 8px; border-radius: 6px; background: #f1f5f9; color: #64748b; }
-.btn-review-edit { padding: 14px; border-radius: 16px; border: 1px solid #e2e8f0; background: white; color: #64748b; font-weight: 600; }
-.btn-review-confirm { padding: 14px; border-radius: 16px; border: none; background: var(--primary-gradient); color: white; font-weight: 700; }
-
-/* Suggestions */
-.search-suggestions-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 100; padding: 8px; list-style: none; }
-.search-suggestions-list li { padding: 12px 15px; border-radius: 10px; cursor: pointer; font-size: 0.9rem; }
-.search-suggestions-list li:hover { background: #fff1f2; color: var(--primary-pink); }
-
-.image-viewer-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 2000; display: flex; align-items: center; justify-content: center; }
-.image-viewer-content { position: relative; max-width: 90%; }
-.image-viewer-content img { max-width: 100%; border-radius: 20px; }
-.close-image-btn { position: absolute; top: -40px; right: 0; background: none; border: none; color: white; font-size: 1.5rem; }
-
-.divider-text { text-align: center; position: relative; }
-.divider-text::before { content: ""; position: absolute; left: 0; top: 50%; width: 100%; height: 1px; background: #e2e8f0; }
-.divider-text span { background: #fff; padding: 0 15px; position: relative; color: #cbd5e1; font-size: 12px; }
-
-.error-badge { background: #fef2f2; color: #ef4444; padding: 10px; border-radius: 12px; font-size: 12px; text-align: center; }
-.animate-fade { animation: fadeIn 0.4s ease-out; }
-
-/* ===== Cancel Button Step 2 ===== */
-
-.cancel-step2-wrapper {
-    margin-top: 40px;
+/* จัดกลุ่มปุ่มล่างสุด */
+.flex.gap-3.justify-center {
     display: flex;
-    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 400px; /* ไม่ให้ปุ่มแผ่กว้างเกินไปบน Laptop */
+    margin: 0 auto;
 }
 
-.btn-cancel-step2 {
-    background-color: #fff1f2;
-    color: #f43f5e;
-    border: 1px solid #ffe4e6;
-    padding: 10px 30px;
-    border-radius: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.25s ease;
+/* Step 4: Summary Ticket */
+.confirmation-summary-card {
+    width: 100%; background: #f0f7ff; border-radius: 24px; padding: 24px;
+    border: 1px solid #e0e7ff; margin: 20px 0; text-align: left;
 }
+.summary-items-list { background: #ffffff; border-radius: 16px; padding: 12px 16px; margin: 15px 0; }
+.summary-total-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 2px dashed #cbd5e1; font-weight: 800; }
 
-.btn-cancel-step2:hover {
-    background-color: #ffe4e6;
-    transform: translateY(-2px);
+/* Step 5: Success */
+.success-banner-modern {
+    background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 20px;
+    border-radius: 24px; width: 100%; margin-bottom: 30px; text-align: center;
 }
+.btn-close-gate-final { background: #1e293b; color: white; width: 100%; padding: 18px; border-radius: 20px; font-weight: 700; border: none; cursor: pointer; }
+
+.animate-fadeIn { animation: fadeIn 0.4s ease-out; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }

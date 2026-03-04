@@ -198,64 +198,88 @@ function ReturnPartPage() {
 
             <div className="return-card mt-2">
                 {currentStep === 1 && (
-                    <div className="step-content animate-fade">
-                        <h3 className="text-lg font-bold mb-4">1. ระบุอะไหล่ที่คืน</h3>
-                        <div className="scanner-section mb-6">
+                    <div className="step-content-identify animate-fadeIn">
+                        <div className="identify-header">
+                            <h3 className="text-2xl font-bold text-gray-800">1. ระบุอะไหล่ที่คืน</h3>
+                        </div>
+
+                        {/* ส่วนที่ 1: สแกนบาร์โค้ด */}
+                        <div className="scanner-action-area">
                             {isScanning ? (
                                 <div className="scanner-container">
                                     <div id="reader"></div>
                                     <button onClick={() => setIsScanning(false)} className="btn-cancel-scan mt-4">ยกเลิกสแกน</button>
                                 </div>
                             ) : (
-                                <button onClick={() => setIsScanning(true)} className="btn-scanner-trigger">
+                                <button onClick={() => setIsScanning(true)} className="btn-modern-scanner">
                                     <FaCamera /> สแกนบาร์โค้ดอะไหล่
                                 </button>
                             )}
                         </div>
-                        <div className="divider-text mb-6"><span>หรือพิมพ์รหัส</span></div>
-                        <div className="flex gap-2 mb-6">
-                            <input type="text" className="modern-input flex-grow" value={manualPartId} onChange={(e) => setManualPartId(e.target.value)} placeholder="รหัสอะไหล่..." />
-                            <button onClick={() => handleAddItem()} className="btn-add-square"><FaPlus /></button>
+
+                        <div className="divider-with-text"><span>หรือพิมพ์รหัส</span></div>
+
+                        {/* ส่วนที่ 2: ระบุรหัสอะไหล่ด้วยตนเอง (ปรับ UI ตามรูปภาพ) */}
+                        <div className="input-group-modern">
+                            <div className="part-input-row">
+                                <div className="flex-grow-input relative">
+                                    <div className="input-with-icon">
+                                        <FaPlus className="icon-prefix" />
+                                        <input 
+                                            type="text" 
+                                            className="withdraw-input-modern" 
+                                            value={manualPartId} 
+                                            onChange={(e) => setManualPartId(e.target.value)} 
+                                            placeholder="พิมพ์รหัสอะไหล่..." 
+                                        />
+                                    </div>
+                                </div>
+                                <button onClick={() => handleAddItem()} className="btn-add-part-modern">
+                                    <FaPlus size={20} />
+                                </button>
+                            </div>
                         </div>
-                        {error && <p className="error-badge mb-4">{error}</p>}
+
+                        {error && <p className="error-badge mt-4">{error}</p>}
                         
+                        {/* ส่วนที่ 3: ตะกร้าคืนอะไหล่ (คงค่า .isFixed ไว้ตามเงื่อนไข) */}
                         {returnItems.length > 0 && (
-                            <div className="cart-section mt-8">
-                                <h4 className="section-title-sm mb-4">ตะกร้าคืนอะไหล่ ({returnItems.length})</h4>
-                                <div className="modern-items-list">
+                            <div className="cart-section animate-fadeIn w-full">
+                                <h4 className="cart-header">ตะกร้าคืนอะไหล่ ({returnItems.length})</h4>
+                                <div className="cart-list">
                                     {returnItems.map((item, index) => (
-                                        <div key={index} className="modern-part-card">
-                                            <div className="part-img">
+                                        <div key={index} className="new-cart-item">
+                                            <div className="item-thumb">
                                                 <img 
                                                     src={getImageUrl(item.imageUrl)} 
                                                     alt={item.partName} 
                                                     onError={(e) => { e.target.src="https://placehold.co/60x60?text=Error" }} 
                                                 />
                                             </div>
-                                            <div className="part-details">
-                                                <span className="part-name">{item.partName}</span>
-                                                <span className="part-lot">Lot: {item.lotId}</span>
+                                            <div className="item-info">
+                                                <div className="item-name">{item.partName}</div>
+                                                <div className="item-lot">Lot: {item.lotId}</div>
                                             </div>
-                                            <div className="part-actions">
-                                                <div className="modern-qty-control">
+                                            <div className="item-controls">
+                                                <div className="qty-stepper">
                                                     <button 
                                                         onClick={() => updateQty(index, -1)} 
                                                         disabled={item.isFixed} 
-                                                        style={{ opacity: item.isFixed ? 0.5 : 1, cursor: item.isFixed ? 'not-allowed' : 'pointer' }}
+                                                        style={{ opacity: item.isFixed ? 0.4 : 1 }}
                                                     >
                                                         <FaMinus size={10}/>
                                                     </button>
                                                     <span>{item.quantity}</span>
                                                     <button 
                                                         onClick={() => updateQty(index, 1)} 
-                                                        disabled={item.isFixed} 
-                                                        style={{ opacity: item.isFixed ? 0.5 : 1, cursor: item.isFixed ? 'not-allowed' : 'pointer' }}
+                                                        disabled={item.isFixed}
+                                                        style={{ opacity: item.isFixed ? 0.4 : 1 }}
                                                     >
                                                         <FaPlus size={10}/>
                                                     </button>
                                                 </div>
                                                 {!item.isFixed && (
-                                                    <button className="btn-delete-item" onClick={() => setReturnItems(returnItems.filter((_, i) => i !== index))}>
+                                                    <button className="btn-delete-small" onClick={() => setReturnItems(returnItems.filter((_, i) => i !== index))}>
                                                         <FaTrash size={12} />
                                                     </button>
                                                 )}
@@ -263,108 +287,180 @@ function ReturnPartPage() {
                                         </div>
                                     ))}
                                 </div>
-                                <button onClick={() => setCurrentStep(2)} className="btn-action-primary w-full mt-6 shadow-pink">ตรวจสอบรายการ</button>
+                                <button onClick={() => setCurrentStep(2)} className="btn-action-primary mt-4">
+                                    ตรวจสอบรายการ
+                                </button>
                             </div>
                         )}
                     </div>
                 )}
 
-                {/* Step 2-5 ยังคงเดิมตาม Logic เดิมของคุณ */}
                 {currentStep === 2 && (
-                    <div className="space-y-6 animate-fadeIn">
-                        <div className="text-center">
+                    <div className="step-content-review animate-fadeIn">
+                        <div className="review-header-group">
                             <h3 className="text-2xl font-bold">2. ตรวจสอบข้อมูล</h3>
-                            <p className="text-gray-400 text-sm">กรุณาตรวจสอบรายละเอียดการคืนก่อนบันทึก</p>
+                            <p className="text-gray-400 text-sm">กรุณาตรวจสอบรายละเอียดก่อนบันทึก</p>
                         </div>
+
+                        {/* แบนเนอร์แสดงเลขครุภัณฑ์ (ถ้ามี) หรือวันที่คืน */}
                         <div className="asset-info-banner">
                             <div className="label">วันที่ทำรายการคืน</div>
-                            <div className="value">{new Date(returnDate).toLocaleDateString('th-TH')}</div>
+                            <div className="value">
+                                {new Date(returnDate).toLocaleDateString('th-TH')}
+                            </div>
                         </div>
+
                         <div className="review-list-container">
-                            <h4 className="text-sm font-bold mb-3 text-gray-500 uppercase">รายการอะไหล่ที่คืน</h4>
+                            <h4 className="text-sm font-bold mb-3 text-gray-500 uppercase text-center">
+                                รายการอะไหล่ที่คืน
+                            </h4>
                             {returnItems.map((item, idx) => (
-                                <div key={idx} className="review-item-card">
+                                <div key={idx} className="review-item-card-modern">
                                     <div className="item-img-box">
                                         <img 
-                                            src={getImageUrl(item.imageUrl)} 
+                                            src={getImageUrl(item.imageUrl) || "https://placehold.co/60"} 
                                             alt="part" 
-                                            onError={(e) => { e.target.src = "https://placehold.co/60x60?text=Error"; }}
+                                            onError={(e) => { e.target.src = "https://placehold.co/60?text=Error"; }}
                                         />
                                     </div>
                                     <div className="item-main-info">
-                                        <div className="item-name-row">
-                                            <span className="name">{item.partName}</span>
-                                            <div className="qty-display-group">
-                                                <span className="qty-val">x {item.quantity}</span>
-                                                <span className="unit-val">{item.unit || 'ชิ้น'}</span>
-                                            </div>
+                                        <div className="item-main-info-row">
+                                            <span className="name font-bold">{item.partName}</span>
+                                            <span className="qty-val-pink">x {item.quantity} {item.unit || 'ชิ้น'}</span>
                                         </div>
-                                        <div className="item-sub-info"><span className="tag-lot">Lot: {item.lotId}</span></div>
+                                        <div className="text-xs text-gray-400 mt-1">Lot: {item.lotId}</div>
                                     </div>
                                 </div>
                             ))}
                         </div>
-                        <div className="flex gap-3 mt-8">
-                            <button onClick={() => setCurrentStep(1)} className="btn-review-edit">แก้ไขรายการ</button>
-                            <button onClick={() => setCurrentStep(3)} className="btn-review-confirm">ไปหน้ายืนยัน</button>
+
+                        <div className="flex gap-3 mt-8 w-full">
+                            <button onClick={() => setCurrentStep(2)} className="btn-review-edit flex-1">แก้ไขรายการ</button>
+                            <button onClick={() => setCurrentStep(3)} className="btn-modern-gradient flex-2">บันทึกข้อมูล</button>
                         </div>
                     </div>
                 )}
-                
-                {/* Step 3, 4, 5 (ย่อไว้เพื่อประหยัดพื้นที่ แต่คง Logic เดิมของคุณ) */}
+        
                 {currentStep === 3 && (
-                    <div className="step-content animate-fade text-center py-4">
-                        <div className="status-icon-wrapper mb-6">
-                            <FaLockOpen size={50} className="text-pink-500" />
+                    <div className="step-content-unlock animate-fadeIn">
+                        {/* ไอคอนกุญแจในวงกลมสีชมพูอ่อน */}
+                        <div className="unlock-icon-container">
+                            <FaLockOpen size={48} />
                         </div>
-                        <h3 className="step-title font-bold text-2xl mb-2">3. เปิดประตูกล่อง</h3>
-                        <p className="step-desc text-gray-400 mb-8">กรุณากดปุ่มเพื่อเปิดกล่องและเตรียมการคืน</p>
-                        <button onClick={handleOpenDoor} disabled={isProcessing} className="btn-action btn-open-gate w-full shadow-pink">
-                            {isProcessing ? <span className="loader"></span> : <><FaLockOpen /> เปิดประตูตู้</>}
+                        
+                        <h3 className="unlock-title">3. เปิดประตูกล่อง</h3>
+                        <p className="unlock-subtitle">กรุณากดปุ่มเพื่อปลดล็อกและเตรียมการคืน</p>
+
+                        {/* แสดงวันที่คืนให้ชัดเจนกึ่งกลาง */}
+                        <div className="asset-info-banner mb-8">
+                            <div className="label">วันที่ทำรายการคืน</div>
+                            <div className="value">
+                                {new Date(returnDate).toLocaleDateString('th-TH')}
+                            </div>
+                        </div>
+
+                        {/* ปุ่มเปิดประตูทรงมนยาวตามรูป */}
+                        <button 
+                            onClick={handleOpenDoor} 
+                            disabled={isProcessing} 
+                            className="btn-unlock-gate"
+                        >
+                            {isProcessing ? (
+                                <span className="loader"></span>
+                            ) : (
+                                <>
+                                    <FaLockOpen className="mr-2" />
+                                    เปิดประตูตู้
+                                </>
+                            )}
                         </button>
-                        <button onClick={handleCancelStep2} className="btn-cancel-step2 mt-4">ยกเลิกการทำรายการ</button>
+
+                        {/* ปุ่มยกเลิกด้านล่างสุด */}
+                        <div className="footer-actions">
+                            <button onClick={handleCancelStep2} className="btn-cancel-step2">
+                                ยกเลิกการทำรายการ
+                            </button>
+                        </div>
                     </div>
                 )}
 
                 {currentStep === 4 && (
-                    <div className="text-center py-4 space-y-6 animate-fadeIn">
-                        <FaClipboardCheck size={60} className="mx-auto text-blue-500 mb-2" />
-                        <h3 className="text-2xl font-bold">4. ยืนยันการบันทึก</h3>
-                        <div className="summary-box bg-blue-50 p-6 rounded-3xl border border-blue-100 text-left">
-                            <p className="text-xs text-blue-600 font-bold uppercase mb-3">สรุปการคืนอะไหล่</p>
-                            <p className="text-sm text-gray-700 mb-4"><b>วันที่คืน:</b> {new Date(returnDate).toLocaleDateString('th-TH')}</p>
-                            <div className="space-y-3">
-                                {returnItems.map((item, index) => (
-                                    <div key={index} className="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm">
-                                        <div>
-                                            <div className="font-semibold text-gray-800">{item.partName}</div>
-                                            <div className="text-xs text-gray-500">Lot: {item.lotId}</div>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="font-bold text-blue-600">x {item.quantity}</div>
-                                            <div className="text-xs text-gray-500">{item.unit || 'ชิ้น'}</div>
-                                        </div>
+                    <div className="step-content-confirmation">
+                        <FaClipboardCheck size={64} className="text-blue-500 mb-4" />
+                        <h3 className="text-2xl font-bold text-gray-800">4. ยืนยันการบันทึก</h3>
+                        <p className="text-gray-400 text-sm">กรุณาตรวจสอบสรุปรายการครั้งสุดท้าย</p>
+
+                        <div className="confirmation-summary-card">
+                            <span className="summary-header-label">สรุปรายละเอียดการคืน</span>
+                            
+                            <div className="summary-data-row-flex">
+                                <span>วันที่คืน:</span>
+                                <b>{new Date(returnDate).toLocaleDateString('th-TH')}</b>
+                            </div>
+                            
+                            {/* แสดง Asset ID ถ้ามีข้อมูล (จากรายการแรก) */}
+                            <div className="summary-data-row-flex">
+                                <span>ประเภทรายการ:</span>
+                                <b>คืนอะไหล่</b>
+                            </div>
+
+                            <div className="summary-items-list">
+                                {returnItems.map((item, idx) => (
+                                    <div key={idx} className="summary-item-line-right py-1">
+                                        <span className="text-gray-600">{item.partName}</span>
+                                        <b>x {item.quantity} {item.unit || 'ชิ้น'}</b>
                                     </div>
                                 ))}
                             </div>
+
+                            <div className="summary-total-footer">
+                                <span>รวมคืนทั้งสิ้น</span>
+                                <div className="total-count-badge">
+                                    {returnItems.reduce((sum, item) => sum + item.quantity, 0)} ชิ้น
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex gap-4">
-                            <button onClick={() => setCurrentStep(3)} className="btn-review-edit">กลับ</button>
-                            <button onClick={handleFinalConfirm} disabled={isProcessing} className="btn-action btn-confirm-save flex-2">
-                                {isProcessing ? <span className="loader"></span> : 'ยืนยันการคืนอะไหล่'}
+
+                        <div className="flex gap-4 w-full mt-2">
+                            <button onClick={() => setCurrentStep(3)} className="btn-review-edit flex-1">กลับไปแก้ไข</button>
+                            <button 
+                                onClick={handleFinalConfirm} 
+                                disabled={isProcessing} 
+                                className="btn-modern-gradient flex-2"
+                            >
+                                {isProcessing ? <span className="loader"></span> : 'ยืนยันและบันทึกข้อมูล'}
                             </button>
                         </div>
                     </div>
                 )}
 
                 {currentStep === 5 && (
-                    <div className="text-center py-6 animate-fadeIn">
-                        <div className="success-badge bg-green-100 text-green-700 p-4 rounded-2xl mb-8 flex items-center gap-3 justify-center">
-                            <FaCheckCircle size={24} /> <p className="font-bold">บันทึกข้อมูลสำเร็จ!</p>
+                    <div className="step-content-success">
+                        <div className="success-banner-modern">
+                            <div className="success-icon-circle">
+                                <FaCheckCircle />
+                            </div>
+                            <span className="success-text-main">บันทึกข้อมูลสำเร็จ!</span>
                         </div>
-                        <h3 className="text-2xl font-bold mb-2">5. สั่งปิดประตู</h3>
-                        <button onClick={handleCloseDoor} disabled={isProcessing} className="btn-action btn-close-lock w-full" style={{ margin: '0 auto', maxWidth: '300px' }}>
-                            {isProcessing ? <span className="loader"></span> : <><FaLock className="mr-2" /> ปิดประตูกล่อง</>}
+
+                        <h3 className="text-2xl font-bold text-gray-800 mb-2">5. สั่งปิดประตู</h3>
+                        <p className="instruction-text">
+                            ตรวจสอบสิ่งกีดขวางบริเวณหน้ากล่องให้เรียบร้อย แล้วกดปุ่มเพื่อล็อกตู้
+                        </p>
+
+                        <button 
+                            onClick={handleCloseDoor} 
+                            disabled={isProcessing} 
+                            className="btn-close-gate-final"
+                        >
+                            {isProcessing ? (
+                                <span className="loader"></span>
+                            ) : (
+                                <>
+                                    <FaLock />
+                                    ปิดประตูกล่อง
+                                </>
+                            )}
                         </button>
                     </div>
                 )}
