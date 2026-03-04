@@ -1,15 +1,18 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { FaClock, FaBoxOpen, FaExclamationTriangle, FaMoneyBillWave } from "react-icons/fa";
+import { 
+  FaClock, FaBoxOpen, FaExclamationTriangle, 
+  FaMoneyBillWave, FaCheck, FaUser, FaDesktop 
+} from "react-icons/fa";
 import "./ManagerAlertPage.css";
 
-const API_BASE_URL = process.env.REACT_APP_API_URL ;
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 function ManagerAlertPage() {
   const [activeTab, setActiveTab] = useState("expire");
   const [expireList, setExpireList] = useState([]);
   const [stockList, setStockList] = useState([]);
-  const [highValueList, setHighValueList] = useState([]); 
+  const [highValueList, setHighValueList] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,7 +25,6 @@ function ManagerAlertPage() {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
 
-      // ใช้การเรียก API แยกกันเพื่อป้องกันกรณี API ตัวใดตัวหนึ่ง Error แล้วตัวอื่นพังไปด้วย
       const [expireRes, stockRes, highValueRes] = await Promise.all([
         axios.get(`${API_BASE_URL}/api/alerts/expire`, { headers }).catch(() => ({ data: [] })),
         axios.get(`${API_BASE_URL}/api/alerts/low-stock`, { headers }).catch(() => ({ data: [] })),
@@ -39,6 +41,24 @@ function ManagerAlertPage() {
     }
   };
 
+  // ฟังก์ชันสำหรับกดรับทราบรายการอะไหล่มูลค่าสูง
+  const handleAcknowledge = async (transactionId) => {
+    if (!window.confirm("คุณได้รับทราบการเบิกอะไหล่มูลค่าสูงรายการนี้แล้วใช่หรือไม่?")) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API_BASE_URL}/api/alerts/acknowledge-high-value`, 
+        { transaction_id: transactionId }, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      // รีโหลดข้อมูลเพื่อให้รายการที่รับทราบแล้วหายไป
+      fetchAlerts();
+    } catch (err) {
+      console.error("Error acknowledging alert:", err);
+      alert("ไม่สามารถบันทึกการรับทราบได้");
+    }
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return "-";
     const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
@@ -50,7 +70,7 @@ function ManagerAlertPage() {
       <h2 className="page-title">การแจ้งเตือน</h2>
 
       <div className="alert-tabs">
-        <button 
+        <button
           className={`alert-tab-card ${activeTab === "expire" ? "active" : ""}`}
           onClick={() => setActiveTab("expire")}
         >
@@ -61,7 +81,7 @@ function ManagerAlertPage() {
           </div>
         </button>
 
-        <button 
+        <button
           className={`alert-tab-card ${activeTab === "stock" ? "active" : ""}`}
           onClick={() => setActiveTab("stock")}
         >
@@ -72,15 +92,15 @@ function ManagerAlertPage() {
           </div>
         </button>
 
-        <button 
+        <button
           className={`alert-tab-card ${activeTab === "high-value" ? "active" : ""}`}
           onClick={() => setActiveTab("high-value")}
         >
-          <div className="icon-circle value-icon"> 
+          <div className="icon-circle value-icon">
             <FaMoneyBillWave />
           </div>
           <div className="tab-text">
-            <h3>มูลค่าสูง {">"} 1,000</h3>
+            <h3>เบิกมูลค่าสูง</h3>
             <span className="badge-count">{highValueList.length} รายการ</span>
           </div>
         </button>
@@ -88,9 +108,9 @@ function ManagerAlertPage() {
 
       <div className="alert-content-header">
         <h3>
-            {activeTab === "expire" && "แจ้งเตือน: สินค้าใกล้หมดอายุ"}
-            {activeTab === "stock" && "แจ้งเตือน: สินค้าคงคลังต่ำกว่าจุดสั่งซื้อ"}
-            {activeTab === "high-value" && "แจ้งเตือน: อะไหล่มูลค่าสูงในคลัง"}
+          {activeTab === "expire" && "แจ้งเตือน: สินค้าใกล้หมดอายุ"}
+          {activeTab === "stock" && "แจ้งเตือน: สินค้าคงคลังต่ำกว่าจุดสั่งซื้อ"}
+          {activeTab === "high-value" && "แจ้งเตือน: รายการเบิกอะไหล่มูลค่าสูง (> 500 บาท)"}
         </h3>
       </div>
 
@@ -98,34 +118,55 @@ function ManagerAlertPage() {
         <p className="loading-text">กำลังโหลดข้อมูล...</p>
       ) : (
         <div className="alert-list">
-          {/* 1. ส่วนแสดงผล High Value List */}
+          {/* 1. ส่วนแสดงผล High Value (รายการเบิกจริง) */}
           {activeTab === "high-value" && (
             highValueList.length > 0 ? (
               highValueList.map((item) => (
-                <div key={item.lot_id || item.equipment_id} className="alert-item-card high-value-border">
+                <div key={item.transaction_id} className="alert-item-card high-value-border">
                   <div className="item-image">
                     {item.img ? (
-                      <img 
-                        src={`${API_BASE_URL}/uploads/${item.img}`} 
-                        alt={item.equipment_name} 
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+                      <img
+                        src={`${API_BASE_URL}/uploads/${item.img}`}
+                        alt={item.equipment_name}
                       />
                     ) : (
-                      <div style={{ color: '#ccc', fontSize: '0.8rem', textAlign: 'center' }}>ไม่มีรูป</div>
+                      <div className="no-img-text">ไม่มีรูป</div>
                     )}
                   </div>
-                  <div className="item-details">
-                    <h4 className="text-success">ราคาหน่วยละ : {Number(item.price).toLocaleString()} บาท</h4>
+                  <div className="item-details" style={{ flex: 1 }}>
+                    <div className="detail-header-flex">
+                      <h4 className="text-success">ราคาหน่วยละ : {Number(item.price).toLocaleString()} บาท</h4>
+                      <span className="type-badge">{item.transaction_type_name}</span>
+                    </div>
                     <h3>{item.equipment_name}</h3>
-                    <p><strong>รหัสอุปกรณ์:</strong> {item.equipment_id}</p>
-                    <p><strong>คงเหลือในคลัง:</strong> {item.total_quantity} {item.unit_name || "หน่วย"}</p>
-                    <p className="warning-text" style={{ color: '#e67e22' }}>
+                    
+                    <div className="info-grid-container">
+                      <p><FaUser className="inline-icon" /> <strong>ผู้เบิก:</strong> {item.user_name}</p>
+                      <p><FaDesktop className="inline-icon" /> <strong>ใช้กับเครื่อง:</strong> {item.machine_name || "ไม่ระบุ"} ({item.machine_SN || "-"})</p>
+                      <p><FaClock className="inline-icon" /> <strong>วันเวลา:</strong> {formatDate(item.date)} | {item.time.substring(0, 5)} น.</p>
+                      <p><strong>จำนวน:</strong> <span className="text-danger">{item.quantity}</span> {item.unit || "หน่วย"}</p>
+                    </div>
+
+                    <p className="warning-text-box">
                       <FaExclamationTriangle /> อะไหล่ควบคุมพิเศษเนื่องจากมีมูลค่าสูง
                     </p>
                   </div>
+
+                  <div className="acknowledge-action-zone">
+                    <button 
+                      className="btn-modern-check" // เปลี่ยนชื่อคลาส
+                      onClick={() => handleAcknowledge(item.transaction_id)}
+                      title="รับทราบและลบรายการแจ้งเตือน"
+                    >
+                      <div className="check-icon-wrapper">
+                        <FaCheck />
+                      </div>
+                      <span className="btn-tooltip">รับทราบ</span>
+                    </button>
+                  </div>
                 </div>
               ))
-            ) : <p className="no-data">ไม่มีอะไหล่มูลค่าสูงเกิน 1,000 บาท</p>
+            ) : <p className="no-data">ไม่มีรายการเบิกอะไหล่มูลค่าสูงที่ยังไม่ได้ตรวจสอบ</p>
           )}
 
           {/* 2. ส่วนแสดงผล Expire List */}
@@ -134,16 +175,8 @@ function ManagerAlertPage() {
                 expireList.map((item) => (
                     <div key={item.lot_id} className="alert-item-card">
                         <div className="item-image">
-                    {item.img ? (
-                      <img 
-                        src={`${API_BASE_URL}/uploads/${item.img}`} 
-                        alt={item.equipment_name} 
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
-                      />
-                    ) : (
-                      <div style={{ color: '#ccc', fontSize: '0.8rem', textAlign: 'center' }}>ไม่มีรูป</div>
-                    )}
-                  </div>
+                          {item.img ? <img src={`${API_BASE_URL}/uploads/${item.img}`} alt={item.equipment_name} /> : <div className="no-img-text">ไม่มีรูป</div>}
+                        </div>
                         <div className="item-details">
                             <h4 className="text-danger">จำนวน : {item.current_quantity} {item.unit || "หน่วย"}</h4>
                             <h3>{item.equipment_name}</h3>
@@ -164,16 +197,8 @@ function ManagerAlertPage() {
                 stockList.map((item) => (
                     <div key={item.equipment_id} className="alert-item-card">
                         <div className="item-image">
-                    {item.img ? (
-                      <img 
-                        src={`${API_BASE_URL}/uploads/${item.img}`} 
-                        alt={item.equipment_name} 
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
-                      />
-                    ) : (
-                      <div style={{ color: '#ccc', fontSize: '0.8rem', textAlign: 'center' }}>ไม่มีรูป</div>
-                    )}
-                  </div>
+                          {item.img ? <img src={`${API_BASE_URL}/uploads/${item.img}`} alt={item.equipment_name} /> : <div className="no-img-text">ไม่มีรูป</div>}
+                        </div>
                         <div className="item-details">
                             <h4 className="text-danger">เหลือปัจจุบัน : {item.total_stock} {item.unit || "หน่วย"}</h4>
                             <h3>{item.equipment_name}</h3>

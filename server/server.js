@@ -981,23 +981,36 @@ app.get("/api/inventoryBalanceReportChart", async (req, res) => {
 });
 
 // ดึงรายการอะไหล่ที่มีราคาต่อหน่วยมากกว่า 1,000 บาท
+// 1. API ดึงรายการเบิกอะไหล่ราคาสูงที่ยังไม่ได้กดรับทราบ
 app.get('/api/alerts/high-value', async (req, res) => {
     try {
         const sql = `
             SELECT 
-                l.lot_id,
-                e.equipment_id, 
-                et.equipment_name, 
-                l.price, 
-                l.current_quantity as total_quantity, 
+                t.transaction_id,
+                t.transaction_type_id,
+                tt.transaction_type_name,
+                t.date,
+                t.time,
+                u.fullname as user_name,
+                m.machine_name,
+                t.machine_SN,
+                et.equipment_name,
                 et.img,
-                e.alert_quantity,
-                et.unit as unit_name
-            FROM lot l
+                et.unit,
+                el.quantity,
+                l.price,
+                (el.quantity * l.price) as total_value
+            FROM transactions t
+            JOIN transactions_type tt ON t.transaction_type_id = tt.transaction_type_id
+            JOIN users u ON t.user_id = u.user_id
+            LEFT JOIN machine m ON t.machine_SN = m.machine_SN
+            JOIN equipment_list el ON t.transaction_id = el.transaction_id
+            JOIN lot l ON el.lot_id = l.lot_id
             JOIN equipment e ON l.equipment_id = e.equipment_id
             JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
-            WHERE l.price > 1000
-            ORDER BY l.price DESC
+            WHERE l.price > 500 
+              AND t.manager_acknowledged = 0
+            ORDER BY t.date DESC, t.time DESC
         `;
 
         const [results] = await db.query(sql);
@@ -1005,6 +1018,18 @@ app.get('/api/alerts/high-value', async (req, res) => {
     } catch (err) {
         console.error("Database Error:", err);
         res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+
+// 2. API สำหรับกดปุ่มติ๊กถูกเพื่อรับทราบรายการ
+app.post('/api/alerts/acknowledge-high-value', async (req, res) => {
+    const { transaction_id } = req.body;
+    try {
+        const sql = `UPDATE transactions SET manager_acknowledged = 1 WHERE transaction_id = ?`;
+        await db.query(sql, [transaction_id]);
+        res.json({ message: "Acknowledge successful" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
