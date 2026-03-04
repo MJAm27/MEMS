@@ -357,7 +357,7 @@ body {
     .user-text { display: none; } /* ซ่อนชื่อในมือถือ */
     
     .logout-btn-top span { display: none; } /* ซ่อนคำว่า "ออก" */
-    .logout-btn-top { width: 35px; height: 35px; padding: 0; justify-content: center; border-radius: 50%; }
+    .logout-btn-top { width: 180px; height: 35px; padding: 0; justify-content: center; }
 
     .dashboard-welcome-card { flex-direction: column; text-align: center; gap: 15px; }
     .content-body { padding: 20px; }
