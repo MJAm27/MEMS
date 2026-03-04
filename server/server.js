@@ -1883,65 +1883,82 @@ app.get("/api/users", async (req, res) => {
 
 // 3. สร้าง User ใหม่ (Hash Password ก่อนบันทึก)
 app.post("/api/users", async (req, res) => {
-    const { fullname, password_hash,position, phone_number, email, role_id } = req.body;
+    // ดึงตัวแปรให้ตรงกับที่ React ส่งมา (password, profile_img)
+    const { fullname, email, password, position, phone_number, role_id, profile_img } = req.body; 
     
     try {
-        // 3.1 เช็คก่อนว่า username ซ้ำไหม
+        // 3.1 เช็คก่อนว่า email ซ้ำไหม
         const [existing] = await db.query("SELECT user_id FROM users WHERE email = ?", [email]);
         if (existing.length > 0) {
-            return res.status(400).json({ message: "มีผู้ใช้งานแล้ว" });
+            return res.status(400).json({ message: "อีเมลนี้มีผู้ใช้งานแล้ว" });
         }
 
         // 3.2 เข้ารหัสรหัสผ่าน
-        const hashedPassword = await bcrypt.hash(password_hash, 10);
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-        // 3.3 สร้าง user_id (หรือจะใช้ Auto Increment ก็ได้ แล้วแต่ DB)
-        // สมมติถ้า DB เป็น Auto Increment ไม่ต้องใส่ user_id ใน INSERT
-        // แต่ถ้าต้องเจนเอง:
+        // 3.3 สร้าง user_id
         const user_id = 'U-' + Date.now(); 
 
-        const sql = `INSERT INTO users (user_id, email, password_hash, fullname, position, phone_number, role_id) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-        await db.query(sql, [ user_id, email,hashedPassword, fullname, position, phone_number, role_id]);
+        // 3.4 บันทึกลงตาราง users (ให้ตรงกับโครงสร้างคอลัมน์)
+        const sql = `
+            INSERT INTO users 
+            (user_id, email, password_hash, fullname, position, phone_number, role_id, profile_img) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        
+        // จับคู่ parameter ให้ตรงกับเครื่องหมาย ? ตามลำดับ 
+        // (ถ้า profile_img เป็น String ว่างให้ใส่ null เพื่อป้องกัน DB Error)
+        const params = [
+            user_id, 
+            email, 
+            hashedPassword, 
+            fullname, 
+            position, 
+            phone_number, 
+            role_id, 
+            profile_img || null 
+        ];
+
+        await db.query(sql, params);
 
         res.json({ message: "สร้างผู้ใช้งานสำเร็จ" });
     } catch (err) {
-        console.error(err);
+        console.error("Insert User Error:", err);
         res.status(500).send(err);
     }
 });
 
-// 4. แก้ไข User (ถ้ากรอก password มาใหม่ให้เปลี่ยนด้วย ถ้าไม่กรอกให้ใช้ของเดิม)
 app.put("/api/users/:id", async (req, res) => {
-    const { fullname, position , phone_number, role_id } = req.body;
+    // ดึงตัวแปรให้ตรงกับที่ React ส่งมา
+    const { fullname, position, phone_number, role_id, password, profile_img } = req.body; 
     const user_id = req.params.id;
 
     try {
-        let sql = "UPDATE users SET fullname=?, position=?, phone_number=?, role_id=? WHERE user_id=?";
-        let params = [fullname, position , phone_number, role_id];
+        let sql = `
+            UPDATE users 
+            SET fullname=?, position=?, phone_number=?, role_id=?, profile_img=? 
+            WHERE user_id=?
+        `;
+        let params = [fullname, position, phone_number, role_id, profile_img || null, user_id];
 
-        // ถ้ามีการส่ง password มาใหม่ ให้ Hash แล้วอัปเดตด้วย
+        // ถ้า User มีการพิมพ์ password ใหม่มาด้วย ให้ Hash แล้วอัปเดตทับ
         if (password && password.trim() !== "") {
-            const hashedPassword = await bcrypt.hash(password_hash, 10);
-            sql = "UPDATE users SET fullname=?, position=?, phone_number=?, role_id=? WHERE user_id=?";
-            params = [fullname, position , phone_number, role_id, hashedPassword, user_id];
+            const hashedPassword = await bcrypt.hash(password, 10); 
+            
+            sql = `
+                UPDATE users 
+                SET fullname=?, position=?, phone_number=?, role_id=?, profile_img=?, password_hash=? 
+                WHERE user_id=?
+            `;
+            // เรียงลำดับ parameter ใหม่ให้ตรงกับ ?
+            params = [fullname, position, phone_number, role_id, profile_img || null, hashedPassword, user_id];
         }
 
         await db.query(sql, params);
         res.json({ message: "แก้ไขข้อมูลสำเร็จ" });
     } catch (err) {
-        console.error(err);
+        console.error("Update User Error:", err);
         res.status(500).send(err);
-    }
-});
-
-// 5. ลบ User
-app.delete("/api/users/:id", async (req, res) => {
-    try {
-        await db.query("DELETE FROM users WHERE user_id = ?", [req.params.id]);
-        res.json({ message: "ลบผู้ใช้งานสำเร็จ" });
-    } catch (err) {
-        // ระวังเรื่อง Foreign Key constraint ถ้า user เคยทำ transaction อาจจะลบไม่ได้
-        res.status(500).send({ message: "ไม่สามารถลบได้ เนื่องจากผู้ใช้นี้มีประวัติการใช้งานในระบบ" });
     }
 });
 
