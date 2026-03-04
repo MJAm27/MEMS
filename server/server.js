@@ -1711,13 +1711,18 @@ app.get("/api/transactions", async (req, res) => {
 // 2. ดึงรายละเอียดของ Transaction นั้นๆ (รายการของที่เบิก)
 app.get("/api/transactions/:id/items", async (req, res) => {
     const sql = `
-        SELECT el.*, et.equipment_name,et.unit, e.model_size FROM equipment_list el JOIN equipment e ON el.equipment_id = e.equipment_id JOIN equipment_type et ON et.equipment_type_id = e.equipment_type_id
+        SELECT el.*, et.equipment_name, et.unit, e.model_size 
+        FROM equipment_list el
+        JOIN lot l ON el.lot_id = l.lot_id
+        JOIN equipment e ON l.equipment_id = e.equipment_id
+        JOIN equipment_type et ON et.equipment_type_id = e.equipment_type_id
         WHERE el.transaction_id = ?
     `;
     try {
         const [results] = await db.query(sql, [req.params.id]);
         res.json(results);
     } catch (err) {
+        console.error("Fetch Items Error:", err);
         res.status(500).send(err);
     }
 });

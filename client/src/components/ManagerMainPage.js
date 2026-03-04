@@ -93,15 +93,15 @@ function ManagerMainPage({ user, handleLogout, refreshUser }) {
                 <nav className="sidebar-nav">
                     {/* ✅ เปลี่ยนจาก navigate เป็น goTo เพื่อให้ sidebar ปิดบนมือถือ */}
                     <button className="nav-link" onClick={() => goTo("/dashboard/manager/home")}>
-                        <FaHome /> <span>แผงควบคุมหลัก</span>
+                        <FaHome /> <span>หน้าหลัก</span>
                     </button>
                     <button className="nav-link" onClick={() => goTo("/dashboard/manager/reports")}>
-                        <FaChartBar /> <span>รายงานสรุปคลัง</span>
+                        <FaChartBar /> <span>รายงานสรุป</span>
                     </button>
                     <button className="nav-link" onClick={() => goTo("/dashboard/manager/alerts")}>
                         <div className="nav-link-content">
                             <FaBell /> 
-                            <span>รายการแจ้งเตือน</span>
+                            <span>แจ้งเตือน</span>
                             {alertCount > 0 && <span className="notification-badge-inline">{alertCount}</span>}
                         </div>
                     </button>
@@ -109,10 +109,10 @@ function ManagerMainPage({ user, handleLogout, refreshUser }) {
                         <FaBoxOpen /> <span>ข้อมูลอะไหล่ทั้งหมด</span>
                     </button>
                     <button className="nav-link" onClick={() => goTo("/dashboard/manager/managerhistory")}>
-                        <FaHistory /> <span>ประวัติการใช้งาน</span>
+                        <FaHistory /> <span>ประวัติการเบิกคืน</span>
                     </button>
                     <button className="nav-link" onClick={() => goTo("/dashboard/manager/profile")}>
-                        <FaUserCircle /> <span>โปรไฟล์</span>
+                        <FaUserCircle /> <span>แก้ไขโปรไฟล์</span>
                     </button>
                 </nav>
 

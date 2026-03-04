@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react"; 
 import "./ManageTransaction.css";
-import { FaPlus, FaSearch, FaEye, FaTimes, FaTrash, FaFilter } from "react-icons/fa";
+// เพิ่ม FaEdit เข้ามาใน import
+import { FaPlus, FaSearch, FaEye, FaTimes, FaTrash, FaFilter, FaEdit } from "react-icons/fa";
 import axios from "axios";
 import SubNavbar from "./SubNavbar";
-
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
@@ -13,7 +13,12 @@ function ManageTransaction() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [viewMode, setViewMode] = useState(false); // true=ดูรายละเอียด, false=เพิ่มใหม่
+  const [viewMode, setViewMode] = useState(false); // true=ดูรายละเอียด, false=เพิ่ม/แก้ไข
+  
+  // +++ เพิ่ม State สำหรับควบคุมโหมดแก้ไข +++
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editTransactionId, setEditTransactionId] = useState(null);
+
   const [options, setOptions] = useState({ 
     users: [], 
     machines: [], 
@@ -78,7 +83,7 @@ function ManageTransaction() {
           model_size: lotInfo.model_size
         };
         setCartItems([...cartItems, newItem]);
-        setCurrentItem({ lot_id: "", equipment_id: "", quantity: 1 }); // รีเซ็ตค่าหลังกดเพิ่ม
+        setCurrentItem({ lot_id: "", equipment_id: "", quantity: 1 }); 
     }
   };
 
@@ -88,6 +93,7 @@ function ManageTransaction() {
     setCartItems(newCart);
   };
 
+  // +++ แก้ไข: ฟังก์ชันบันทึกข้อมูล (เพิ่มเช็คว่าเป็นการสร้างใหม่หรือแก้ไข) +++
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (cartItems.length === 0) {
@@ -95,7 +101,8 @@ function ManageTransaction() {
       return;
     }
     
-    if (!headerData.transaction_type_id || !headerData.user_id) {
+    // แก้บั๊กตรงนี้จาก transaction_type_id เป็น type_mode
+    if (!headerData.type_mode || !headerData.user_id) {
        alert("กรุณาระบุประเภทและผู้ทำรายการ");
        return; 
     }
@@ -105,18 +112,48 @@ function ManageTransaction() {
         ...headerData,
         items: cartItems
       };
-      await axios.post(`${API_BASE_URL}/api/transactions`, payload);
-      alert("บันทึกรายการสำเร็จ!");
+
+      if (isEditMode) {
+        // อัปเดตข้อมูล (ต้องมั่นใจว่า Backend มี API รองรับ PUT /api/transactions/:id)
+        await axios.put(`${API_BASE_URL}/api/transactions/${editTransactionId}`, payload);
+        alert("แก้ไขรายการสำเร็จ!");
+      } else {
+        // สร้างรายการใหม่
+        await axios.post(`${API_BASE_URL}/api/transactions`, payload);
+        alert("บันทึกรายการสำเร็จ!");
+      }
+
       setShowModal(false);
       fetchTransactions(); 
-      setHeaderData({ transaction_type_id: "", user_id: "", machine_SN: "" });
-      setCartItems([]);
+      handleResetForm();
     } catch (error) {
       console.error(error);
-      alert("เกิดข้อผิดพลาดในการบันทึก");
+      alert("เกิดข้อผิดพลาดในการบันทึก: " + (error.response?.data?.error || error.message));
     }
   };
 
+  // +++ ล้างข้อมูลฟอร์ม +++
+  const handleResetForm = () => {
+    setHeaderData({ 
+        type_mode: "withdraw", 
+        user_id: "", 
+        machine_SN: "",
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toLocaleTimeString('th-TH', { hour12: false }).slice(0, 5)
+    });
+    setCartItems([]);
+    setIsEditMode(false);
+    setEditTransactionId(null);
+  };
+
+  // +++ ฟังก์ชันสำหรับกดเปิด Modal เพิ่มข้อมูลใหม่ +++
+  const handleOpenAdd = () => {
+      handleResetForm();
+      setViewMode(false);
+      setShowModal(true);
+  };
+
+  // +++ เปิด Modal ดูรายละเอียด +++
   const handleViewDetail = async (trans) => {
     setSelectedTransaction(trans);
     setViewMode(true);
@@ -129,12 +166,50 @@ function ManageTransaction() {
     }
   };
 
-  const handleOpenAdd = () => {
-      setViewMode(false);
-      setCartItems([]);
-      setHeaderData({ transaction_type_id: "", user_id: "", machine_SN: "" });
-      setShowModal(true);
-  }
+  // +++ ฟังก์ชันสำหรับกดแก้ไขข้อมูล +++
+  const handleEdit = async (trans) => {
+    setViewMode(false);
+    setIsEditMode(true);
+    setEditTransactionId(trans.transaction_id);
+
+    // จำลองการแปลงประเภทกลับไปเป็น type_mode สำหรับ Dropdown
+    let mappedTypeMode = "withdraw";
+    if (trans.transaction_type_name?.includes("คืน")) mappedTypeMode = "return";
+    if (trans.transaction_type_name?.includes("ล่วงหน้า")) mappedTypeMode = "borrow";
+
+    setHeaderData({
+      type_mode: mappedTypeMode,
+      user_id: trans.user_id,
+      machine_SN: trans.machine_SN || "",
+      date: trans.date ? new Date(trans.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      time: trans.time || new Date().toLocaleTimeString('th-TH', { hour12: false }).slice(0, 5)
+    });
+
+    try {
+        // ดึงรายการย่อยมาใส่ในตะกร้า
+        const res = await axios.get(`${API_BASE_URL}/api/transactions/${trans.transaction_id}/items`);
+        setCartItems(res.data);
+    } catch (error) {
+        console.error("Fetch Items Error:", error);
+    }
+    
+    setShowModal(true);
+  };
+
+  // +++ ฟังก์ชันสำหรับลบข้อมูล +++
+  const handleDelete = async (transaction_id) => {
+    if (window.confirm(`คุณต้องการลบรายการเลขที่ ${transaction_id} ใช่หรือไม่? \n(คำเตือน: หากลบแล้วจะไม่สามารถกู้คืนได้)`)) {
+      try {
+        // ต้องมั่นใจว่า Backend มี API รองรับ DELETE /api/transactions/:id
+        await axios.delete(`${API_BASE_URL}/api/transactions/${transaction_id}`);
+        fetchTransactions(); 
+        alert("ลบข้อมูลสำเร็จ");
+      } catch (error) {
+        console.error("Error deleting:", error);
+        alert("ไม่สามารถลบได้ เกิดข้อผิดพลาดจากระบบฐานข้อมูล (อาจเกิดจากการผูก Foreign Key)");
+      }
+    }
+  };
 
   const filteredData = transactions.filter(t => {
     const matchesSearch = 
@@ -199,11 +274,11 @@ function ManageTransaction() {
             <tr>
               <th>เลขที่รายการ</th>
               <th>วันที่</th>
-              <th>ประเภท</th>
+              <th style={{ minWidth: '150px'}}>ประเภท</th>
               <th>ผู้ดำเนินการ</th>
               <th>ครุภัณฑ์</th>
               <th style={{textAlign:'center'}}>จำนวนรายการ</th>
-              <th style={{textAlign:'center'}}>ดูข้อมูล</th>
+              <th style={{textAlign:'center', minWidth: '150px'}}>จัดการ</th>
             </tr>
           </thead>
           <tbody>
@@ -221,9 +296,24 @@ function ManageTransaction() {
                   <td>{item.machine_name || "-"}</td>
                   <td style={{textAlign:'center'}}>{item.item_count}</td>
                   <td style={{textAlign:'center'}}>
-                    <button className="action-btn view-btn" onClick={() => handleViewDetail(item)}>
-                      <FaEye />
-                    </button>
+                    <div>
+                      <div>
+                        <button className="action-btn view-btn" onClick={() => handleViewDetail(item)} title="ดูรายละเอียด">
+                          <FaEye /> 
+                          <span style={{ fontSize: "0.8rem", marginLeft: "5px", fontWeight: "normal" }}>
+                            ดูรายการ
+                          </span>
+                        </button>
+                      </div>
+                      <div>
+                        <button className="action-btn edit-btn" onClick={() => handleEdit(item)} title="แก้ไขรายการ">
+                          <FaEdit />
+                        </button>
+                        <button className="action-btn delete-btn" onClick={() => handleDelete(item.transaction_id)} title="ลบรายการ">
+                          <FaTrash />
+                        </button>
+                      </div>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -238,7 +328,8 @@ function ManageTransaction() {
         <div className="modal-overlay">
           <div className="modal-content transaction-modal">
             <div className="modal-header">
-              <h3>{viewMode ? "รายละเอียดรายการ" : "สร้างรายการใหม่"}</h3>
+              {/* เปลี่ยนชื่อ Header ตามโหมด */}
+              <h3>{viewMode ? "รายละเอียดรายการ" : (isEditMode ? `แก้ไขรายการ: ${editTransactionId}` : "สร้างรายการใหม่")}</h3>
               <button className="close-btn" onClick={() => setShowModal(false)}><FaTimes /></button>
             </div>
             
@@ -285,7 +376,6 @@ function ManageTransaction() {
                                         value={headerData.type_mode}
                                         onChange={e => {
                                             const mode = e.target.value;
-                                            // ถ้าเป็น คืน หรือ ยืม ให้เคลียร์ค่าครุภัณฑ์ทิ้งอัตโนมัติ
                                             const resetMachine = (mode === 'return' || mode === 'borrow') ? "" : headerData.machine_SN;
                                             setHeaderData({...headerData, type_mode: mode, machine_SN: resetMachine});
                                         }}
@@ -336,7 +426,7 @@ function ManageTransaction() {
                                         setCurrentItem({
                                             ...currentItem, 
                                             lot_id: selectedLotId,
-                                            equipment_id: selectedLot ? selectedLot.equipment_id : "" // แนบ equipment_id ไปด้วย
+                                            equipment_id: selectedLot ? selectedLot.equipment_id : "" 
                                         });
                                     }}
                                 >
@@ -393,7 +483,8 @@ function ManageTransaction() {
 
                         <div className="modal-footer" style={{marginTop: '20px'}}>
                              <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>ยกเลิก</button>
-                             <button type="submit" className="btn-primary">บันทึกข้อมูล</button>
+                             {/* เปลี่ยนชื่อปุ่มบันทึกตามโหมด */}
+                             <button type="submit" className="btn-primary">{isEditMode ? "บันทึกการแก้ไข" : "บันทึกข้อมูล"}</button>
                         </div>
                     </form>
                 )}
