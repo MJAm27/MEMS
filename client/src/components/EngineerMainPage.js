@@ -121,6 +121,7 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                 if (!snInput || qtyInput <= 0) {
                     return alert("กรุณากรอกเลขครุภัณฑ์และจำนวนที่ใช้จริงให้ถูกต้อง");
                 }
+                
                 await axios.post(`${API_BASE}/api/borrow/finalize-partial`, {
                     transactionId: item.borrow_id,
                     equipmentId: item.equipment_id,
@@ -130,6 +131,15 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                 }, { headers: { Authorization: `Bearer ${token}` } });
 
                 alert("ดำเนินการสำเร็จ");
+
+                // --- ส่วนที่แก้ไข: ล้างค่าในช่องกรอกของรายการนี้ ---
+                setFinalizeData(prev => {
+                    const newData = { ...prev };
+                    delete newData[uniqueKey]; // ลบข้อมูลการกรอกของแถวนี้ออก
+                    return newData;
+                });
+
+                // ดึงข้อมูลใหม่ทันที
                 fetchPendingBorrows();
             }
         } catch (err) { 

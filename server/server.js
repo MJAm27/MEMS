@@ -560,43 +560,39 @@ app.post('/api/borrow/finalize-partial', authenticateToken, async (req, res) => 
         connection = await pool.getConnection();
         await connection.beginTransaction();
 
-        // 1. ตรวจสอบจำนวนคงเหลือในมือจากรายการเบิกต้นทาง
+        // 1. ตรวจสอบจำนวน
         const [rows] = await connection.query(
             "SELECT quantity FROM equipment_list WHERE transaction_id = ? AND lot_id = ?",
             [transactionId, lotId]
         );
         
-        if (rows.length === 0) throw new Error("ไม่พบรายการยืมนี้ในระบบ");
+        if (rows.length === 0) throw new Error("ไม่พบรายการอะไหล่ในมือ");
         const currentInHand = rows[0].quantity;
+        if (usedQty > currentInHand) throw new Error(`ยอดไม่พอ (มี ${currentInHand} ต้องการใช้ ${usedQty})`);
 
-        if (usedQty > currentInHand) {
-            throw new Error(`จำนวนที่บันทึก (${usedQty}) มากกว่าจำนวนที่มีอยู่ในมือ (${currentInHand})`);
-        }
-
-        // 2. สร้าง Transaction ใหม่สำหรับการใช้จริง และผูก parent_transaction_id
-        const realTxId = `W-REAL-${Date.now().toString().slice(-8)}`;
+        // 2. สร้าง Transaction (ตรวจสอบให้ชัวร์ว่าจำนวน ? ครบ 7 ตัว)
+        const realTxId = `W-REAL-${Date.now().toString().slice(-6)}`;
         await connection.query(
-            "INSERT INTO transactions (transaction_id, parent_transaction_id, transaction_type_id, date, time, user_id, machine_SN, is_pending) VALUES (?, ?, 'T-WTH', CURDATE(), CURTIME(), ?, ?, 0)",
+            `INSERT INTO transactions 
+            (transaction_id, parent_transaction_id, transaction_type_id, date, time, user_id, machine_SN, is_pending) 
+            VALUES (?, ?, 'T-WTH', CURDATE(), CURTIME(), ?, ?, 0)`,
             [realTxId, transactionId, req.user.userId, machineSN]
         );
 
-        // 3. บันทึกรายละเอียดอะไหล่ (ลบ equipment_id ออกเพื่อให้ตรงกับโครงสร้างตารางจริง)
+        // 3. บันทึกรายละเอียดอะไหล่ (ใส่รหัสสุ่มที่ไม่ซ้ำ)
+        const elId = `ELR-${Math.floor(Math.random() * 100000)}`;
         await connection.query(
             "INSERT INTO equipment_list (equipment_list_id, transaction_id, quantity, lot_id) VALUES (?, ?, ?, ?)",
-            [`ELR-${Date.now().toString().slice(-5)}`, realTxId, usedQty, lotId]
+            [elId, realTxId, usedQty, lotId]
         );
 
-        // 4. บันทึก Log เวลาเปิด-ปิดอัตโนมัติสำหรับรายการสรุปผล
+        // 4. บันทึก Logs
         await connection.query(
             "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-001', ?, ?)",
             [`LG-OP-${Date.now()}`, realTxId, req.user.userId]
         );
-        await connection.query(
-            "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-002', ?, ?)",
-            [`LG-CL-${Date.now() + 500}`, realTxId, req.user.userId]
-        );
 
-        // 5. อัปเดตยอดคงเหลือในมือ หรือลบทิ้งหากใช้หมดแล้ว
+        // 5. อัปเดตยอดคงเหลือในมือ (Parent)
         const newRemainingQty = currentInHand - usedQty;
         if (newRemainingQty > 0) {
             await connection.query(
@@ -607,19 +603,19 @@ app.post('/api/borrow/finalize-partial', authenticateToken, async (req, res) => 
             await connection.query("DELETE FROM equipment_list WHERE transaction_id = ? AND lot_id = ?", [transactionId, lotId]);
         }
 
-        // 6. ตรวจสอบว่าใบเบิกต้นทาง (Parent) เหลืออะไหล่อื่นอีกไหม ถ้าไม่มีให้ปิด is_pending
+        // 6. ปิด is_pending ถ้าหมดทุกรายการในใบเบิกนั้น
         const [check] = await connection.query("SELECT COUNT(*) as itemCount FROM equipment_list WHERE transaction_id = ?", [transactionId]);
         if (check[0].itemCount === 0) {
             await connection.query("UPDATE transactions SET is_pending = 0 WHERE transaction_id = ?", [transactionId]);
         }
 
         await connection.commit();
-        res.json({ success: true, message: "บันทึกใช้จริงและเชื่อมโยงประวัติสำเร็จ" });
+        res.json({ success: true, message: "บันทึกสำเร็จ" });
 
     } catch (error) {
         if (connection) await connection.rollback();
-        console.error("Finalize Partial Error:", error.message);
-        res.status(500).json({ error: error.message });
+        console.error("DEBUG ERROR:", error); // ดู Error เต็มๆ ใน Terminal ของ Node.js
+        res.status(500).json({ error: error.sqlMessage || error.message });
     } finally {
         if (connection) connection.release();
     }
