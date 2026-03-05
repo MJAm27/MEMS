@@ -315,17 +315,35 @@ function BorrowPage({ user }) {
                 )}
 
                 {currentStep === 5 && (
-                    <div className="text-center py-6 animate-fadeIn">
-                        <div className="success-badge bg-green-100 text-green-700 p-4 rounded-2xl mb-8 flex items-center gap-3 justify-center">
-                            <FaCheckCircle size={24} /> <p className="font-bold">บันทึกสำเร็จ!</p>
+                    <div className="step-content-success">
+                        <div className="success-banner-modern">
+                            <div className="success-icon-circle">
+                                <FaCheckCircle />
+                            </div>
+                            <span className="success-text-main">บันทึกข้อมูลสำเร็จ!</span>
                         </div>
-                        <h3 className="font-bold text-2xl mb-3">5. สั่งปิดประตูกล่อง</h3>
-                        <p className="text-gray-500 mb-8">ตรวจสอบสิ่งกีดขวางก่อนปิดประตูกล่อง</p>
-                        <button onClick={handleCloseDoor} disabled={isProcessing} className="btn-action-dark w-full">
-                            {isProcessing ? <span className="loader"></span> : <><FaLock className="mr-2" /> สั่งปิดประตูกล่อง</>}
+
+                        <h3 className="text-2xl font-bold text-gray-800 mb-2">5. สั่งปิดประตู</h3>
+                        <p className="instruction-text">
+                            ตรวจสอบสิ่งกีดขวางบริเวณหน้ากล่องให้เรียบร้อย แล้วกดปุ่มเพื่อล็อกตู้
+                        </p>
+
+                        <button 
+                            onClick={handleCloseDoor} 
+                            disabled={isProcessing} 
+                            className="btn-close-gate-final"
+                        >
+                            {isProcessing ? (
+                                <span className="loader"></span>
+                            ) : (
+                                <>
+                                    <FaLock />
+                                    ปิดประตูกล่อง
+                                </>
+                            )}
                         </button>
                     </div>
-                )}
+                )}                
             </div>
 
             {previewImage && (
