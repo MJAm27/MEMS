@@ -91,6 +91,7 @@ function ManageUser() {
         await axios.put(`${API_BASE_URL}/api/users/${formData.user_id}`, formData);
         alert("แก้ไขข้อมูลสำเร็จ");
       } else {
+        const { user_id, ...newUserData } = formData;
         await axios.post(`${API_BASE_URL}/api/users`, formData);
         alert("สร้างผู้ใช้งานสำเร็จ");
       }

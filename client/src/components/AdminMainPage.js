@@ -1,18 +1,9 @@
-import React, { useState, useLayoutEffect, useEffect } from "react"; // เพิ่ม useEffect
-import axios from "axios"; // เพิ่ม axios
+import React, { useState, useLayoutEffect, useEffect } from "react";
+import axios from "axios";
 import { useNavigate, Routes, Route } from "react-router-dom";
 import {
-    FaBars,
-    FaHome,
-    FaChartLine,
-    FaBell,
-    FaUserCircle,
-    FaSignOutAlt,
-    FaIndustry,
-    FaCogs,
-    FaExchangeAlt,
-    FaTruck,
-    FaUsers
+    FaBars, FaHome, FaChartLine, FaBell, FaUserCircle,
+    FaSignOutAlt, FaIndustry, FaCogs, FaExchangeAlt, FaTruck, FaUsers
 } from "react-icons/fa";
 
 import "./AdminMainPage.css";
@@ -29,7 +20,6 @@ import ProfileENG from './ProfileENG';
 import ProfileEditENG from './ProfileEditENG';
 import ChangePasswordENG from './ChangePasswordENG';
 
-
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 function AdminMainPage({ user, handleLogout }) {
@@ -37,13 +27,11 @@ function AdminMainPage({ user, handleLogout }) {
 
     const getInitialSidebarState = () => window.innerWidth > 768;
     const [sidebarOpen, setSidebarOpen] = useState(getInitialSidebarState);
-
     const [alertCount, setAlertCount] = useState(0);
 
     useEffect(() => {
         const fetchAlertCount = async () => {
             try {
-                // เรียกทั้ง 2 API เพื่อมานับรวมกัน
                 const [expireRes, stockRes] = await Promise.all([
                     axios.get(`${API_BASE_URL}/api/alerts/expire`),
                     axios.get(`${API_BASE_URL}/api/alerts/low-stock`)
@@ -56,8 +44,6 @@ function AdminMainPage({ user, handleLogout }) {
         };
 
         fetchAlertCount();
-        
-        // (Optional) ตั้ง Interval ให้เช็คทุก 1 นาที
         const interval = setInterval(fetchAlertCount, 60000); 
         return () => clearInterval(interval);
     }, []);
@@ -69,6 +55,13 @@ function AdminMainPage({ user, handleLogout }) {
         window.addEventListener("resize", handleResize);
         return () => window.removeEventListener("resize", handleResize);
     }, []);
+
+    const goTo = (path) => {
+        navigate(path);
+        if (window.innerWidth <= 768) {
+            setSidebarOpen(false);
+        }
+    };
 
     const toggleSidebar = () => {
         setSidebarOpen((prev) => !prev);
@@ -89,6 +82,9 @@ function AdminMainPage({ user, handleLogout }) {
 
     return (
         <div className={`layout-wrapper ${sidebarOpen ? "sidebar-open" : "sidebar-closed"}`}>
+            
+            <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>
+
             {/* ===== Sidebar ===== */}
             <aside className="sidebar-container">
                 <div className="sidebar-header">
@@ -96,15 +92,15 @@ function AdminMainPage({ user, handleLogout }) {
                 </div>
 
                 <nav className="sidebar-nav">
-                    <button className="nav-link" onClick={() => navigate("/dashboard/admin/home")}>
+                    <button className="nav-link" onClick={() => goTo("/dashboard/admin/home")}>
                         <FaHome /> <span>หน้าหลัก</span>
                     </button>
 
-                    <button className="nav-link" onClick={() => navigate("/dashboard/admin/report")}>
+                    <button className="nav-link" onClick={() => goTo("/dashboard/admin/report")}>
                         <FaChartLine /> <span>รายงานสรุป</span>
                     </button>
 
-                    <button className="nav-link" onClick={() => navigate("/dashboard/admin/alert")}>
+                    <button className="nav-link" onClick={() => goTo("/dashboard/admin/alert")}>
                         <div className="nav-link-content">
                             <FaBell />
                             <span>แจ้งเตือน</span>
@@ -116,7 +112,7 @@ function AdminMainPage({ user, handleLogout }) {
                         </div>
                     </button>
 
-                    <button className="nav-link" onClick={() => navigate("/dashboard/admin/profile")}>
+                    <button className="nav-link" onClick={() => goTo("/dashboard/admin/profile")}>
                         <FaUserCircle /> <span>แก้ไขโปรไฟล์</span>
                     </button>
                 </nav>
@@ -150,112 +146,9 @@ function AdminMainPage({ user, handleLogout }) {
 
                 <div className="content-body">
                     <Routes>
-                        <Route
-                            path="/"
-                            element={
-                                <>
-                                    <h1 className="page-title">หน้าหลักผู้ดูแลระบบ</h1>
-                                    <p className="page-subtitle">เลือกเมนูเพื่อจัดการข้อมูลภายในระบบ</p>
-
-                                    <div className="admin-action-grid">
-                                        <button
-                                            className="admin-action-card"
-                                            onClick={() => navigate("/dashboard/admin/machine")}
-                                        >
-                                            <FaIndustry className="icon" />
-                                            <span>จัดการข้อมูลครุภัณฑ์</span>
-                                        </button>
-
-                                        <button
-                                            className="admin-action-card"
-                                            onClick={() => navigate("/dashboard/admin/equipment")}
-                                        >
-                                            <FaCogs className="icon" />
-                                            <span>จัดการข้อมูลอะไหล่</span>
-                                        </button>
-
-                                        <button
-                                            className="admin-action-card"
-                                            onClick={() => navigate("/dashboard/admin/transactions")}
-                                        >
-                                            <FaExchangeAlt className="icon" />
-                                            <span>จัดการประวัติการเบิกคืน</span>
-                                        </button>
-
-                                        <button
-                                            className="admin-action-card"
-                                            onClick={() => navigate("/dashboard/admin/supplier")}
-                                        >
-                                            <FaTruck className="icon" />
-                                            <span>จัดการข้อมูลบริษัทนำเข้าอะไหล่</span>
-                                        </button>
-
-                                        <button
-                                            className="admin-action-card"
-                                            onClick={() => navigate("/dashboard/admin/user")}
-                                        >
-                                            <FaUsers className="icon" />
-                                            <span>จัดการข้อมูลผู้ใช้งาน</span>
-                                        </button>
-                                    </div>
-                                </>
-                            }
-                        />
-                        <Route
-                            path="/admin/home"
-                            element={
-                                <>
-                                    <h1 className="page-title">หน้าหลักผู้ดูแลระบบ</h1>
-                                    <p className="page-subtitle">เลือกเมนูเพื่อจัดการข้อมูลภายในระบบ</p>
-
-                                    <div className="admin-action-grid">
-                                        <button
-                                            className="admin-action-card"
-                                            onClick={() => navigate("/dashboard/admin/machine")}
-                                        >
-                                            <FaIndustry className="icon" />
-                                            <span>จัดการข้อมูลครุภัณฑ์</span>
-                                        </button>
-
-                                        <button
-                                            className="admin-action-card"
-                                            onClick={() => navigate("/dashboard/admin/equipment")}
-                                        >
-                                            <FaCogs className="icon" />
-                                            <span>จัดการข้อมูลอะไหล่</span>
-                                        </button>
-
-                                        <button
-                                            className="admin-action-card"
-                                            onClick={() => navigate("/dashboard/admin/transactions")}
-                                        >
-                                            <FaExchangeAlt className="icon" />
-                                            <span>จัดการประวัติการเบิกคืน</span>
-                                        </button>
-
-                                        <button
-                                            className="admin-action-card"
-                                            onClick={() => navigate("/dashboard/admin/supplier")}
-                                        >
-                                            <FaTruck className="icon" />
-                                            <span>จัดการข้อมูลบริษัทนำเข้าอะไหล่</span>
-                                        </button>
-
-                                        <button
-                                            className="admin-action-card"
-                                            onClick={() => navigate("/dashboard/admin/user")}
-                                        >
-                                            <FaUsers className="icon" />
-                                            <span>จัดการข้อมูลผู้ใช้งาน</span>
-                                        </button>
-                                    </div>
-                                </>
-                            }
-                        />
-
-
+                        <Route path="/" element={<HomeMenu navigate={goTo} />} />
+                        <Route path="/admin/home" element={<HomeMenu navigate={goTo} />} />
                         <Route path="/admin/report" element={<ReportPage />} />
-                        
                         <Route path="/admin/machine" element={<ManageMachine />} />
                         <Route path="/admin/equipment" element={<ManageEquipment />} />
                         <Route path="/admin/lot/:equipmentId" element={<ManageLot />} />
@@ -266,13 +159,38 @@ function AdminMainPage({ user, handleLogout }) {
                         <Route path="/admin/profile" element={<ProfileENG user={user}/>} />
                         <Route path="/admin/profile/edit" element={<ProfileEditENG user={user}/>} />
                         <Route path="/admin/profile/change-passwordENG" element={<ChangePasswordENG user={user}/>} />
-
-
                         <Route path="*" element={<h2>ไม่พบหน้าที่คุณต้องการ</h2>} />
                     </Routes>
                 </div>
             </main>
         </div>
+    );
+}
+
+function HomeMenu({ navigate }) {
+    return (
+        <>
+            <h1 className="page-title">หน้าหลักผู้ดูแลระบบ</h1>
+            <p className="page-subtitle">เลือกเมนูเพื่อจัดการข้อมูลภายในระบบ</p>
+
+            <div className="admin-action-grid">
+                <button className="admin-action-card" onClick={() => navigate("/dashboard/admin/machine")}>
+                    <FaIndustry className="icon" /><span>จัดการข้อมูลครุภัณฑ์</span>
+                </button>
+                <button className="admin-action-card" onClick={() => navigate("/dashboard/admin/equipment")}>
+                    <FaCogs className="icon" /><span>จัดการข้อมูลอะไหล่</span>
+                </button>
+                <button className="admin-action-card" onClick={() => navigate("/dashboard/admin/transactions")}>
+                    <FaExchangeAlt className="icon" /><span>จัดการประวัติการเบิกคืน</span>
+                </button>
+                <button className="admin-action-card" onClick={() => navigate("/dashboard/admin/supplier")}>
+                    <FaTruck className="icon" /><span>จัดการข้อมูลบริษัทนำเข้าอะไหล่</span>
+                </button>
+                <button className="admin-action-card" onClick={() => navigate("/dashboard/admin/user")}>
+                    <FaUsers className="icon" /><span>จัดการข้อมูลผู้ใช้งาน</span>
+                </button>
+            </div>
+        </>
     );
 }
 
