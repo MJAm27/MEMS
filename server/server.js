@@ -65,17 +65,38 @@ const JWT_SECRET = "MY_SUPER_SECRET_KEY_FOR_JWT_12345";
 //step2 แก้ไข ESP8266 ให้เชื่อมต่อกับ MQTT Broker ของ Server แทนการรับคำสั่งผ่าน HTTP โดยตรง
 //step3 ใน server.js ให้ใช้ MQTT Client (เช่น mqtt.js) เพื่อส่งคำสั่งไปยัง ESP8266 ผ่าน MQTT แทนการใช้ HTTP
 //const ESP_IP = 'http://192.168.1.139'; 
-const HARDCODED_USER_ID = 123464; // (ชั่วคราว)
+
 const mqtt = require('mqtt');
 const client = mqtt.connect('mqtt://kob.vps.athichal.com:62279'); 
 const SECRET_PASSKEY = "MEMS_AMKOB";
+
+let deviceStatus = "offline";
 client.on('connect', () => {
-    console.log('✅ Connected to MQTT Broker on VPS successfully!');
+    console.log('✅ Connected to MQTT Broker');
+    client.subscribe("esp8266/status");
+});
+client.on('message', (topic, message) => {
+    if (topic === "esp8266/status") {
+        deviceStatus = message.toString();
+        console.log(`[Device] Status changed to: ${deviceStatus}`);
+    }
 });
 
 client.on('error', (err) => {
     console.error('❌ MQTT Connection Error:', err);
 });
+
+app.get('/api/device-check', authenticateToken, (req, res) => {
+    if (deviceStatus === "online") {
+        res.status(200).json({ status: "online" });
+    } else {
+        res.status(503).json({ 
+            status: "offline", 
+            message: "ตู้ไม่พร้อมใช้งาน กรุณาตรวจสอบการเสียบปลั๊กหรือการเชื่อมต่ออินเทอร์เน็ตของตู้" 
+        });
+    }
+});
+
 // -------------------------------------------------------------------
 
 
@@ -134,13 +155,18 @@ async function commandServo(action) {
 
 // --- API สำหรับสั่งเปิดประตูตู้ ---
 app.get('/api/open', authenticateToken, async (req, res) => {
+
+    if (deviceStatus !== "online") {
+        return res.status(503).json({ 
+            error: 'ตู้ไม่มีไฟเลี้ยงหรือ Offline อยู่ ไม่สามารถสั่งเปิดได้' 
+        });
+    }
+
     const userId = req.user.userId;
     const transactionId = req.query.transactionId || null;
     try {
         await commandServo('OPEN'); 
-        
         await logActionToDB(userId, 'A-001', transactionId);
-        
         res.status(200).send({ message: 'เปิดตู้สำเร็จ (MQTT)' });
     } catch (error) {
         res.status(500).send({ error: 'ไม่สามารถส่งคำสั่ง MQTT ได้' });

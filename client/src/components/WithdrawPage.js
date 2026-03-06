@@ -37,12 +37,22 @@ function WithdrawPage({ user }) {
         setError('');
         try {
             const token = localStorage.getItem('token');
-            await axios.get(`${API_BASE}/api/open`, { 
+            
+            //1. เช็คสถานะบอร์ดจาก API ก่อน
+            const checkRes = await axios.get(`${API_BASE}/api/device-check`, { 
                 headers: { Authorization: `Bearer ${token}` } 
             });
-            setCurrentStep(2);
+
+            //2. ถ้าออนไลน์ ค่อยสั่งเปิดประตู
+            if (checkRes.data.status === "online") {
+                await axios.get(`${API_BASE}/api/open`, { 
+                    headers: { Authorization: `Bearer ${token}` } 
+                });
+                setCurrentStep(2); // ไปต่อ Step 2 ได้
+            }
         } catch (err) {
-            setError('ไม่สามารถติดต่อตู้เพื่อเปิดได้');
+            // ดักจับข้อความ Error จาก Backend (เช่น ตู้ไม่พร้อมใช้งาน)
+            setError(err.response?.data?.message || 'ไม่สามารถติดต่อตู้เพื่อเปิดได้');
         } finally {
             setIsProcessing(false);
         }
