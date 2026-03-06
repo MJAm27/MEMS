@@ -158,7 +158,8 @@ app.get('/api/open', authenticateToken, async (req, res) => {
 
     if (deviceStatus !== "online") {
         return res.status(503).json({ 
-            error: 'ตู้ไม่มีไฟเลี้ยงหรือ Offline อยู่ ไม่สามารถสั่งเปิดได้' 
+            status: "offline",
+            message: 'ตู้ไม่พร้อมใช้งาน (ไม่มีไฟเลี้ยง) กรุณาเสียบปลั๊กก่อนสั่งเปิดประตู' 
         });
     }
 
@@ -167,9 +168,9 @@ app.get('/api/open', authenticateToken, async (req, res) => {
     try {
         await commandServo('OPEN'); 
         await logActionToDB(userId, 'A-001', transactionId);
-        res.status(200).send({ message: 'เปิดตู้สำเร็จ (MQTT)' });
+        res.status(200).send({ message: 'เปิดตู้สำเร็จ' });
     } catch (error) {
-        res.status(500).send({ error: 'ไม่สามารถส่งคำสั่ง MQTT ได้' });
+        res.status(500).send({ error: 'ไม่สามารถส่งคำสั่งได้' });
     }
 });
 

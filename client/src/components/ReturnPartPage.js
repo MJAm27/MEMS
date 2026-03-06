@@ -52,30 +52,31 @@ function ReturnPartPage() {
     };
 
     const handleOpenDoor = async () => {
-    setIsProcessing(true);
-    setError('');
-    try {
-        const token = localStorage.getItem('token');
-        
-        //1. เช็คสถานะบอร์ดจาก API ก่อน
-        const checkRes = await axios.get(`${API_BASE}/api/device-check`, { 
-            headers: { Authorization: `Bearer ${token}` } 
-        });
-
-        //2. ถ้าออนไลน์ ค่อยสั่งเปิดประตู
-        if (checkRes.data.status === "online") {
-            await axios.get(`${API_BASE}/api/open`, { 
+        setIsProcessing(true);
+        setError('');
+        try {
+            const token = localStorage.getItem('token');
+            
+            // 1. เช็คสถานะบอร์ดก่อน (เรียก API ที่เราทำไว้)
+            const checkRes = await axios.get(`${API_BASE}/api/device-check`, { 
                 headers: { Authorization: `Bearer ${token}` } 
             });
-            setCurrentStep(4); // ไปต่อ Step 2 ได้
+
+            if (checkRes.data.status === "online") {
+                // 2. ถ้า Online ค่อยสั่งเปิด
+                await axios.get(`${API_BASE}/api/open`, { 
+                    headers: { Authorization: `Bearer ${token}` } 
+                });
+                setCurrentStep(2); 
+            }
+        } catch (err) {
+            // หากบอร์ด Offline จะมาตกที่ catch นี้ (เพราะเราส่ง Status 503 กลับมา)
+            const msg = err.response?.data?.message || 'ตู้ไม่มีไฟเลี้ยง กรุณาตรวจสอบการเชื่อมต่อ';
+            setError(msg);
+        } finally {
+            setIsProcessing(false);
         }
-    } catch (err) {
-        // ดักจับข้อความ Error จาก Backend (เช่น ตู้ไม่พร้อมใช้งาน)
-        setError(err.response?.data?.message || 'ไม่สามารถติดต่อตู้เพื่อเปิดได้');
-    } finally {
-        setIsProcessing(false);
-    }
-};
+    };
     const handleCloseDoor = async () => {
         setIsProcessing(true);
         setError('');
