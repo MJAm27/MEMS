@@ -297,7 +297,7 @@ function ReturnPartPage() {
                                         </div>
                                     ))}
                                 </div>
-                                <button onClick={() => setCurrentStep(2)} className="btn-action-primary mt-4">
+                                <button onClick={() => setCurrentStep(4)} className="btn-action-primary mt-4">
                                     ตรวจสอบรายการ
                                 </button>
                             </div>
