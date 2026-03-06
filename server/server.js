@@ -2398,7 +2398,6 @@ app.put('/api/inventory/update-lot/:id', async (req, res) => {
 
 app.use(express.static(path.join(__dirname, 'build')));
 
-// 🚩 แก้ไขปัญหา PathError: เปลี่ยนจาก '*' เป็น '(.*)'
 app.get(/.*/, (req, res) => {
     res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
