@@ -14,11 +14,6 @@ const http = require('http');
 const { Server } = require("socket.io"); 
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-const path = require('path');
-app.use(express.static(path.join(__dirname, 'build')));
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'build', 'index.html'));
-});
 
 const app = express();
 // ++++++++++ แก้ไข: สร้าง HTTP Server และผูก Socket.IO ++++++++++
@@ -2401,9 +2396,16 @@ app.put('/api/inventory/update-lot/:id', async (req, res) => {
 
 // หมายเหตุ: API ลบ Lot (DELETE /api/inventory/:id) ของคุณมีอยู่ใน server.js อยู่แล้ว จึงไม่ต้องเขียนเพิ่ม
 
-// 4. สั่งให้ Server รัน
-// ✅ ใช้ server.listen เพื่อรันทั้ง Express และ Socket.IO
+app.use(express.static(path.join(__dirname, 'build')));
+
+// 🚩 แก้ไขปัญหา PathError: เปลี่ยนจาก '*' เป็น '(.*)'
+app.get(/.*/, (req, res) => {
+    res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});
+
+// -------------------
+
 server.listen(PORT, () => {
     console.log(`🚀 Backend server is running on http://localhost:${PORT}`);
-    console.log(`    (Ready to command ESP via MQTT Broker)`); // แก้เป็นข้อความนี้แทน
+    console.log(`    (Ready to command ESP via MQTT Broker)`);
 });
