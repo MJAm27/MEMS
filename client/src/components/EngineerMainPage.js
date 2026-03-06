@@ -25,6 +25,7 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
     const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
     const [pendingItems, setPendingItems] = useState([]); 
     const [finalizeData, setFinalizeData] = useState({}); 
+    const [machines, setMachines] = useState([]);
 
     // จัดการการเปิด-ปิด Sidebar ตามขนาดหน้าจอ
     useLayoutEffect(() => {
@@ -47,6 +48,18 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
         }
     };
 
+    const fetchMachines = useCallback(async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.get(`${API_BASE}/api/machine`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setMachines(res.data);
+        } catch (err) {
+            console.error("Fetch machines error:", err);
+        }
+    }, []);
+
     const fetchPendingBorrows = useCallback(async () => {
         if (!user?.user_id) return;
         try {
@@ -62,7 +75,8 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
 
     useEffect(() => {
         fetchPendingBorrows();
-    }, [fetchPendingBorrows]);
+        fetchMachines(); 
+    }, [fetchPendingBorrows, fetchMachines]);
 
     const handleInputChange = (borrowId, field, value) => {
         setFinalizeData(prev => ({
@@ -168,8 +182,19 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                                     <small>วันที่เบิก: {new Date(item.borrow_date).toLocaleDateString('th-TH')}</small>
                                 </div>
                                 <div className="finalize-form">
-                                    <label>ระบุเลขครุภัณฑ์:</label>
-                                    <input type="text" placeholder="เช่น C-001..." value={finalizeData[uniqueKey]?.machineSN || ''} onChange={(e) => handleInputChange(uniqueKey, 'machineSN', e.target.value)} />
+                                    <label>ระบุครุภัณฑ์:</label>
+                                    <select 
+                                        value={finalizeData[uniqueKey]?.machineSN || ''} 
+                                        onChange={(e) => handleInputChange(uniqueKey, 'machineSN', e.target.value)}
+                                        style={{ marginBottom: '10px', padding: '8px', borderRadius: '4px', border: '1px solid #ccc', width: '100%' }}
+                                    >
+                                        <option value="">-- เลือกครุภัณฑ์ --</option>
+                                        {machines.map((mac) => (
+                                            <option key={mac.machine_id} value={mac.machine_sn}>
+                                                {mac.machine_name} {mac.machine_sn ? `(${mac.machine_sn})` : ''}
+                                            </option>
+                                        ))}
+                                    </select>
                                     <label>จำนวนที่ใช้จริง/คืน:</label>
                                     <div className="action-row">
                                         <input type="number" placeholder="จำนวน..." min="1" max={item.borrow_qty} value={finalizeData[uniqueKey]?.usedQty || ''} onChange={(e) => handleInputChange(uniqueKey, 'usedQty', e.target.value)} />

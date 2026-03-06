@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
     FaLockOpen, FaCheckCircle, FaPlus, FaCamera, FaTrash, 
-    FaMinus, FaLock, FaClipboardCheck, FaTimes, FaSearch
+    FaMinus, FaLock, FaClipboardCheck, FaTimes
 } from 'react-icons/fa'; 
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import axios from 'axios';
@@ -18,10 +18,10 @@ function WithdrawPage({ user }) {
     const [isProcessing, setIsProcessing] = useState(false);
     const [showScanner, setShowScanner] = useState(false);
     const [previewImage, setPreviewImage] = useState(null);
-    const [machineSuggestions, setMachineSuggestions] = useState([]);
+    // const [machineSuggestions, setMachineSuggestions] = useState([]);
     const [partSuggestions, setPartSuggestions] = useState([]);
+    const [machines, setMachines] = useState([]);
 
-    // ฟังก์ชันสำหรับ Reset ข้อมูลแทนการ Reload หน้าจอ
     const handleResetForm = () => {
         setCurrentStep(1);
         setAssetId('');
@@ -31,7 +31,6 @@ function WithdrawPage({ user }) {
         setShowScanner(false);
     };
 
-    // --- 1. ฟังก์ชันควบคุมประตู (ESP8266 ผ่าน Backend) ---
     const handleOpenDoor = async () => {
         setIsProcessing(true);
         setError('');
@@ -65,22 +64,6 @@ function WithdrawPage({ user }) {
         }
     };
 
-    // --- 2. ระบบจัดการข้อมูลอะไหล่และตะกร้า ---
-    const handleMachineSearch = async (val) => {
-        setAssetId(val);
-        if (val.length > 0) {
-            try {
-                const token = localStorage.getItem('token');
-                const res = await axios.get(`${API_BASE}/api/search/machines?term=${val}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                setMachineSuggestions(res.data);
-            } catch (err) { console.error(err); }
-        } else {
-            setMachineSuggestions([]);
-        }
-    };
-
     const handlePartSearch = async (val) => {
         setCurrentPartId(val);
         if (val.length > 0) {
@@ -99,7 +82,7 @@ function WithdrawPage({ user }) {
     const handleAddItemToCart = useCallback(async (scannedId, quantity = 1) => {
         if (isProcessing) return;
         const idToSearch = scannedId || currentPartId;
-        if (!assetId) { setError('กรุณากรอกเลขครุภัณฑ์ก่อน'); return; }
+        if (!assetId) { setError('กรุณากรอกครุภัณฑ์ก่อน'); return; }
         if (!idToSearch) { setError('กรุณาระบุรหัสอะไหล่'); return; }
 
         setIsProcessing(true);
@@ -170,6 +153,18 @@ function WithdrawPage({ user }) {
     };
 
     useEffect(() => {
+        const fetchMachines = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await axios.get(`${API_BASE}/api/machine`, {
+                    headers: token ? { Authorization: `Bearer ${token}` } : {}
+                });
+                setMachines(res.data);
+            } catch (err) {
+                console.error("Fetch machines error:", err);
+            }
+        };
+        fetchMachines();
         let scanner = null;
         if (showScanner && currentStep === 2) {
             scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 350, height: 150 } });
@@ -201,16 +196,13 @@ function WithdrawPage({ user }) {
             <div className="withdraw-card">
                 {currentStep === 1 && (
                     <div className="step-content-unlock">
-                        {/* ไอคอนขนาดใหญ่ในวงกลมเพื่อความโดดเด่น */}
                         <div className="unlock-icon-container">
                             <FaLockOpen size={48} />
                         </div>
                         
-                        {/* หัวข้อและคำแนะนำ */}
                         <h3 className="unlock-title">1. เปิดประตูกล่อง</h3>
                         <p className="unlock-subtitle">กรุณากดปุ่มเพื่อปลดล็อกและหยิบอะไหล่</p>
                         
-                        {/* ปุ่มแอ็คชั่นที่จำกัดความกว้างให้พอดีสายตา */}
                         <button 
                             onClick={handleOpenDoor} 
                             disabled={isProcessing} 
@@ -221,7 +213,7 @@ function WithdrawPage({ user }) {
                             ) : (
                                 <>
                                     <FaLockOpen />
-                                    เปิดประตูตู้
+                                    เปิดประตูกล่อง
                                 </>
                             )}
                         </button>
@@ -234,30 +226,28 @@ function WithdrawPage({ user }) {
                             <h3 className="text-2xl font-bold text-gray-800">2. ระบุอะไหล่</h3>
                         </div>
 
-                        {/* ส่วนที่ 1: เลขครุภัณฑ์ */}
                         <div className="input-group-modern">
-                            <label className="input-label-modern">เลขครุภัณฑ์ (Asset ID)</label>
+                            <label className="input-label-modern">ครุภัณฑ์</label>
                             <div className="search-box-wrapper">
                                 <div className="input-with-icon">
-                                    <FaSearch className="icon-prefix" />
-                                    <input 
-                                        type="text" 
-                                        className="withdraw-input-modern" 
-                                        value={assetId} 
-                                        onChange={(e) => handleMachineSearch(e.target.value)} 
-                                        placeholder="ค้นหาหรือระบุเลขครุภัณฑ์..." 
-                                    />
-                                </div>
-                                {/* Machine Suggestions List ตามเดิม */}
-                                {machineSuggestions.length > 0 && (
-                                    <ul className="search-suggestions-list">
-                                        {machineSuggestions.map(m => (
-                                            <li key={m.machine_SN} onClick={() => { setAssetId(m.machine_SN); setMachineSuggestions([]); }}>
-                                                {m.machine_SN} <small>{m.machine_name}</small>
-                                            </li>
+                                    <select 
+                                        className="input-field select-dropdown" 
+                                        value={assetId}
+                                        onChange={(e) => setAssetId(e.target.value)}
+                                        disabled={isProcessing}
+                                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }}
+                                    >
+                                        <option value="">-- เลือกครุภัณฑ์ --</option>
+                                        {machines.map((mac, index) => (
+                                            <option 
+                                                key={mac.machine_id || index} 
+                                                value={mac.machine_SN || mac.machine_sn} 
+                                            >
+                                                {mac.machine_name} {mac.machine_SN || mac.machine_sn ? `(${mac.machine_SN || mac.machine_sn})` : ''}
+                                            </option>
                                         ))}
-                                    </ul>
-                                )}
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
@@ -362,8 +352,10 @@ function WithdrawPage({ user }) {
                         </div>
 
                         <div className="asset-info-banner">
-                            <div className="label">เลขครุภัณฑ์ (Asset ID)</div>
-                            <div className="value">{assetId}</div>
+                            <div className="label">ครุภัณฑ์ </div>
+                            <div className="value">
+                                {machines.find(mac => (mac.machine_SN || mac.machine_sn) === assetId)?.machine_name || "ไม่ทราบชื่อ"} <br></br> ({assetId})
+                            </div>
                         </div>
 
                         <div className="review-list-container">
@@ -409,8 +401,7 @@ function WithdrawPage({ user }) {
                             </div>
                             
                             <div className="summary-data-row">
-                                <span>เลขครุภัณฑ์:</span>
-                                <b>{assetId}</b>
+                                <span>ครุภัณฑ์:</span>
                             </div>
 
                             <div className="summary-items-list">
