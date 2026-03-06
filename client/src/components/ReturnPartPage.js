@@ -67,7 +67,7 @@ function ReturnPartPage() {
                 await axios.get(`${API_BASE}/api/open`, { 
                     headers: { Authorization: `Bearer ${token}` } 
                 });
-                setCurrentStep(2); 
+                setCurrentStep(4); 
             }
         } catch (err) {
             // หากบอร์ด Offline จะมาตกที่ catch นี้ (เพราะเราส่ง Status 503 กลับมา)
@@ -297,7 +297,7 @@ function ReturnPartPage() {
                                         </div>
                                     ))}
                                 </div>
-                                <button onClick={() => setCurrentStep(4)} className="btn-action-primary mt-4">
+                                <button onClick={() => setCurrentStep(2)} className="btn-action-primary mt-4">
                                     ตรวจสอบรายการ
                                 </button>
                             </div>
@@ -345,7 +345,7 @@ function ReturnPartPage() {
                         </div>
 
                         <div className="flex gap-3 mt-8 w-full">
-                            <button onClick={() => setCurrentStep(2)} className="btn-review-edit flex-1">แก้ไขรายการ</button>
+                            <button onClick={() => setCurrentStep(1)} className="btn-review-edit flex-1">แก้ไขรายการ</button>
                             <button onClick={() => setCurrentStep(3)} className="btn-modern-gradient flex-2">บันทึกข้อมูล</button>
                         </div>
                     </div>
