@@ -190,8 +190,11 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                                     >
                                         <option value="">-- เลือกครุภัณฑ์ --</option>
                                         {machines.map((mac) => (
-                                            <option key={mac.machine_id} value={mac.machine_sn}>
-                                                {mac.machine_name} {mac.machine_sn ? `(${mac.machine_sn})` : ''}
+                                            <option 
+                                                key={mac.machine_id} 
+                                                value={mac.machine_SN || mac.machine_sn}
+                                            >
+                                                {mac.machine_name} {(mac.machine_SN || mac.machine_sn) ? `(${mac.machine_SN || mac.machine_sn})` : ''}
                                             </option>
                                         ))}
                                     </select>
