@@ -218,7 +218,7 @@ function ReturnPartPage() {
                             {isScanning ? (
                                 <div className="scanner-container">
                                     <div id="reader"></div>
-                                    <button onClick={() => setIsScanning(false)} className="btn-cancel-scan mt-4">ยกเลิกสแกน</button>
+                                    <button onClick={() => setIsScanning(false)} className="btn-cancel-step2">ยกเลิกสแกน</button>
                                 </div>
                             ) : (
                                 <button onClick={() => setIsScanning(true)} className="btn-modern-scanner">
