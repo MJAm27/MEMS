@@ -164,6 +164,25 @@
     align-items: center; justify-content: center; gap: 10px; cursor: pointer;
 }
 
+
+@media screen and (max-width: 768px) {
+    .withdraw-input-modern, select {
+        font-size: 16px !important; 
+    }
+}
+
+#reader {
+    border: none !important;
+    background: #000;
+}
+
+#reader video {
+    object-fit: cover !important;
+}
+.cursor-pointer {
+    cursor: pointer;
+}
+
 .part-input-row { display: flex; gap: 10px; align-items: flex-end; width: 100%; }
 .btn-add-part-modern {
     background: var(--primary-pink); color: white; width: 52px; height: 52px;
