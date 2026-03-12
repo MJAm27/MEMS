@@ -248,8 +248,12 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                     <button className="nav-link" onClick={() => goTo("/dashboard/engineer/withdraw")}><FaBoxOpen /> <span>เบิกอะไหล่</span></button>
                     <button className="nav-link" onClick={() => goTo("/dashboard/engineer/return")}><FaReply /> <span>คืนอะไหล่</span></button>
                     <button className="nav-link" onClick={() => goTo("/dashboard/engineer/borrow")}><FaHandHolding /> <span>เบิกอะไหล่ล่วงหน้า</span></button>
+                    <div className="nav-divider"></div> 
+                    <button className="logout-btn-sidebar" onClick={localHandleLogout}>
+                        <FaSignOutAlt /> <span>ออกจากระบบ</span>
+                    </button>
                 </nav>
-                <button className="logout-btn-sidebar" onClick={localHandleLogout}><FaSignOutAlt /> ออกจากระบบ</button>
+                
             </aside>
 
             <main className="main-content-wrapper">
