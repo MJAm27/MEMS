@@ -1,9 +1,9 @@
-import React, {useState, useEffect, useCallback, useRef} from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
     FaLockOpen, FaCheckCircle, FaPlus, FaCamera, FaTrash, 
-    FaMinus, FaLock, FaClipboardCheck, FaTimes,FaImage
+    FaMinus, FaLock, FaClipboardCheck, FaTimes
 } from 'react-icons/fa'; 
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 import axios from 'axios';
 import './WithdrawPage.css';
 
@@ -18,9 +18,9 @@ function WithdrawPage({ user }) {
     const [isProcessing, setIsProcessing] = useState(false);
     const [showScanner, setShowScanner] = useState(false);
     const [previewImage, setPreviewImage] = useState(null);
+    // const [machineSuggestions, setMachineSuggestions] = useState([]);
     const [partSuggestions, setPartSuggestions] = useState([]);
     const [machines, setMachines] = useState([]);
-    const qrCodeInstance = useRef(null);
 
     const handleResetForm = () => {
         setCurrentStep(1);
@@ -89,30 +89,6 @@ function WithdrawPage({ user }) {
             setPartSuggestions([]);
         }
     };
-
-    const stopScanning = async () => {
-        if (qrCodeInstance.current && qrCodeInstance.current.isScanning) {
-            try {
-                await qrCodeInstance.current.stop();
-                setShowScanner(false);
-            } catch (err) { console.error(err); }
-        }
-    };
-
-    const handleFileScan = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        await stopScanning(); // ปิดกล้องก่อนถ้าเปิดอยู่
-        const html5QrCode = new Html5Qrcode("reader");
-        try {
-            const decodedText = await html5QrCode.scanFile(file, true);
-            handleAddItemToCart(decodedText, 1);
-            setError("");
-        } catch (err) {
-            setError("ไม่สามารถอ่านบาร์โค้ดจากรูปภาพได้ โปรดใช้ภาพที่ชัดเจนและไม่มีแสงสะท้อน");
-        }
-    };
-
 
     const handleAddItemToCart = useCallback(async (scannedId, quantity = 1) => {
         if (isProcessing) return;
@@ -200,40 +176,16 @@ function WithdrawPage({ user }) {
             }
         };
         fetchMachines();
+        let scanner = null;
         if (showScanner && currentStep === 2) {
-            qrCodeInstance.current = new Html5Qrcode("reader");
-            const config = { 
-                fps: 15, // เพิ่ม FPS ให้ภาพไหลลื่นขึ้นบน iOS
-                qrbox: { width: 300, height: 120 }, // ปรับทรงให้เหมาะกับ Barcode (แบนยาว)
-                aspectRatio: 1.0,
-                // บังคับ Format ที่ต้องการสแกน ช่วยให้ iOS ประมวลผลเร็วขึ้นมาก
-                formatsToSupport: [ 
-                    Html5QrcodeSupportedFormats.CODE_128, 
-                    Html5QrcodeSupportedFormats.CODE_39,
-                    Html5QrcodeSupportedFormats.EAN_13,
-                    Html5QrcodeSupportedFormats.QR_CODE
-                ]
-            };
-
-            qrCodeInstance.current.start(
-                { facingMode: "environment" }, // บังคับกล้องหลัง
-                config,
-                (decodedText) => {
-                    handleAddItemToCart(decodedText, 1);
-                    stopScanning(); // สแกนติดแล้วปิดกล้องทันที
-                },
-                () => {} // ignore scan failure
-            ).catch(err => {
-                setError("ไม่สามารถเปิดกล้องได้ โปรดตรวจสอบการอนุญาตใน Safari");
+            scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 350, height: 150 } });
+            scanner.render((decodedText) => {
+                handleAddItemToCart(decodedText, 1);
                 setShowScanner(false);
-            });
+                scanner.clear();
+            }, () => {});
         }
-
-        return () => {
-            if (qrCodeInstance.current && qrCodeInstance.current.isScanning) {
-                qrCodeInstance.current.stop().catch(() => {});
-            }
-        };
+        return () => { if (scanner) scanner.clear().catch(() => {}); };
     }, [showScanner, currentStep, handleAddItemToCart]);
 
     return (
@@ -312,27 +264,14 @@ function WithdrawPage({ user }) {
 
                         {/* ส่วนที่ 2: สแกนบาร์โค้ด */}
                         <div className="scanner-action-area">
-                            <div className="divider-with-text"><span>สแกนหรือเลือกรูปภาพ</span></div>
-                            
-                            <div id="reader" style={{ width: '100%', borderRadius: '15px', overflow: 'hidden' }}></div>
-
-                            <div className="flex gap-2 mt-2">
-                                {!showScanner ? (
-                                    <button onClick={() => setShowScanner(true)} className="btn-modern-scanner flex-1">
-                                        <FaCamera /> เปิดกล้องสแกน
-                                    </button>
-                                ) : (
-                                    <button onClick={stopScanning} className="btn-modern-scanner flex-1" style={{ color: '#f43f5e', borderColor: '#f43f5e' }}>
-                                        <FaTimes /> ปิดกล้อง
-                                    </button>
-                                )}
-                                
-                                {/* เพิ่มปุ่มเลือกรูปภาพ เพื่อแก้ปัญหา iOS อ่านบาร์โค้ดจากรูปภาพในระบบไม่ได้ */}
-                                <label className="btn-modern-scanner flex-1 cursor-pointer">
-                                    <FaImage /> เลือกรูปภาพ
-                                    <input type="file" accept="image/*" onChange={handleFileScan} style={{ display: 'none' }} />
-                                </label>
-                            </div>
+                            <div className="divider-with-text"><span>หรือสแกน</span></div>
+                            {showScanner ? (
+                                <div id="reader"></div>
+                            ) : (
+                                <button onClick={() => setShowScanner(true)} className="btn-modern-scanner">
+                                    <FaCamera /> สแกนบาร์โค้ดอะไหล่
+                                </button>
+                            )}
                         </div>
 
                         {/* ส่วนที่ 3: ระบุรหัสอะไหล่ด้วยตนเอง */}
@@ -375,7 +314,6 @@ function WithdrawPage({ user }) {
                             <div className="cart-section animate-fadeIn">
                                 <h4 className="cart-header">รายการในตะกร้า ({cartItems.length})</h4>
                                 <div className="cart-list">
-                                    {/* ใช้โครงสร้าง Item ในตะกร้าที่คุณปรับปรุงไว้ก่อนหน้านี้ */}
                                     {cartItems.map((item, idx) => (
                                         <div key={idx} className="new-cart-item">
                                             <div className="item-thumb" onClick={() => item.imageUrl && setPreviewImage(`${API_BASE}/uploads/${item.imageUrl}`)}>
@@ -415,7 +353,7 @@ function WithdrawPage({ user }) {
                     </div>
                 )}
 
-               
+                
                 {currentStep === 3 && (
                     <div className="step-content-review animate-fadeIn">
                         <div className="review-header-group">
