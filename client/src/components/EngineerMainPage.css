@@ -30,6 +30,7 @@ body {
 .sidebar-container {
     width: var(--sidebar-width);
     height: 100vh;
+    height: 100dvh; 
     background: var(--bg-white);
     border-right: 1px solid #f1f5f9;
     position: fixed;
@@ -37,7 +38,7 @@ body {
     left: 0;
     z-index: 1100;
     display: flex;
-    flex-direction: column;
+    flex-direction: column; 
     transition: transform 0.3s var(--transition);
 }
 
@@ -105,7 +106,11 @@ body {
 .sidebar-header { padding: 25px 20px; text-align: center; }
 .brand h2 { font-size: 22px; font-weight: 800; background: var(--primary-gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 
-.sidebar-nav { flex-grow: 1; padding: 0 12px; }
+.sidebar-nav { 
+    flex: 1; 
+    padding: 0 12px;
+    overflow-y: auto;
+ }
 .nav-link {
     display: flex; align-items: center; width: 100%; padding: 12px 15px;
     margin-bottom: 5px; border-radius: var(--radius-md); color: var(--text-muted);
@@ -118,9 +123,27 @@ body {
 .nav-divider { height: 1px; background: #f1f5f9; margin: 15px; }
 
 .logout-btn-sidebar {
-    margin: 15px; padding: 12px; border-radius: 12px; border: 1px solid #fee2e2;
-    background: #fff; color: #ef4444; font-family: 'Prompt'; font-weight: 600;
-    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+    margin: 15px;
+    margin-bottom: calc(15px + env(safe-area-inset-bottom)); 
+    padding: 14px;
+    border-radius: 12px;
+    border: 1px solid #fee2e2;
+    background: #fff;
+    color: #ef4444;
+    font-family: 'Prompt';
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-shrink: 0; 
+    transition: var(--transition);
+}
+
+.logout-btn-sidebar:active {
+    background-color: #fef2f2;
+    transform: scale(0.98);
 }
 
 /* ==================== Content Body ==================== */
