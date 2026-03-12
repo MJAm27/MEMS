@@ -115,11 +115,14 @@ function AdminMainPage({ user, handleLogout }) {
                     <button className="nav-link" onClick={() => goTo("/dashboard/admin/profile")}>
                         <FaUserCircle /> <span>แก้ไขโปรไฟล์</span>
                     </button>
+
+                    <div className="nav-divider"></div> 
+                    <button className="logout-btn-sidebar" onClick={localHandleLogout}>
+                        <FaSignOutAlt /> <span>ออกจากระบบ</span>
+                    </button>
                 </nav>
 
-                <button className="logout-btn-top" onClick={localHandleLogout}>
-                    <FaSignOutAlt /> ออกจากระบบ
-                </button>
+                
             </aside>
 
             {/* ===== Main Content ===== */}

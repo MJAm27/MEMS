@@ -114,11 +114,11 @@ function ManagerMainPage({ user, handleLogout, refreshUser }) {
                     <button className="nav-link" onClick={() => goTo("/dashboard/manager/profile")}>
                         <FaUserCircle /> <span>แก้ไขโปรไฟล์</span>
                     </button>
+                    <div className="nav-divider"></div> 
+                    <button className="logout-btn-sidebar" onClick={localHandleLogout}>
+                        <FaSignOutAlt /> <span>ออกจากระบบ</span>
+                    </button>
                 </nav>
-
-                <button className="logout-btn-sidebar" onClick={localHandleLogout}>
-                    <FaSignOutAlt /> <span>ออกจากระบบ</span>
-                </button>
             </aside>
 
             <main className="main-content-wrapper">
