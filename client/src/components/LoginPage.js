@@ -32,6 +32,7 @@ function LoginPage() {
             }
 
         } catch (err) {
+            console.error("Login Error Details:", err.response); 
             setError(err.response?.data?.message || 'เกิดข้อผิดพลาดในการล็อกอิน');
         }
     };
