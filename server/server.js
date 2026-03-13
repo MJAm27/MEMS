@@ -1684,26 +1684,22 @@ app.get("/api/supplier", async (req, res) => {
 
 // 2. เพิ่ม Supplier ใหม่
 app.post("/api/supplier", async (req, res) => {
-    const { supplier_id, supplier_name, contact } = req.body;
+    const { supplier_name, contact } = req.body;
     
     // ตรวจสอบค่าว่าง
-    if (!supplier_id || !supplier_name) {
-        return res.status(400).json({ message: "Please provide Supplier ID and Name" });
+    if (!supplier_name) {
+        return res.status(400).json({ message: "Please provide Supplier Name" });
     }
 
     try {
         // เช็คก่อนว่า ID ซ้ำไหม
-        const [existing] = await db.query("SELECT supplier_id FROM supplier WHERE supplier_id = ?", [supplier_id]);
-        if (existing.length > 0) {
-            return res.status(400).json({ message: "Supplier ID นี้มีอยู่ในระบบแล้ว" });
-        }
+        const sql = "INSERT INTO supplier (supplier_name, contact) VALUES (?, ?)";
+        const [result] = await db.query(sql, [supplier_name, contact]);
 
-        const sql = "INSERT INTO supplier (supplier_id, supplier_name, contact) VALUES (?, ?, ?)";
-        await db.query(sql, [supplier_id, supplier_name, contact]);
-        res.json({ message: "Supplier added successfully", id: supplier_id });
+        res.json({ message: "Supplier added successfully", id: result.insertId });
     } catch (err) {
         console.log(err);
-        res.status(500).send("Error adding machine");
+        res.status(500).send("Error adding supplier");
     }
 });
 
@@ -1744,11 +1740,25 @@ app.delete("/api/supplier/:id", async (req, res) => {
 
 // 1. ดึงประวัติ Transaction ทั้งหมด (พร้อมชื่อคน, ชื่อเครื่อง, ประเภท)
 app.get("/api/transactions", async (req, res) => {
+    // เพิ่ม t.parent_transaction_id ใน SELECT
     const sql = `
-        SELECT t.transaction_id, t.date,t.time, tt.transaction_type_name, u.fullname, m.machine_name, (SELECT COUNT(*) FROM equipment_list el WHERE el.transaction_id = t.transaction_id) as item_count FROM transactions t LEFT JOIN transactions_type tt ON t.transaction_type_id = tt.transaction_type_id LEFT JOIN users u ON t.user_id = u.user_id LEFT JOIN machine m ON t.machine_SN = m.machine_SN ORDER BY t.date DESC, t.transaction_id DESC;
+        SELECT 
+            t.transaction_id, 
+            t.parent_transaction_id,   /* << เพิ่มบรรทัดนี้ครับ */
+            t.date,
+            t.time, 
+            tt.transaction_type_name, 
+            u.fullname, 
+            m.machine_name, 
+            (SELECT COUNT(*) FROM equipment_list el WHERE el.transaction_id = t.transaction_id) as item_count 
+        FROM transactions t 
+        LEFT JOIN transactions_type tt ON t.transaction_type_id = tt.transaction_type_id 
+        LEFT JOIN users u ON t.user_id = u.user_id 
+        LEFT JOIN machine m ON t.machine_SN = m.machine_SN 
+        ORDER BY t.date DESC, t.transaction_id DESC;
     `;
     try {
-        const [results] = await db.query(sql);
+        const [results] = await db.query(sql); // ถ้าคุณใช้ db.query ตรงนี้ต้องดูให้แน่ใจว่า import และประกาศไว้ถูกนะครับ (บางทีอาจจะเป็น pool.query)
         res.json(results);
     } catch (err) {
         console.error(err);
@@ -1824,6 +1834,7 @@ app.post('/api/transactions', authenticateToken, async (req, res) => {
         let typeId = '';
         let is_pending = 0;
         let finalMachineSN = machine_SN;
+        let finalParentTxId = parent_transaction_id || null;
 
         // เงื่อนไขตามที่คุณระบุ
         if (type_mode === 'withdraw') { // เบิกปกติ
@@ -1845,7 +1856,7 @@ app.post('/api/transactions', authenticateToken, async (req, res) => {
         // บันทึกลงตาราง transactions
         await connection.query(
             "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_SN, is_pending) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            [transactionId, typeId, date, time, user_id, finalMachineSN, is_pending]
+            [transactionId,finalParentTxId, typeId, date, time, user_id, finalMachineSN, is_pending]
         );
 
         for (const item of items) {
@@ -2395,7 +2406,35 @@ app.put('/api/inventory/update-lot/:id', async (req, res) => {
     }
 });
 
-// หมายเหตุ: API ลบ Lot (DELETE /api/inventory/:id) ของคุณมีอยู่ใน server.js อยู่แล้ว จึงไม่ต้องเขียนเพิ่ม
+// ดึงข้อมูลประวัติการใช้งานกล่อง (Access Logs)
+app.get('/api/report/accesslogs', async (req, res) => {
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const sql = `
+           SELECT 
+                al.log_id, 
+                al.time, 
+                al.date, 
+                at.action_type_name,
+                al.transaction_id, 
+                t.parent_transaction_id,
+                u.fullname 
+            FROM accesslogs al
+            LEFT JOIN action_type at ON al.action_type_id = at.action_type_id
+            LEFT JOIN users u ON al.user_id = u.user_id
+            JOIN transactions t ON al.transaction_id = t.transaction_id
+            ORDER BY al.date DESC, al.time DESC;
+        `;
+        const [rows] = await connection.query(sql);
+        res.json(rows);
+    } catch (error) {
+        console.error("Fetch Access Logs Error:", error);
+        res.status(500).json({ error: error.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
 
 app.use(express.static(path.join(__dirname, 'build')));
 

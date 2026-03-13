@@ -174,8 +174,8 @@ function ManageTransaction() {
 
     // จำลองการแปลงประเภทกลับไปเป็น type_mode สำหรับ Dropdown
     let mappedTypeMode = "withdraw";
-    if (trans.transaction_type_name?.includes("คืน")) mappedTypeMode = "return";
-    if (trans.transaction_type_name?.includes("ล่วงหน้า")) mappedTypeMode = "borrow";
+    if (trans.transaction_type_name?.includes("คืนอะไหล่")) mappedTypeMode = "return";
+    if (trans.transaction_type_name?.includes("เบิกอะไหล่ล่วงหน้า")) mappedTypeMode = "borrow";
 
     setHeaderData({
       type_mode: mappedTypeMode,
@@ -211,16 +211,34 @@ function ManageTransaction() {
     }
   };
 
-  const filteredData = transactions.filter(t => {
-    const matchesSearch = 
-        t.transaction_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (t.fullname && t.fullname.toLowerCase().includes(searchTerm.toLowerCase()));
+ const filteredData = transactions.filter(t => {
+    if (!t) return false;
+    
+    // 1. ตรวจสอบเงื่อนไขช่องค้นหา
+    const searchLower = (searchTerm || "").toLowerCase().trim();
+    const matchesSearch = searchLower === "" || 
+        (t.transaction_id || "").toString().toLowerCase().includes(searchLower) ||
+        (t.parent_transaction_id || "").toString().toLowerCase().includes(searchLower) ||
+        (t.fullname || "").toString().toLowerCase().includes(searchLower) ||
+        (t.machine_name || "").toString().toLowerCase().includes(searchLower) ||
+        (t.transaction_type_name || "").toString().toLowerCase().includes(searchLower);
 
-    const matchesType = filterType ? t.transaction_type_id.toString() === filterType.toString() : true;
+    // 2. ตรวจสอบเงื่อนไขตัวกรองประเภท Dropdown (ใช้การเทียบชื่อแทน ID)
+    let matchesType = true;
+    if (filterType !== "") {
+        const selectedOption = options.types.find(
+            opt => opt.transaction_type_id.toString() === filterType.toString()
+        );
+        
+        if (selectedOption) {
+            matchesType = (t.transaction_type_name === selectedOption.transaction_type_name);
+        } else {
+            matchesType = false;
+        }
+    }
 
     return matchesSearch && matchesType;
   });
-
   if (loading) {
     return <div className="loading-container">กำลังโหลดข้อมูลประวัติ...</div>;
   }
@@ -272,7 +290,8 @@ function ManageTransaction() {
         <table className="custom-table">
           <thead>
             <tr>
-              <th>เลขที่รายการ</th>
+              <th>เลขที่ทำรายการ</th>
+              <th>อ้างอิง</th>
               <th>วันที่</th>
               <th style={{ minWidth: '150px'}}>ประเภท</th>
               <th>ผู้ดำเนินการ</th>
@@ -286,9 +305,10 @@ function ManageTransaction() {
               filteredData.map((item) => (
                 <tr key={item.transaction_id}>
                   <td className="text-primary fw-bold">{item.transaction_id}</td>
+                  <td>{item.parent_transaction_id || "-"}</td>
                   <td>{new Date(item.date).toLocaleDateString('th-TH')} {item.time}</td>
                   <td>
-                      <span className={`badge ${item.transaction_type_name?.includes('เบิก') ? 'bg-warning' : 'bg-success'}`}>
+                      <span className={`badge ${item.transaction_type_name?.includes('เบิกอะไหล่') ? 'bg-warning' : 'bg-success'}`}>
                           {item.transaction_type_name}
                       </span>
                   </td>
@@ -381,9 +401,9 @@ function ManageTransaction() {
                                         }}
                                         required
                                     >
-                                        <option value="withdraw">เบิก</option>
-                                        <option value="return">คืน</option>
-                                        <option value="borrow">เบิกล่วงหน้า</option>
+                                        <option value="withdraw">เบิกอะไหล่</option>
+                                        <option value="return">คืนอะไหล่</option>
+                                        <option value="borrow">เบิกอะไหล่ล่วงหน้า</option>
                                     </select>
                                 </div>
                                 <div className="form-group">

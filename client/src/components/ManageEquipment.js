@@ -306,7 +306,7 @@ function ManageEquipment() {
                                 <option value="">-- เลือกประเภท --</option>
                                 {equipmentTypes.map((type) => (
                                     <option key={type.equipment_type_id} value={type.equipment_type_id}>
-                                        {type.equipment_type_id} - {type.equipment_name}
+                                        {type.equipment_type_id}  {type.equipment_name}
                                     </option>
                                 ))}
                             </select>

@@ -22,23 +22,43 @@ function ReportPage() {
     return: { daily: 0, monthly: 0 }
   });
 
+  const [accessLogs, setAccessLogs] = useState([]);
+  const [accessLogFilter, setAccessLogFilter] = useState("all");
+
   useEffect(() => {
     fetchReport();
   }, []);
 
   const fetchReport = async () => {
     try {
-      const [summaryRes, usageRes] = await Promise.all([
+      const [summaryRes, usageRes , accessLogsRes] = await Promise.all([
         axios.get(`${API_BASE_URL}/api/report/summary`),
-        axios.get(`${API_BASE_URL}/api/report/usage`)
+        axios.get(`${API_BASE_URL}/api/report/usage`),
+        axios.get(`${API_BASE_URL}/api/report/accesslogs`)
       ]);
 
       setSummary(summaryRes.data);
       setUsage(usageRes.data);
+      setAccessLogs(accessLogsRes.data);
     } catch (err) {
       console.error("โหลดรายงานไม่สำเร็จ", err);
     }
   };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("th-TH", {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    });
+  };
+
+  const filteredAccessLogs = accessLogs.filter((log) => {
+    if (accessLogFilter === "all") return true;
+    return log.action_type_name === accessLogFilter;
+  });
 
   return (
     <div className="report-page fade-in">
@@ -120,6 +140,60 @@ function ReportPage() {
             </div>
         </div>
 
+      </div>
+      <div className="accesslog-section">
+        <div className="accesslog-header">
+          <h3 className="section-title" style={{ margin: 0 }}>รายงานการใช้งานกล่อง</h3>
+          <select 
+            className="filter-select" 
+            value={accessLogFilter} 
+            onChange={(e) => setAccessLogFilter(e.target.value)}
+          >
+            <option value="all">สถานะทั้งหมด</option>
+            <option value="เปิดประตู">เปิดประตู</option>
+            <option value="ปิดประตู">ปิดประตู</option>
+          </select>
+        </div>
+        <div className="accesslog-table-container">
+          <table className="accesslog-table">
+            <thead>
+              <tr>
+                <th>log_id</th>
+                <th>เวลา (time)</th>
+                <th>วันที่ (date)</th>
+                <th style={{ minWidth: '120px'}}>สถานะ</th>
+                <th>เลขที่ทำรายการ</th>
+                <th>อ้างอิง</th> {/* เพิ่มช่องนี้ */}
+                <th>ผู้ทำรายการ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredAccessLogs.length > 0 ? (
+                filteredAccessLogs.map((log) => (
+                  <tr key={log.log_id}>
+                    <td>{log.log_id}</td>
+                    <td>{log.time || "-"}</td>
+                    <td>{formatDate(log.date)}</td>
+                    <td>
+                      <span className={`status-badge ${log.action_type_name === 'เปิดประตู' ? 'status-open' : 'status-close'}`}>
+                        {log.action_type_name || "-"}
+                      </span>
+                    </td>
+                    <td>{log.transaction_id || "-"}</td>
+                    <td>{log.parent_transaction_id || "-"}</td> 
+                    <td>{log.fullname || "-"}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" className="text-center text-muted py-4">
+                    ไม่มีข้อมูลการใช้งาน
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
