@@ -192,9 +192,9 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                                         {machines.map((mac) => (
                                             <option 
                                                 key={mac.machine_id} 
-                                                value={mac.machine_SN || mac.machine_sn}
+                                                value={mac.machine_id || mac.machine_id}
                                             >
-                                                {mac.machine_name} {(mac.machine_SN || mac.machine_sn) ? `(${mac.machine_SN || mac.machine_sn})` : ''}
+                                                {mac.machine_name} {(mac.machine_id || mac.machine_id) ? `(${mac.machine_id || mac.machine_id})` : ''}
                                             </option>
                                         ))}
                                     </select>

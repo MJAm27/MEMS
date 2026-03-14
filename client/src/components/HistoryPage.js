@@ -152,7 +152,7 @@ function HistoryPage({ user }) {
                                     <td>{renderTypeBadge(row)}</td>
                                     <td>{parseItems(row.items_json).map((item, i) => <div key={i}>{item.name}</div>)}</td>
                                     <td>{parseItems(row.items_json).map((item, i) => <div key={i} className="font-bold text-pink-600">x{item.qty}</div>)}</td>
-                                    <td className="font-bold">{row.machine_SN || "-"}</td>
+                                    <td className="font-bold">{row.machine_id || "-"}</td>
                                     <td>
                                         <div className="access-log-container">
                                             <div className="time-row"><span className="time-label-open">เปิด</span> <b>{row.open_time || '--:--'}</b></div>
@@ -191,7 +191,7 @@ function HistoryPage({ user }) {
                                     ))}
                                 </div>
                                 <div className="m-footer">
-                                    <span>ครุภัณฑ์: {row.machine_SN || "-"}</span>
+                                    <span>ครุภัณฑ์: {row.machine_id || "-"}</span>
                                     <div className="m-access-logs">
                                         <span>🔓 {row.open_time || '--'}</span>
                                         <span>🔒 {row.close_time || '--'}</span>

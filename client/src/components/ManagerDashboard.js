@@ -79,8 +79,8 @@ function ManagerDashboard({ viewDate }) {
 
         // ค้นหาเครื่องจักรที่ถูกเบิกอะไหล่มากที่สุด
         const machineUsage = todayData.reduce((acc, curr) => {
-            if (curr.machine_SN) {
-                acc[curr.machine_SN] = (acc[curr.machine_SN] || 0) + 1;
+            if (curr.machine_id) {
+                acc[curr.machine_id] = (acc[curr.machine_id] || 0) + 1;
             }
             return acc;
         }, {});

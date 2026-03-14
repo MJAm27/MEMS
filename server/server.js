@@ -273,7 +273,7 @@ app.post('/api/withdraw/partInfo', async (req, res) => {
 
 // 2. API: Confirm and Cut Stock (POST /api/withdraw/confirm)
 app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
-    const { machine_SN, cartItems } = req.body;
+    const { machine_id, cartItems } = req.body;
     const userId = req.user.userId;
     let connection;
 
@@ -285,8 +285,8 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
 
         // 1. บันทึกรายการหลักก่อนเสมอ เพื่อให้มี ID อ้างอิง (แก้ Error 500)
         await connection.query(
-            "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_SN, is_pending) VALUES (?, 'T-WTH', CURDATE(), CURTIME(), ?, ?, 0)",
-            [transactionId, userId, machine_SN]
+            "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_id, is_pending) VALUES (?, 'T-WTH', CURDATE(), CURTIME(), ?, ?, 0)",
+            [transactionId, userId, machine_id]
         );
 
         // 2. ผูก ID กับเวลาเปิดจริง (UPDATE จาก Log ที่บันทึกไว้ตอนกดปุ่มเปิดประตูใน Step 1)
@@ -544,7 +544,7 @@ app.post('/api/borrow/finalize-v2', authenticateToken, async (req, res) => {
             // สร้าง Transaction ใหม่สำหรับการใช้จริง (เพื่อเก็บประวัติแยกตามเลขครุภัณฑ์)
             const newTxId = `WTH-REAL-${Date.now().toString().slice(-8)}`;
             await connection.query(
-                "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_SN, is_pending) VALUES (?, 'T-WTH', CURDATE(), CURTIME(), ?, ?, 0)",
+                "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_id, is_pending) VALUES (?, 'T-WTH', CURDATE(), CURTIME(), ?, ?, 0)",
                 [newTxId, req.user.userId, machineSN]
             );
             await connection.query(
@@ -601,7 +601,7 @@ app.post('/api/borrow/finalize-partial', authenticateToken, async (req, res) => 
         const realTxId = `W-REAL-${Date.now().toString().slice(-6)}`;
         await connection.query(
             `INSERT INTO transactions 
-            (transaction_id, parent_transaction_id, transaction_type_id, date, time, user_id, machine_SN, is_pending) 
+            (transaction_id, parent_transaction_id, transaction_type_id, date, time, user_id, machine_id, is_pending) 
             VALUES (?, ?, 'T-WTH', CURDATE(), CURTIME(), ?, ?, 0)`,
             [realTxId, transactionId, req.user.userId, machineSN]
         );
@@ -1016,7 +1016,7 @@ app.get('/api/alerts/high-value', async (req, res) => {
                 t.time,
                 u.fullname as user_name,
                 m.machine_name,
-                t.machine_SN,
+                t.machine_id,
                 et.equipment_name,
                 et.img,
                 et.unit,
@@ -1026,7 +1026,7 @@ app.get('/api/alerts/high-value', async (req, res) => {
             FROM transactions t
             JOIN transactions_type tt ON t.transaction_type_id = tt.transaction_type_id
             JOIN users u ON t.user_id = u.user_id
-            LEFT JOIN machine m ON t.machine_SN = m.machine_SN
+            LEFT JOIN machine m ON t.machine_id = m.machine_id
             JOIN equipment_list el ON t.transaction_id = el.transaction_id
             JOIN lot l ON el.lot_id = l.lot_id
             JOIN equipment e ON l.equipment_id = e.equipment_id
@@ -1071,19 +1071,19 @@ app.get('/api/machine', async (req, res) => {
 // POST /api/machine
 app.post('/api/machine', async (req, res) => {
     try {
-        const { machine_SN, machine_name } = req.body;
+        const { machine_id, machine_name } = req.body;
         console.log("BODY:", req.body);
 
         // ตรวจสอบซ้ำ
-        const [existing] = await db.query("SELECT * FROM machine WHERE machine_SN = ?", [machine_SN]);
+        const [existing] = await db.query("SELECT * FROM machine WHERE machine_id = ?", [machine_id]);
         if (existing.length > 0) {
             return res.status(400).send("รหัสครุภัณฑ์นี้มีอยู่แล้ว");
         }
 
         // เพิ่มเครื่อง
         await db.query(
-            "INSERT INTO machine (machine_SN, machine_name) VALUES (?, ?)",
-            [machine_SN, machine_name]
+            "INSERT INTO machine (machine_id, machine_name) VALUES (?, ?)",
+            [machine_id, machine_name]
         );
         res.send("Machine added successfully");
 
@@ -1098,7 +1098,7 @@ app.get('/api/search/machines', async (req, res) => {
     const { term } = req.query;
     try {
         const [rows] = await pool.query(
-            "SELECT machine_SN, machine_name FROM machine WHERE machine_SN LIKE ? OR machine_name LIKE ? LIMIT 10",
+            "SELECT machine_id, machine_name FROM machine WHERE machine_id LIKE ? OR machine_name LIKE ? LIMIT 10",
             [`%${term}%`, `%${term}%`]
         );
         res.json(rows);
@@ -1147,7 +1147,7 @@ app.get('/api/history/full', authenticateToken, async (req, res) => {
                 t.is_pending,
                 t.date, 
                 t.time,
-                t.machine_SN,
+                t.machine_id,
                 u.fullname, 
                 u.profile_img, 
                 t.user_id,
@@ -1242,7 +1242,7 @@ app.get('/api/history/manager/daily', authenticateToken, async (req, res) => {
                 t.date, 
                 t.time,
                 u.fullname, 
-                t.machine_SN,
+                t.machine_id,
                 (SELECT JSON_ARRAYAGG(
                     JSON_OBJECT('name', et.equipment_name, 'qty', el.quantity)
                 )
@@ -1274,7 +1274,7 @@ app.put('/api/machine/:sn', async (req, res) => {
         const sn = req.params.sn;
         const { machine_name } = req.body;
 
-        await db.query("UPDATE machine SET machine_name = ? WHERE machine_SN = ?", [machine_name, sn]);
+        await db.query("UPDATE machine SET machine_name = ? WHERE machine_id = ?", [machine_name, sn]);
         res.send("Machine updated successfully");
 
     } catch (err) {
@@ -1287,7 +1287,7 @@ app.put('/api/machine/:sn', async (req, res) => {
 app.delete('/api/machine/:sn', async (req, res) => {
     try {
         const sn = req.params.sn;
-        await db.query("DELETE FROM machine WHERE machine_SN = ?", [sn]);
+        await db.query("DELETE FROM machine WHERE machine_id = ?", [sn]);
         res.send("Machine deleted successfully");
 
     } catch (err) {
@@ -1754,7 +1754,7 @@ app.get("/api/transactions", async (req, res) => {
         FROM transactions t 
         LEFT JOIN transactions_type tt ON t.transaction_type_id = tt.transaction_type_id 
         LEFT JOIN users u ON t.user_id = u.user_id 
-        LEFT JOIN machine m ON t.machine_SN = m.machine_SN 
+        LEFT JOIN machine m ON t.machine_id = m.machine_id 
         ORDER BY t.date DESC, t.transaction_id DESC;
     `;
     try {
@@ -1789,7 +1789,7 @@ app.get("/api/transactions/:id/items", async (req, res) => {
 app.get("/api/transaction-options", async (req, res) => {
     try {
         const [users] = await db.query("SELECT user_id, fullname FROM users");
-        const [machines] = await db.query("SELECT machine_SN, machine_name FROM machine");
+        const [machines] = await db.query("SELECT machine_id, machine_name FROM machine");
         const [types] = await db.query("SELECT transaction_type_id, transaction_type_name FROM transactions_type"); 
         const [equipments] = await db.query("SELECT equipment_id, model_size FROM equipment");
         
@@ -1823,7 +1823,7 @@ async function getNextTransactionId(prefix, connection) {
 
 // 4. สร้าง Transaction ใหม่ (ใช้ SQL Transaction เพื่อความปลอดภัย)
 app.post('/api/transactions', authenticateToken, async (req, res) => {
-    const { type_mode, user_id, machine_SN, date, time, items } = req.body;
+    const { type_mode, user_id, machine_id, date, time, items } = req.body;
     let connection;
 
     try {
@@ -1833,7 +1833,7 @@ app.post('/api/transactions', authenticateToken, async (req, res) => {
         let prefix = '';
         let typeId = '';
         let is_pending = 0;
-        let finalMachineSN = machine_SN;
+        let finalMachineSN = machine_id;
         let finalParentTxId = parent_transaction_id || null;
 
         // เงื่อนไขตามที่คุณระบุ
@@ -1843,19 +1843,19 @@ app.post('/api/transactions', authenticateToken, async (req, res) => {
         } else if (type_mode === 'return') { // คืน
             prefix = 'RTN';
             typeId = 'T-RTN';
-            finalMachineSN = null; // ไม่ต้องกรอก machine_SN
+            finalMachineSN = null; // ไม่ต้องกรอก machine_id
         } else if (type_mode === 'borrow') { // เบิกสำหรับยืม (Pending)
             prefix = 'PEND';
             typeId = 'T-WTH';
             is_pending = 1;
-            finalMachineSN = null; // ไม่ต้องกรอก machine_SN
+            finalMachineSN = null; // ไม่ต้องกรอก machine_id
         }
 
         const transactionId = await getNextTransactionId(prefix, 'transactions', 'transaction_id', connection);
 
         // บันทึกลงตาราง transactions
         await connection.query(
-            "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_SN, is_pending) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_id, is_pending) VALUES (?, ?, ?, ?, ?, ?, ?)",
             [transactionId,finalParentTxId, typeId, date, time, user_id, finalMachineSN, is_pending]
         );
 
@@ -2078,7 +2078,7 @@ app.post('/api/withdraw/partInfo', async (req, res) => {
 
 // 2. API: Confirm and Cut Stock (POST /api/withdraw/confirm)
 app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
-    const { machine_SN, cartItems } = req.body;
+    const { machine_id, cartItems } = req.body;
     const userId = req.user.userId;
     let connection;
 
@@ -2090,8 +2090,8 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
 
         // 🟢 ขั้นตอนที่ 1: บันทึกรายการหลักก่อน
         await connection.query(
-            "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_SN, is_pending) VALUES (?, 'T-WTH', CURDATE(), CURTIME(), ?, ?, 0)",
-            [transactionId, userId, machine_SN]
+            "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_id, is_pending) VALUES (?, 'T-WTH', CURDATE(), CURTIME(), ?, ?, 0)",
+            [transactionId, userId, machine_id]
         );
 
         // 🟢 ขั้นตอนที่ 2: ผูกเวลาเปิดที่มีอยู่แล้ว (จากตอนเริ่ม Step 1)

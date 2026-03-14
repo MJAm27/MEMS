@@ -12,7 +12,7 @@ function ManageMachine() {
   const [isEditMode, setIsEditMode] = useState(false);
   
   const [formData, setFormData] = useState({
-    machine_SN: "",
+    machine_id: "",
     machine_name: ""
   });
   
@@ -34,12 +34,12 @@ function ManageMachine() {
   // 2. ฟังก์ชัน Filter สำหรับค้นหา
   const filteredMachines = machines.filter((item) =>
     item.machine_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.machine_SN.toLowerCase().includes(searchTerm.toLowerCase())
+    item.machine_id.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleAddNew = () => {
     setIsEditMode(false);
-    setFormData({ machine_SN: "", machine_name: "" });
+    setFormData({ machine_id: "", machine_name: "" });
     setShowModal(true);
   };
 
@@ -55,7 +55,7 @@ function ManageMachine() {
     
     try {
       if (isEditMode) {
-        await axios.put(`${process.env.REACT_APP_API_URL}/api/machine/${formData.machine_SN}`, {
+        await axios.put(`${process.env.REACT_APP_API_URL}/api/machine/${formData.machine_id}`, {
           machine_name: formData.machine_name
         });
         alert("แก้ไขข้อมูลสำเร็จ");
@@ -64,7 +64,7 @@ function ManageMachine() {
         await axios.post(
             `${process.env.REACT_APP_API_URL}/api/machine`,
             {
-                machine_SN: formData.machine_SN,
+                machine_id: formData.machine_id,
                 machine_name: formData.machine_name
             },
             {
@@ -138,8 +138,8 @@ function ManageMachine() {
           <tbody>
             {filteredMachines.length > 0 ? (
               filteredMachines.map((machine) => (
-                <tr key={machine.machine_SN}>
-                  <td className="fw-bold text-primary">{machine.machine_SN}</td>
+                <tr key={machine.machine_id}>
+                  <td className="fw-bold text-primary">{machine.machine_id}</td>
                   <td>{machine.machine_name}</td>
                   <td className="text-center">
                     <button 
@@ -150,7 +150,7 @@ function ManageMachine() {
                     </button>
                     <button 
                       className="action-btn delete-btn" 
-                      onClick={() => handleDelete(machine.machine_SN)}
+                      onClick={() => handleDelete(machine.machine_id)}
                     >
                       <FaTrash />
                     </button>
@@ -184,8 +184,8 @@ function ManageMachine() {
                   <label>รหัสครุภัณฑ์ (SN) <span className="text-danger">*</span></label>
                   <input
                     type="text"
-                    name="machine_SN"
-                    value={formData.machine_SN}
+                    name="machine_id"
+                    value={formData.machine_id}
                     onChange={handleChange}
                     disabled={isEditMode}
                     required

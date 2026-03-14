@@ -31,7 +31,7 @@ function ManageTransaction() {
   const [headerData, setHeaderData] = useState({
     type_mode: "withdraw", // withdraw, return, borrow
     user_id: "",
-    machine_SN: "",
+    machine_id: "",
     date: new Date().toISOString().split('T')[0],
     time: new Date().toLocaleTimeString('th-TH', { hour12: false }).slice(0, 5)
   });
@@ -137,7 +137,7 @@ function ManageTransaction() {
     setHeaderData({ 
         type_mode: "withdraw", 
         user_id: "", 
-        machine_SN: "",
+        machine_id: "",
         date: new Date().toISOString().split('T')[0],
         time: new Date().toLocaleTimeString('th-TH', { hour12: false }).slice(0, 5)
     });
@@ -180,7 +180,7 @@ function ManageTransaction() {
     setHeaderData({
       type_mode: mappedTypeMode,
       user_id: trans.user_id,
-      machine_SN: trans.machine_SN || "",
+      machine_id: trans.machine_id || "",
       date: trans.date ? new Date(trans.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       time: trans.time || new Date().toLocaleTimeString('th-TH', { hour12: false }).slice(0, 5)
     });
@@ -396,8 +396,8 @@ function ManageTransaction() {
                                         value={headerData.type_mode}
                                         onChange={e => {
                                             const mode = e.target.value;
-                                            const resetMachine = (mode === 'return' || mode === 'borrow') ? "" : headerData.machine_SN;
-                                            setHeaderData({...headerData, type_mode: mode, machine_SN: resetMachine});
+                                            const resetMachine = (mode === 'return' || mode === 'borrow') ? "" : headerData.machine_id;
+                                            setHeaderData({...headerData, type_mode: mode, machine_id: resetMachine});
                                         }}
                                         required
                                     >
@@ -422,12 +422,12 @@ function ManageTransaction() {
                                     <label>ครุภัณฑ์</label>
                                     <select 
                                         className="form-control"
-                                        value={headerData.machine_SN}
-                                        onChange={e => setHeaderData({...headerData, machine_SN: e.target.value})}
+                                        value={headerData.machine_id}
+                                        onChange={e => setHeaderData({...headerData, machine_id: e.target.value})}
                                         disabled={headerData.type_mode === 'return' || headerData.type_mode === 'borrow'}
                                     >
                                         <option value="">-- ไม่ระบุ --</option>
-                                        {options.machines.map(m => <option key={m.machine_SN} value={m.machine_SN}>{m.machine_name}</option>)}
+                                        {options.machines.map(m => <option key={m.machine_id} value={m.machine_id}>{m.machine_name}</option>)}
                                     </select>
                                 </div>
                             </div>

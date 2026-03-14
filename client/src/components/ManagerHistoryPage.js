@@ -200,7 +200,7 @@ function ManagerHistoryPage({ viewDate }) {
                                             <div key={i} className="item-row"><span>{item.name}</span><span className="item-q">x{item.qty}</span></div>
                                         ))}
                                     </td>
-                                    <td className="font-bold">{row.machine_SN || "-"}</td>
+                                    <td className="font-bold">{row.machine_id || "-"}</td>
                                     <td>
                                         <div className="access-log-container">
                                             <div className="time-row"><span className="time-label-open">เปิด</span> <b>{row.open_time || '--:--'}</b></div>
@@ -237,7 +237,7 @@ function ManagerHistoryPage({ viewDate }) {
                                     ))}
                                 </div>
                                 <div className="m-footer-info">
-                                    <div>ครุภัณฑ์: <b>{row.machine_SN || "-"}</b></div>
+                                    <div>ครุภัณฑ์: <b>{row.machine_id || "-"}</b></div>
                                     <div className="m-access-logs">
                                         <span>🔓 {row.open_time || '--'}</span><span>🔒 {row.close_time || '--'}</span>
                                     </div>

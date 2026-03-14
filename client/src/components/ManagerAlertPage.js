@@ -142,7 +142,7 @@ function ManagerAlertPage() {
                     
                     <div className="info-grid-container">
                       <p><FaUser className="inline-icon" /> <strong>ผู้เบิก:</strong> {item.user_name}</p>
-                      <p><FaDesktop className="inline-icon" /> <strong>ใช้กับเครื่อง:</strong> {item.machine_name || "ไม่ระบุ"} ({item.machine_SN || "-"})</p>
+                      <p><FaDesktop className="inline-icon" /> <strong>ใช้กับเครื่อง:</strong> {item.machine_name || "ไม่ระบุ"} ({item.machine_id || "-"})</p>
                       <p><FaClock className="inline-icon" /> <strong>วันเวลา:</strong> {formatDate(item.date)} | {item.time.substring(0, 5)} น.</p>
                       <p><strong>จำนวน:</strong> <span className="text-danger">{item.quantity}</span> {item.unit || "หน่วย"}</p>
                     </div>

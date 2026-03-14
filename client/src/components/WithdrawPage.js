@@ -129,7 +129,7 @@ function WithdrawPage({ user }) {
         try {
             const token = localStorage.getItem('token');
             const payload = { 
-                machine_SN: assetId, 
+                machine_id: assetId, 
                 cartItems: cartItems.map(item => ({ 
                     lotId: item.lotId, 
                     partId: item.partId, 
@@ -252,9 +252,9 @@ function WithdrawPage({ user }) {
                                         {machines.map((mac, index) => (
                                             <option 
                                                 key={mac.machine_id || index} 
-                                                value={mac.machine_SN || mac.machine_sn} 
+                                                value={mac.machine_id || mac.machine_id} 
                                             >
-                                                {mac.machine_name} {mac.machine_SN || mac.machine_sn ? `(${mac.machine_SN || mac.machine_sn})` : ''}
+                                                {mac.machine_name} {mac.machine_id || mac.machine_id ? `(${mac.machine_id || mac.machine_id})` : ''}
                                             </option>
                                         ))}
                                     </select>
@@ -364,7 +364,7 @@ function WithdrawPage({ user }) {
                         <div className="asset-info-banner">
                             <div className="label">ครุภัณฑ์ </div>
                             <div className="value">
-                                {machines.find(mac => (mac.machine_SN || mac.machine_sn) === assetId)?.machine_name || "ไม่ทราบชื่อ"} <br></br> ({assetId})
+                                {machines.find(mac => (mac.machine_id || mac.machine_id) === assetId)?.machine_name || "ไม่ทราบชื่อ"} <br></br> ({assetId})
                             </div>
                         </div>
 
