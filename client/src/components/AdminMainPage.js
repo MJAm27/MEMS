@@ -3,7 +3,7 @@ import axios from "axios";
 import { useNavigate, Routes, Route } from "react-router-dom";
 import {
     FaBars, FaHome, FaChartLine, FaBell, FaUserCircle,
-    FaSignOutAlt, FaIndustry, FaCogs, FaExchangeAlt, FaTruck, FaUsers
+    FaSignOutAlt, FaIndustry, FaCogs, FaExchangeAlt, FaTruck, FaUsers , FaBuilding
 } from "react-icons/fa";
 
 import "./AdminMainPage.css";
@@ -19,6 +19,7 @@ import AlertPage from "./AlertPage";
 import ProfileENG from './ProfileENG';
 import ProfileEditENG from './ProfileEditENG';
 import ChangePasswordENG from './ChangePasswordENG';
+import ManageDepartment from './ManageDepartment';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
@@ -157,6 +158,7 @@ function AdminMainPage({ user, handleLogout }) {
                         <Route path="/admin/lot/:equipmentId" element={<ManageLot />} />
                         <Route path="/admin/transactions" element={<ManageTransaction />} />
                         <Route path="/admin/user" element={<ManageUser />} />
+                        <Route path="/admin/department" element={<ManageDepartment />} />
                         <Route path="/admin/supplier" element={<ManageSupplier />} />
                         <Route path="/admin/alert" element={<AlertPage />} />
                         <Route path="/admin/profile" element={<ProfileENG user={user}/>} />
@@ -191,6 +193,9 @@ function HomeMenu({ navigate }) {
                 </button>
                 <button className="admin-action-card" onClick={() => navigate("/dashboard/admin/user")}>
                     <FaUsers className="icon" /><span>จัดการข้อมูลผู้ใช้งาน</span>
+                </button>
+                <button className="admin-action-card" onClick={() => navigate("/dashboard/admin/department")}>
+                    <FaBuilding className="icon" /><span>จัดการข้อมูลหน่วยงาน</span>
                 </button>
             </div>
         </>

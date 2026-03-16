@@ -2436,6 +2436,74 @@ app.get('/api/report/accesslogs', async (req, res) => {
     }
 });
 
+// 1. ดึงข้อมูลหน่วยงานทั้งหมด
+app.get('/api/departments', async (req, res) => {
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const [rows] = await connection.query("SELECT * FROM department ORDER BY department_id ASC");
+        res.json(rows);
+    } catch (error) {
+        console.error("Fetch Departments Error:", error);
+        res.status(500).json({ error: error.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// 2. เพิ่มหน่วยงานใหม่
+app.post('/api/departments', async (req, res) => {
+    // รับค่า department_id มาด้วย (เพราะไม่ใช่ Auto Increment)
+    const { department_id, department_name, buildings } = req.body;
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const sql = "INSERT INTO department (department_id, department_name, buildings) VALUES (?, ?, ?)";
+        await connection.query(sql, [department_id, department_name, buildings]);
+        res.status(201).json({ message: "เพิ่มหน่วยงานสำเร็จ" });
+    } catch (error) {
+        console.error("Add Department Error:", error);
+        res.status(500).json({ error: error.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// 3. แก้ไขข้อมูลหน่วยงาน
+app.put('/api/departments/:id', async (req, res) => {
+    const { id } = req.params;
+    const { department_name, buildings } = req.body;
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const sql = "UPDATE department SET department_name = ?, buildings = ? WHERE department_id = ?";
+        await connection.query(sql, [department_name, buildings, id]);
+        res.json({ message: "อัปเดตข้อมูลหน่วยงานสำเร็จ" });
+    } catch (error) {
+        console.error("Update Department Error:", error);
+        res.status(500).json({ error: error.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// 4. ลบหน่วยงาน
+app.delete('/api/departments/:id', async (req, res) => {
+    const { id } = req.params;
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const sql = "DELETE FROM department WHERE department_id = ?";
+        await connection.query(sql, [id]);
+        res.json({ message: "ลบหน่วยงานสำเร็จ" });
+    } catch (error) {
+        console.error("Delete Department Error:", error);
+        res.status(500).json({ error: error.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
 app.use(express.static(path.join(__dirname, 'build')));
 
 app.get(/.*/, (req, res) => {
