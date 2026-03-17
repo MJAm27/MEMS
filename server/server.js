@@ -71,17 +71,23 @@ const client = mqtt.connect('mqtt://kob.vps.athichal.com:62279');
 const SECRET_PASSKEY = "MEMS_AMKOB";
 
 let deviceStatus = "offline";
+let lastLoggedStatus = ""; 
+
 client.on('connect', () => {
     console.log('✅ Connected to MQTT Broker');
     client.subscribe("esp8266/status");
 });
+
 client.on('message', (topic, message) => {
     if (topic === "esp8266/status") {
-        deviceStatus = message.toString();
-        console.log(`[Device] Status changed to: ${deviceStatus}`);
+        const newStatus = message.toString();
+        deviceStatus = newStatus;
+        if (newStatus !== lastLoggedStatus) {
+            console.log(`[Device] Status changed to: ${newStatus}`);
+            lastLoggedStatus = newStatus; 
+        }
     }
 });
-
 client.on('error', (err) => {
     console.error('❌ MQTT Connection Error:', err);
 });
@@ -273,7 +279,7 @@ app.post('/api/withdraw/partInfo', async (req, res) => {
 
 // 2. API: Confirm and Cut Stock (POST /api/withdraw/confirm)
 app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
-    const { machine_SN, cartItems } = req.body;
+    const { machine_id, machine_number, machine_SN, department_id, repair_type_id, cartItems } = req.body;
     const userId = req.user.userId;
     let connection;
 
@@ -283,13 +289,19 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
 
         const transactionId = `WTH-${Date.now()}`;
 
-        // 1. บันทึกรายการหลักก่อนเสมอ เพื่อให้มี ID อ้างอิง (แก้ Error 500)
-        await connection.query(
-            "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_SN, is_pending) VALUES (?, 'T-WTH', CURDATE(), CURTIME(), ?, ?, 0)",
-            [transactionId, userId, machine_SN]
-        );
+        // บันทึกรายการหลัก พร้อมข้อมูลสถานที่และประเภทงาน
+        const insertTxSql = `
+            INSERT INTO transactions 
+            (transaction_id, transaction_type_id, date, time, user_id, 
+            machine_id, machine_number, machine_SN, department_id, repair_type_id, is_pending) 
+            VALUES (?, 'T-WTH', CURDATE(), CURTIME(), ?, ?, ?, ?, ?, ?, 0)
+        `;
 
-        // 2. ผูก ID กับเวลาเปิดจริง (UPDATE จาก Log ที่บันทึกไว้ตอนกดปุ่มเปิดประตูใน Step 1)
+        await connection.query(insertTxSql, [
+            transactionId, userId, machine_id, machine_number, machine_SN, department_id, repair_type_id
+        ]);
+
+        // ผูกเวลาเปิดประตู
         await connection.query(
             `UPDATE accesslogs SET transaction_id = ? 
              WHERE user_id = ? AND transaction_id IS NULL AND action_type_id = 'A-001' 
@@ -297,13 +309,11 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
             [transactionId, userId]
         );
 
-        // 3. ตัดสต็อกและบันทึกรายละเอียดอะไหล่
         for (const item of cartItems) {
             await connection.query(
                 "UPDATE lot SET current_quantity = current_quantity - ? WHERE lot_id = ? AND current_quantity >= ?",
                 [item.quantity, item.lotId, item.quantity]
             );
-
             const listId = `ER-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
             await connection.query(
                 "INSERT INTO equipment_list (equipment_list_id, transaction_id, quantity, lot_id) VALUES (?, ?, ?, ?)",
@@ -311,21 +321,40 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
             );
         }
 
-        // 4. บันทึกเวลาปิดตู้ใหม่ (จะทำให้เวลาปิดต่างจากเวลาเปิดจริง)
-        const closeLogId = `CL-${Date.now()}`; // ** อย่าลืมรัน SQL ขยายคอลัมน์ log_id เป็น 50 **
+        // บันทึกเวลาปิดตู้
+        const closeLogId = `CL-${Date.now()}`;
         await connection.query(
             "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-002', ?, ?)",
             [closeLogId, transactionId, userId]
         );
 
         await connection.commit();
-        res.json({ success: true, message: "เบิกอะไหล่และบันทึกเวลาสำเร็จ" });
+        res.json({ success: true, message: "เบิกอะไหล่เรียบร้อยแล้ว" });
     } catch (error) {
         if (connection) await connection.rollback();
-        console.error("❌ Confirm Error:", error.message);
         res.status(500).json({ error: error.message });
     } finally {
         if (connection) connection.release();
+    }
+});
+
+// ดึงยอดค้างทั้งหมดของพนักงานทุกคน (ใช้ใน Dashboard)
+app.get('/api/borrow/all-pending', authenticateToken, async (req, res) => {
+    try {
+        // ใช้ SUM เพื่อรวมยอด quantity ทั้งหมดจากรายการที่ค้างอยู่ (is_pending = 1)
+        const sql = `
+            SELECT COALESCE(SUM(el.quantity), 0) as total_pending 
+            FROM transactions t
+            JOIN equipment_list el ON t.transaction_id = el.transaction_id
+            WHERE t.is_pending = 1
+        `;
+        const [rows] = await pool.query(sql);
+        
+        // ส่งกลับเป็น Object: { "total_pending": 7 }
+        res.json(rows[0]); 
+    } catch (error) {
+        console.error("Fetch All Pending Error:", error.message);
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -428,26 +457,55 @@ app.post('/api/return-part', authenticateToken, async (req, res) => {
     }
 });
 
+// API ตึกและแผนก 
+app.get('/api/departments', authenticateToken, async (req, res) => {
+    try {
+        const [rows] = await pool.query("SELECT * FROM department ORDER BY buildings ASC, department_name ASC");
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// API ประเภทงาน
+app.get('/api/repair-types', authenticateToken, async (req, res) => {
+    try {
+        const [rows] = await pool.query("SELECT * FROM repair_type");
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // API สำหรับยืนยันการเบิกล่วงหน้า (pending) และเพิ่มสต็อก
 // 1. API สำหรับบันทึกรายการเบิกล่วงหน้า (is_pending = 1)
-// 1. API สำหรับบันทึกรายการเบิกล่วงหน้า (is_pending = 1)
 app.post('/api/borrow/pending', authenticateToken, async (req, res) => {
-    const { userId, borrowDate, items } = req.body;
+    // 1. รับค่าเพิ่มจาก req.body
+    const { 
+        userId, borrowDate, items, 
+        machine_id, machine_number, machine_SN, 
+        department_id, repair_type_id 
+    } = req.body;
+
     let connection;
     try {
         connection = await pool.getConnection();
         await connection.beginTransaction();
 
-        // สร้าง Transaction ID (PEND-xxxx)
         const transactionId = `PEND-${Date.now().toString().slice(-8)}`;
 
-        // บันทึกรายการหลักลงตาราง transactions
+        // 2. แก้ไข SQL INSERT ให้รองรับคอลัมน์ใหม่ๆ
         await connection.query(
-            "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, is_pending) VALUES (?, 'T-WTH', ?, CURTIME(), ?, 1)",
-            [transactionId, borrowDate, userId]
+            `INSERT INTO transactions 
+            (transaction_id, transaction_type_id, date, time, user_id, 
+             machine_id, machine_number, machine_SN, department_id, repair_type_id, is_pending) 
+            VALUES (?, 'T-WTH', ?, CURTIME(), ?, ?, ?, ?, ?, ?, 1)`,
+            [
+                transactionId, borrowDate, userId, 
+                machine_id || null, machine_number || null, machine_SN || null, 
+                department_id || null, repair_type_id || null
+            ]
         );
-
         let counter = 0;
         for (const item of items) {
             // 1. ตัดสต็อกออกจากตาราง lot
@@ -519,6 +577,30 @@ app.get('/api/borrow/pending/:userId', authenticateToken, async (req, res) => {
     }
 });
 
+app.get('/api/borrow/pending-details-all', authenticateToken, async (req, res) => {
+    try {
+        const sql = `
+            SELECT 
+                u.fullname,
+                t.date AS borrow_date,
+                et.equipment_name,
+                el.quantity AS borrow_qty
+            FROM transactions t
+            INNER JOIN users u ON t.user_id = u.user_id
+            INNER JOIN equipment_list el ON t.transaction_id = el.transaction_id
+            INNER JOIN lot l ON el.lot_id = l.lot_id
+            INNER JOIN equipment e ON l.equipment_id = e.equipment_id
+            INNER JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
+            WHERE t.is_pending = 1
+            ORDER BY t.date DESC
+        `;
+        const [rows] = await pool.query(sql);
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // API สำหรับยืนยันการใช้จริงและสรุปรายการ (Finalize)
 // API สำหรับสรุปยอดใช้จริงบางส่วน หรือ คืนทั้งหมด
 app.post('/api/borrow/finalize-v2', authenticateToken, async (req, res) => {
@@ -577,11 +659,19 @@ app.post('/api/borrow/finalize-v2', authenticateToken, async (req, res) => {
     }
 });
 
-// ==========================================
-// 📌 API สำหรับสรุปการใช้จริง (หักยอดในมือ + ปิด job เมื่อหมด)
-// ==========================================
+
+// API สำหรับสรุปการใช้จริง (หักยอดในมือ + ปิด job เมื่อหมด)
 app.post('/api/borrow/finalize-partial', authenticateToken, async (req, res) => {
-    const { transactionId, machineSN, usedQty, lotId } = req.body;
+    const { 
+        transactionId, 
+        machineId,      
+        machineNumber,  
+        machineSN, 
+        usedQty, 
+        lotId,
+        repairTypeId,   
+        departmentId    
+    } = req.body;
     let connection;
     try {
         connection = await pool.getConnection();
@@ -601,9 +691,19 @@ app.post('/api/borrow/finalize-partial', authenticateToken, async (req, res) => 
         const realTxId = `W-REAL-${Date.now().toString().slice(-6)}`;
         await connection.query(
             `INSERT INTO transactions 
-            (transaction_id, parent_transaction_id, transaction_type_id, date, time, user_id, machine_SN, is_pending) 
-            VALUES (?, ?, 'T-WTH', CURDATE(), CURTIME(), ?, ?, 0)`,
-            [realTxId, transactionId, req.user.userId, machineSN]
+            (transaction_id, parent_transaction_id, transaction_type_id, date, time, user_id, 
+            machine_id, machine_number, machine_SN, repair_type_id, department_id, is_pending) 
+            VALUES (?, ?, 'T-WTH', CURDATE(), CURTIME(), ?, ?, ?, ?, ?, ?, 0)`,
+            [
+                realTxId, 
+                transactionId, 
+                req.user.userId, 
+                machineId || null,      
+                machineNumber || null,  
+                machineSN || null, 
+                repairTypeId || null, 
+                departmentId || null
+            ]
         );
 
         // 3. บันทึกรายละเอียดอะไหล่ (ใส่รหัสสุ่มที่ไม่ซ้ำ)
@@ -961,37 +1061,38 @@ app.get("/api/inventoryBalanceReportChart", async (req, res) => {
     try {
         const sql = `
             SELECT
-                et.equipment_type_id,
+                e.equipment_id,
                 et.equipment_name,
-                -- จำนวนคงเหลือในคลังปัจจุบัน (จากตาราง lot)
+                et.unit,
+                e.alert_quantity,
+                -- 1. จำนวนคงเหลือจริงในคลัง (Lot)
                 COALESCE(SUM(l.current_quantity), 0) AS quantity,
                 
-                -- จำนวนทั้งหมด (ของในคลัง + ของที่ถูกเบิกไปแบบ Pending)
+                -- 2. จำนวนทั้งหมด (คงเหลือ + ที่เบิกค้าง Pending ไว้)
                 COALESCE(SUM(l.current_quantity), 0) + COALESCE((
                     SELECT SUM(el_sub.quantity)
                     FROM equipment_list el_sub
+                    INNER JOIN transactions t_sub ON el_sub.transaction_id = t_sub.transaction_id
                     INNER JOIN lot l_sub ON el_sub.lot_id = l_sub.lot_id
-                    JOIN transactions t_sub ON el_sub.transaction_id = t_sub.transaction_id
                     WHERE l_sub.equipment_id = e.equipment_id 
                     AND t_sub.is_pending = 1
                 ), 0) AS total_quantity,
-                
-                COALESCE(e.alert_quantity, 0) AS alert_quantity,
-                
-                -- จำนวนที่ใช้ไปจริง (หักจากรายการที่ปิด Job แล้ว)
+
+                -- 3. จำนวนที่ใช้ไปแล้ว (Transaction ที่ปิด Job แล้ว)
                 COALESCE((
                     SELECT SUM(el_used.quantity)
                     FROM equipment_list el_used
+                    INNER JOIN transactions t_used ON el_used.transaction_id = t_used.transaction_id
                     INNER JOIN lot l_used ON el_used.lot_id = l_used.lot_id
-                    JOIN transactions t_used ON el_used.transaction_id = t_used.transaction_id
                     WHERE l_used.equipment_id = e.equipment_id 
                     AND t_used.transaction_type_id = 'T-WTH'
                     AND t_used.is_pending = 0
                 ), 0) AS used_quantity
-            FROM equipment_type et
-            LEFT JOIN equipment e ON e.equipment_type_id = et.equipment_type_id
-            LEFT JOIN lot l ON l.equipment_id = e.equipment_id
-            GROUP BY et.equipment_type_id, et.equipment_name
+            FROM equipment e
+            JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
+            LEFT JOIN lot l ON e.equipment_id = l.equipment_id
+            GROUP BY e.equipment_id, et.equipment_name, et.unit, e.alert_quantity
+            ORDER BY et.equipment_name ASC
         `;
 
         const [rows] = await pool.query(sql);
@@ -1015,8 +1116,9 @@ app.get('/api/alerts/high-value', async (req, res) => {
                 t.date,
                 t.time,
                 u.fullname as user_name,
-                m.machine_name,
-                t.machine_SN,
+                m.machine_name,       
+                t.machine_SN,         
+                t.machine_number,     
                 et.equipment_name,
                 et.img,
                 et.unit,
@@ -1026,7 +1128,7 @@ app.get('/api/alerts/high-value', async (req, res) => {
             FROM transactions t
             JOIN transactions_type tt ON t.transaction_type_id = tt.transaction_type_id
             JOIN users u ON t.user_id = u.user_id
-            LEFT JOIN machine m ON t.machine_SN = m.machine_SN
+            LEFT JOIN machine m ON t.machine_id = m.machine_id 
             JOIN equipment_list el ON t.transaction_id = el.transaction_id
             JOIN lot l ON el.lot_id = l.lot_id
             JOIN equipment e ON l.equipment_id = e.equipment_id
@@ -1040,7 +1142,7 @@ app.get('/api/alerts/high-value', async (req, res) => {
         res.json(results);
     } catch (err) {
         console.error("Database Error:", err);
-        res.status(500).json({ message: "Internal Server Error" });
+        res.status(500).json({ message: "Internal Server Error", error: err.message });
     }
 });
 
@@ -1133,11 +1235,11 @@ app.get('/api/search/parts', authenticateToken, async (req, res) => {
 });
 
 
-// 📌 API สำหรับดึงประวัติ ENG
 app.get('/api/history/full', authenticateToken, async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
         const userIdFromToken = req.user.userId;
+
         let sql = `
             SELECT 
                 t.transaction_id, 
@@ -1147,10 +1249,16 @@ app.get('/api/history/full', authenticateToken, async (req, res) => {
                 t.is_pending,
                 t.date, 
                 t.time,
-                t.machine_SN,
+                t.machine_SN,             -- SN (โรงงาน)
+                t.machine_number,         -- เลขครุภัณฑ์ (รพ.)
+                rt.repair_type_name,      -- ประเภทงาน (งานซ่อม/PM)
+                m.machine_name,           -- ชื่อเครื่องมือที่ใช้
+                d.buildings,              -- ตึก
+                d.department_name,        -- แผนก
                 u.fullname, 
                 u.profile_img, 
                 t.user_id,
+                -- ดึงรายการอะไหล่ในรูปแบบ JSON
                 (SELECT JSON_ARRAYAGG(
                     JSON_OBJECT(
                         'name', et.equipment_name, 
@@ -1162,14 +1270,18 @@ app.get('/api/history/full', authenticateToken, async (req, res) => {
                  INNER JOIN equipment e ON l.equipment_id = e.equipment_id
                  INNER JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
                  WHERE el.transaction_id = t.transaction_id) as items_json,
+                -- ดึงเวลาเปิด-ปิดตู้จาก AccessLogs
                 (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-001' LIMIT 1) as open_time,
                 (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-002' LIMIT 1) as close_time
             FROM transactions t
             LEFT JOIN transactions_type tt ON t.transaction_type_id = tt.transaction_type_id
             LEFT JOIN users u ON t.user_id = u.user_id
+            LEFT JOIN repair_type rt ON t.repair_type_id = rt.repair_type_id -- JOIN เพิ่มประเภทงาน
+            LEFT JOIN machine m ON t.machine_id = m.machine_id           -- JOIN เพิ่มข้อมูลเครื่อง
+            LEFT JOIN department d ON t.department_id = d.department_id   -- JOIN เพิ่มข้อมูลสถานที่
             WHERE t.user_id = ? `;
 
-        const params = [userIdFromToken]; //
+        const params = [userIdFromToken];
 
         if (startDate && endDate) {
             sql += " AND t.date BETWEEN ? AND ? ";
@@ -1182,7 +1294,7 @@ app.get('/api/history/full', authenticateToken, async (req, res) => {
         res.json(rows);
     } catch (error) {
         console.error("Fetch History Error:", error.message);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: "เกิดข้อผิดพลาดในการดึงข้อมูลประวัติ" });
     }
 });
 
@@ -1195,6 +1307,10 @@ app.get('/api/history/manager/full', authenticateToken, async (req, res) => {
             SELECT 
                 t.*, 
                 tt.transaction_type_name as type_name, 
+                rt.repair_type_name,
+                m.machine_name,
+                d.buildings,
+                d.department_name,
                 u.fullname, 
                 u.profile_img,
                 (SELECT JSON_ARRAYAGG(
@@ -1210,7 +1326,10 @@ app.get('/api/history/manager/full', authenticateToken, async (req, res) => {
             FROM transactions t
             LEFT JOIN transactions_type tt ON t.transaction_type_id = tt.transaction_type_id
             LEFT JOIN users u ON t.user_id = u.user_id
-            WHERE 1=1 `; 
+            LEFT JOIN repair_type rt ON t.repair_type_id = rt.repair_type_id
+            LEFT JOIN machine m ON t.machine_id = m.machine_id
+            LEFT JOIN department d ON t.department_id = d.department_id
+            WHERE 1=1 `;
 
         const params = [];
         if (startDate && endDate && startDate !== 'undefined' && endDate !== 'undefined') {
@@ -1232,7 +1351,6 @@ app.get('/api/history/manager/full', authenticateToken, async (req, res) => {
 app.get('/api/history/manager/daily', authenticateToken, async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
-        // หมายเหตุ: ที่นี่เราไม่ใส่ WHERE user_id = ? เพื่อให้เห็นข้อมูลพนักงานทุกคน
 
         let sql = `
             SELECT 
@@ -1243,6 +1361,8 @@ app.get('/api/history/manager/daily', authenticateToken, async (req, res) => {
                 t.time,
                 u.fullname, 
                 t.machine_SN,
+                rt.repair_type_name, 
+                d.buildings,         
                 (SELECT JSON_ARRAYAGG(
                     JSON_OBJECT('name', et.equipment_name, 'qty', el.quantity)
                 )
@@ -1250,12 +1370,12 @@ app.get('/api/history/manager/daily', authenticateToken, async (req, res) => {
                  INNER JOIN lot l ON el.lot_id = l.lot_id
                  INNER JOIN equipment e ON l.equipment_id = e.equipment_id
                  INNER JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
-                 WHERE el.transaction_id = t.transaction_id) as items_json,
-                (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-001' LIMIT 1) as open_time,
-                (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-002' LIMIT 1) as close_time
+                 WHERE el.transaction_id = t.transaction_id) as items_json
             FROM transactions t
             LEFT JOIN transactions_type tt ON t.transaction_type_id = tt.transaction_type_id
             LEFT JOIN users u ON t.user_id = u.user_id
+            LEFT JOIN repair_type rt ON t.repair_type_id = rt.repair_type_id 
+            LEFT JOIN department d ON t.department_id = d.department_id    
             WHERE t.date BETWEEN ? AND ?
             ORDER BY t.date DESC, t.time DESC
         `;

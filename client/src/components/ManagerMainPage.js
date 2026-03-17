@@ -3,8 +3,8 @@ import { useNavigate, Routes, Route, Navigate } from "react-router-dom";
 import axios from "axios";
 import {
     FaBars, FaHome, FaChartBar, FaBell, FaHistory, 
-    FaSignOutAlt, FaUserCircle ,FaBoxOpen, FaCalendarDay
-} from "react-icons/fa";
+    FaSignOutAlt, FaUserCircle, FaBoxOpen
+} from "react-icons/fa"; 
 
 import "./ManagerMainPage.css"; 
 
@@ -17,13 +17,13 @@ import ProfileENG from './ProfileENG';
 import ProfileEditENG from './ProfileEditENG';
 import ChangePasswordENG from './ChangePasswordENG';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL ;
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 function ManagerMainPage({ user, handleLogout, refreshUser }) {
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
     const [alertCount, setAlertCount] = useState(0);
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+
 
     useLayoutEffect(() => {
         const handleResize = () => {
@@ -56,7 +56,6 @@ function ManagerMainPage({ user, handleLogout, refreshUser }) {
         return () => clearInterval(interval);
     }, [fetchAlertCount]);
 
-    // ✅ ฟังก์ชันสำหรับเปลี่ยนหน้าและปิด Sidebar อัตโนมัติ (สำหรับมือถือ)
     const goTo = (path) => {
         navigate(path);
         if (window.innerWidth <= 768) {
@@ -79,8 +78,6 @@ function ManagerMainPage({ user, handleLogout, refreshUser }) {
 
     return (
         <div className={`layout-wrapper ${sidebarOpen ? "sidebar-open" : "sidebar-closed"}`}>
-            
-            {/* ✅ Overlay สำหรับมือถือ (แตะเพื่อปิด sidebar) */}
             <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>
 
             <aside className="sidebar-container">
@@ -91,7 +88,6 @@ function ManagerMainPage({ user, handleLogout, refreshUser }) {
                 </div>
                 
                 <nav className="sidebar-nav">
-                    {/* ✅ เปลี่ยนจาก navigate เป็น goTo เพื่อให้ sidebar ปิดบนมือถือ */}
                     <button className="nav-link" onClick={() => goTo("/dashboard/manager/home")}>
                         <FaHome /> <span>หน้าหลัก</span>
                     </button>
@@ -127,16 +123,6 @@ function ManagerMainPage({ user, handleLogout, refreshUser }) {
                         <button className="sidebar-toggle-btn" onClick={toggleSidebar}>
                             <FaBars />
                         </button>
-                        <div className="daily-filter-container">
-                            <FaCalendarDay className="calendar-icon" />
-                            <span className="filter-text">มุมมองรายวัน:</span>
-                            <input 
-                                type="date" 
-                                value={selectedDate} 
-                                onChange={(e) => setSelectedDate(e.target.value)} 
-                                className="daily-date-input"
-                            />
-                        </div>
                     </div>
                     
                     <div className="nav-right">
@@ -154,10 +140,10 @@ function ManagerMainPage({ user, handleLogout, refreshUser }) {
 
                 <div className="content-body">
                     <Routes>
-                        <Route path="manager/home" element={<ManagerDashboard viewDate={selectedDate} />} />
-                        <Route path="manager/reports" element={<ManagerReportPage viewDate={selectedDate} />} />
+                        <Route path="manager/home" element={<ManagerDashboard />} />
+                        <Route path="manager/reports" element={<ManagerReportPage />} />
                         <Route path="manager/alerts" element={<ManagerAlertPage />} />
-                        <Route path="manager/managerhistory" element={<ManagerHistoryPage user={user} viewDate={selectedDate} />} />
+                        <Route path="manager/managerhistory" element={<ManagerHistoryPage user={user} />} />
                         <Route path="manager/equipment" element={<ManagerEquipmentPage />} />
                         <Route path="manager/profile" element={<ProfileENG user={user}/>} />
                         <Route path="manager/profile/edit" element={<ProfileEditENG user={user} refreshUser={refreshUser}/>} />

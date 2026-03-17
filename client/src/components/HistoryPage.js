@@ -1,26 +1,57 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { FaHistory, FaFilter, FaBoxOpen, FaReply, FaCalendarAlt, FaHandHolding, FaLink, FaClock } from 'react-icons/fa';
+import { 
+    FaHistory, FaBoxOpen, FaReply,
+    FaHandHolding, FaClock
+} from 'react-icons/fa';
 import './HistoryPage.css';
 
 const API_BASE = process.env.REACT_APP_API_URL;
 
 function HistoryPage({ user }) {
     const [history, setHistory] = useState([]);
-    const [filter, setFilter] = useState('ALL');
     const [loading, setLoading] = useState(true);
-
+    
+    // --- Filter States ---
+    const [filter, setFilter] = useState('ALL');
+    const [repairFilter, setRepairFilter] = useState('ALL');
+    const [machineFilter, setMachineFilter] = useState('ALL');
+    const [buildingFilter, setBuildingFilter] = useState('ALL');
+    const [deptFilter, setDeptFilter] = useState('ALL');
+    
     const [startDate, setStartDate] = useState(
         new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]
     );
     const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
 
+    // --- Master Data for Filters ---
+    const [repairTypes, setRepairTypes] = useState([]);
+    const [machines, setMachines] = useState([]);
+    const [departments, setDepartments] = useState([]);
+
+    const fetchMasterData = useCallback(async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const headers = { Authorization: `Bearer ${token}` };
+            const [rep, mac, dep] = await Promise.all([
+                axios.get(`${API_BASE}/api/repair-types`, { headers }),
+                axios.get(`${API_BASE}/api/machine`, { headers }),
+                axios.get(`${API_BASE}/api/departments`, { headers })
+            ]);
+            setRepairTypes(rep.data);
+            setMachines(mac.data);
+            setDepartments(dep.data);
+        } catch (err) {
+            console.error("Fetch master data error:", err);
+        }
+    }, []);
+
     const fetchHistory = useCallback(async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token'); //
+            const token = localStorage.getItem('token');
             const res = await axios.get(`${API_BASE}/api/history/full`, {
-                headers: { Authorization: `Bearer ${token}` }, // ส่ง Token ไปเพื่อให้ Backend ทราบว่าเป็นใคร
+                headers: { Authorization: `Bearer ${token}` },
                 params: { startDate, endDate }
             });
             
@@ -38,8 +69,9 @@ function HistoryPage({ user }) {
     }, [startDate, endDate]);
 
     useEffect(() => {
+        fetchMasterData();
         fetchHistory();
-    }, [fetchHistory]);
+    }, [fetchHistory, fetchMasterData]);
 
     const parseItems = (jsonStr) => {
         try {
@@ -47,39 +79,31 @@ function HistoryPage({ user }) {
         } catch (e) { return []; }
     };
 
-    const calculateDuration = (open, close) => {
-        if (!open || !close) return null;
-        const start = new Date(`2026-01-01 ${open}`);
-        const end = new Date(`2026-01-01 ${close}`);
-        const diffSec = Math.floor((end - start) / 1000);
-        return diffSec < 60 ? `${diffSec} วิ` : `${Math.floor(diffSec / 60)} นาที ${diffSec % 60} วิ`;
-    };
 
     const renderTypeBadge = (row) => {
         const isSubActivity = !!row.parent_transaction_id;
         if (row.transaction_type_id === 'T-RTN') {
-            return (
-                <span className={`type-badge type-return ${isSubActivity ? 'linked' : ''}`}>
-                    <FaReply /> {isSubActivity ? 'คืน (จากล่วงหน้า)' : 'คืนคลังปกติ'}
-                </span>
-            );
+            return <span className="type-badge type-return"><FaReply /> คืนอะไหล่</span>;
         }
-        if (row.transaction_type_id === 'T-WTH') {
-            if (row.is_pending === 1) {
-                return <span className="type-badge type-pending"><FaHandHolding /> เบิกล่วงหน้า</span>;
-            }
-            return <span className="type-badge type-withdraw"><FaBoxOpen /> {isSubActivity ? 'บันทึกใช้จริง' : 'เบิกอะไหล่'}</span>;
+        if (row.is_pending === 1) {
+            return <span className="type-badge type-pending"><FaHandHolding /> เบิกล่วงหน้า</span>;
         }
-        return <span className="type-badge">{row.type_name}</span>;
+        return (
+            <span className="type-badge type-withdraw">
+                <FaBoxOpen /> {isSubActivity ? 'สรุปใช้จริง' : 'เบิกปกติ'}
+            </span>
+        );
     };
 
-    const filteredData = filter === 'ALL'
-        ? history
-        : history.filter(item => {
-            if (filter === 'PENDING') return item.is_pending === 1 && item.transaction_type_id === 'T-WTH';
-            if (filter === 'T-WTH') return item.is_pending === 0 && item.transaction_type_id === 'T-WTH';
-            return item.transaction_type_id === filter;
-        });
+    // --- Logic การกรองข้อมูล ---
+    const filteredData = history.filter(item => {
+        const matchType = filter === 'ALL' || (filter === 'PENDING' ? item.is_pending === 1 : item.transaction_type_id === filter);
+        const matchRepair = repairFilter === 'ALL' || item.repair_type_id === Number(repairFilter);
+        const matchMachine = machineFilter === 'ALL' || item.machine_id === Number(machineFilter);
+        const matchBuilding = buildingFilter === 'ALL' || item.buildings === buildingFilter;
+        const matchDept = deptFilter === 'ALL' || item.department_id === Number(deptFilter);
+        return matchType && matchRepair && matchMachine && matchBuilding && matchDept;
+    });
 
     if (loading) return <div className="loading-state">กำลังโหลดประวัติ...</div>;
 
@@ -91,75 +115,122 @@ function HistoryPage({ user }) {
                     <h2>ประวัติการทำรายการ</h2>
                 </div>
                 
-                <div className="history-filters-wrapper">
+                {/* --- ส่วนฟิลเตอร์แบบ Grid 7 ช่อง --- */}
+                <div className="history-filters-grid">
                     <div className="filter-item">
                         <label>ตั้งแต่วันที่</label>
-                        <div className="input-with-icon">
-                            <FaCalendarAlt className="icon" />
-                            <input type="date" className="modern-input" value={startDate} onChange={e => setStartDate(e.target.value)} />
-                        </div>
+                        <input type="date" className="modern-input" value={startDate} onChange={e => setStartDate(e.target.value)} />
                     </div>
                     <div className="filter-item">
                         <label>ถึงวันที่</label>
-                        <div className="input-with-icon">
-                            <FaCalendarAlt className="icon" />
-                            <input type="date" className="modern-input" value={endDate} onChange={e => setEndDate(e.target.value)} />
-                        </div>
+                        <input type="date" className="modern-input" value={endDate} onChange={e => setEndDate(e.target.value)} />
                     </div>
                     <div className="filter-item">
-                        <label>ประเภท</label>
-                        <div className="input-with-icon">
-                            <FaFilter className="icon" />
-                            <select className="modern-select" value={filter} onChange={e => setFilter(e.target.value)}>
-                                <option value="ALL">ทั้งหมด</option>
-                                <option value="T-WTH">เบิกปกติ</option>
-                                <option value="PENDING">เบิกล่วงหน้า</option>
-                                <option value="T-RTN">คืนอะไหล่</option>
-                            </select>
-                        </div>
+                        <label>ประเภทรายการ</label>
+                        <select className="modern-select" value={filter} onChange={e => setFilter(e.target.value)}>
+                            <option value="ALL">ทั้งหมด</option>
+                            <option value="T-WTH">เบิกปกติ/สรุปผล</option>
+                            <option value="PENDING">เบิกล่วงหน้า</option>
+                            <option value="T-RTN">คืนอะไหล่</option>
+                        </select>
+                    </div>
+                    <div className="filter-item">
+                        <label>ประเภทงาน</label>
+                        <select className="modern-select" value={repairFilter} onChange={e => setRepairFilter(e.target.value)}>
+                            <option value="ALL">ทุกประเภทงาน</option>
+                            {repairTypes.map(t => <option key={t.repair_type_id} value={t.repair_type_id}>{t.repair_type_name}</option>)}
+                        </select>
+                    </div>
+                    <div className="filter-item">
+                        <label>เครื่องที่นำไปใช้</label>
+                        <select className="modern-select" value={machineFilter} onChange={e => setMachineFilter(e.target.value)}>
+                            <option value="ALL">ทุกเครื่องมือ</option>
+                            {machines.map(m => <option key={m.machine_id} value={m.machine_id}>{m.machine_name}</option>)}
+                        </select>
+                    </div>
+                    <div className="filter-item">
+                        <label>ตึก</label>
+                        <select className="modern-select" value={buildingFilter} onChange={e => {setBuildingFilter(e.target.value); setDeptFilter('ALL');}}>
+                            <option value="ALL">ทุกตึก</option>
+                            {[...new Set(departments.map(d => d.buildings))].map(b => <option key={b} value={b}>{b}</option>)}
+                        </select>
+                    </div>
+                    <div className="filter-item">
+                        <label>แผนก</label>
+                        <select className="modern-select" value={deptFilter} onChange={e => setDeptFilter(e.target.value)} disabled={buildingFilter === 'ALL'}>
+                            <option value="ALL">ทุกแผนก</option>
+                            {departments
+                                .filter(d => buildingFilter === 'ALL' || d.buildings === buildingFilter)
+                                .map(d => <option key={d.department_id} value={d.department_id}>{d.department_name}</option>)
+                            }
+                        </select>
                     </div>
                 </div>
             </header>
 
             <section className="history-card">
-                {/* Desktop Table View (Hidden on Mobile) */}
-                <div className="desktop-only">
+                <div className="desktop-only table-responsive">
                     <table className="history-table">
                         <thead>
                             <tr>
-                                <th>วันที่</th>
-                                <th>รหัสอ้างอิง (ID)</th>
-                                <th>ประเภท</th>
-                                <th>รายการ</th>
+                                <th>วัน/เวลา</th>
+                                <th>รหัสอ้างอิง</th>
+                                <th>ประเภทรายการ</th>
+                                <th>ประเภทงาน</th>
+                                <th>ตึก/แผนก</th>
+                                <th>เครื่องที่ใช้</th>
+                                <th>เลขครุภัณฑ์ (รพ.)</th>
+                                <th>SN (โรงงาน)</th>
+                                <th>รายการอะไหล่</th>
                                 <th>จำนวน</th>
-                                <th>ครุภัณฑ์</th>
-                                <th>เวลาเปิด-ปิดตู้</th>
+                                <th>เวลาเปิด-ปิด</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filteredData.map((row, index) => (
                                 <tr key={index} className={row.parent_transaction_id ? "row-sub-activity" : ""}>
-                                    <td className="date-column">
+                                    <td className="sticky-col">
                                         <div className="date-text">{new Date(row.date).toLocaleDateString('th-TH')}</div>
                                         <div className="time-sub-text"><FaClock size={10} /> {row.time}</div>
                                     </td>
-                                    <td className="id-column">
+                                    <td>
                                         <div className="tx-id-badge">{row.transaction_id}</div>
-                                        {row.parent_transaction_id && (
-                                            <div className="ref-link-badge"><FaLink size={10} /> {row.parent_transaction_id}</div>
-                                        )}
+                                        {row.parent_transaction_id && <div className="ref-link-badge">Ref: {row.parent_transaction_id}</div>}
                                     </td>
                                     <td>{renderTypeBadge(row)}</td>
-                                    <td>{parseItems(row.items_json).map((item, i) => <div key={i}>{item.name}</div>)}</td>
-                                    <td>{parseItems(row.items_json).map((item, i) => <div key={i} className="font-bold text-pink-600">x{item.qty}</div>)}</td>
-                                    <td className="font-bold">{row.machine_SN || "-"}</td>
+                                    <td className="font-semibold text-blue-600">
+                                        {row.repair_type_name || (row.is_pending === 1 ? "-" : "-")}
+                                    </td>
                                     <td>
-                                        <div className="access-log-container">
-                                            <div className="time-row"><span className="time-label-open">เปิด</span> <b>{row.open_time || '--:--'}</b></div>
-                                            <div className="time-row"><span className="time-label-close">ปิด</span> <b>{row.close_time || '--:--'}</b></div>
-                                            {row.open_time && row.close_time && (
-                                                <div className="duration-row">⏱ {calculateDuration(row.open_time, row.close_time)}</div>
-                                            )}
+                                        <div className="location-info">
+                                            <b>{row.buildings || (row.is_pending === 1 ? "-" : "-")}</b>
+                                        </div>
+                                        <div className="dept-info">{row.department_name || (row.is_pending === 1 ? "รอระบุแผนก" : "-")}</div>
+                                    </td>
+                                    <td>{row.machine_name || (row.is_pending === 1 ? "รอระบุเครื่อง" : "-")}</td>
+                                    <td className="font-bold">{row.machine_number || "-"}</td>
+                                    <td>{row.machine_SN || "-"}</td>
+                                    <td>
+                                        {parseItems(row.items_json).map((item, i) => (
+                                            <div key={i} className="item-name-text">{item.name}</div>
+                                        ))}
+                                    </td>
+                                    <td>
+                                        {parseItems(row.items_json).map((item, i) => (
+                                            <div key={i} className="font-bold text-pink-600">x{item.qty}</div>
+                                        ))}
+                                    </td>
+                                    <td>
+                                        <div className="access-log-summary">
+                                            <div className="time-line">
+                                                <span className="badge-open">เปิด</span>
+                                                <span className="time-value">{row.open_time || '--:--'}</span>
+                                            </div>
+                                            <div className="time-line">
+                                                <span className="badge-close">ปิด</span>
+                                                <span className="time-value">{row.close_time || '--:--'}</span>
+                                            </div>
+                                            
                                         </div>
                                     </td>
                                 </tr>
@@ -168,40 +239,29 @@ function HistoryPage({ user }) {
                     </table>
                 </div>
 
-                {/* Mobile Card View (Hidden on Laptop) */}
+                {/* Mobile View */}
                 <div className="mobile-only">
                     {filteredData.map((row, index) => (
-                        <div key={index} className={`history-mobile-card ${row.parent_transaction_id ? 'sub-card' : ''}`}>
-                            <div className="mobile-card-header">
-                                <div className="mobile-date-info">
-                                    <span className="m-date">{new Date(row.date).toLocaleDateString('th-TH')}</span>
-                                    <span className="m-time">{row.time}</span>
-                                </div>
+                        <div key={index} className="history-mobile-card">
+                            <div className="m-card-header">
+                                <div className="m-time-info">{new Date(row.date).toLocaleDateString('th-TH')} | {row.time}</div>
                                 {renderTypeBadge(row)}
                             </div>
-                            <div className="mobile-card-body">
-                                <div className="m-id-badge">ID: {row.transaction_id}</div>
-                                {row.parent_transaction_id && <div className="m-ref-link">🔗 อ้างอิง: {row.parent_transaction_id}</div>}
-                                <div className="m-items-list">
-                                    {parseItems(row.items_json).map((item, i) => (
-                                        <div key={i} className="m-item-row">
-                                            <span>{item.name}</span>
-                                            <span className="m-qty">x{item.qty}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="m-footer">
-                                    <span>ครุภัณฑ์: {row.machine_SN || "-"}</span>
-                                    <div className="m-access-logs">
-                                        <span>🔓 {row.open_time || '--'}</span>
-                                        <span>🔒 {row.close_time || '--'}</span>
-                                    </div>
-                                </div>
+                            <div className="m-repair-tag">{row.repair_type_name || "ไม่ระบุประเภทงาน"}</div>
+                            <div className="m-items-section">
+                                {parseItems(row.items_json).map((item, i) => (
+                                    <div key={i} className="m-item"><span>{item.name}</span> <b>x{item.qty}</b></div>
+                                ))}
+                            </div>
+                            <div className="m-details-grid">
+                                <div><small>เครื่อง:</small> {row.machine_name || '-'}</div>
+                                <div><small>ครุภัณฑ์:</small> {row.machine_number || '-'}</div>
+                                <div><small>ตึก:</small> {row.buildings || '-'}</div>
+                                <div><small>แผนก:</small> {row.department_name || '-'}</div>
                             </div>
                         </div>
                     ))}
                 </div>
-                {filteredData.length === 0 && <div className="empty-row">ไม่พบประวัติการทำรายการ</div>}
             </section>
         </div>
     );

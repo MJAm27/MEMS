@@ -1,12 +1,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&display=swap');
 
 :root {
+    /* Theme Colors */
+    --primary-blue: #3b82f6;
     --primary-pink: #ff4d94;
-    --primary-gradient: linear-gradient(135deg, #ff4d94 0%, #d946ef 100%);
+    --primary-gradient: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    --accent-gradient: linear-gradient(135deg, #ff4d94 0%, #d946ef 100%);
+    
+    /* Status & Neutral */
     --bg-gray: #f8fafc;
-    --radius-lg: 30px;
+    --text-dark: #1e293b;
+    --text-muted: #64748b;
+    --border-soft: #e2e8f0;
+    --radius-lg: 24px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* --- Layout --- */
 .borrow-page-container {
     font-family: 'Prompt', sans-serif;
     min-height: 100vh;
@@ -17,120 +27,137 @@
     align-items: center;
 }
 
-/* Stepper */
-.step-progress-bar { display: flex; align-items: center; justify-content: center; margin: 25px 0; }
+/* --- Stepper (Pink Theme) --- */
+.step-progress-bar { display: flex; align-items: center; justify-content: center; margin-bottom: 25px; }
 .step-circle {
     width: 38px; height: 38px; border-radius: 12px; background: #e2e8f0;
-    color: #94a3b8; display: flex; align-items: center; justify-content: center;
-    font-weight: 700;
+    color: #94a3b8; display: flex; align-items: center; justify-content: center; font-weight: 700;
 }
-.step-item.active .step-circle { background: var(--primary-pink); color: white; box-shadow: 0 4px 12px rgba(255, 77, 148, 0.3); }
+.step-item.active .step-circle {
+    background: var(--primary-pink); color: white; box-shadow: 0 4px 12px rgba(255, 77, 148, 0.3);
+}
 .step-line { width: 30px; height: 3px; background: #e2e8f0; margin: 0 8px; }
 .step-line.active { background: var(--primary-pink); }
 
-/* Card */
+/* --- Main Card --- */
 .withdraw-card {
-    background: #ffffff; width: 100%; max-width: 480px; border-radius: var(--radius-lg);
-    padding: 30px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06); margin: 0 auto;
-    display: flex; flex-direction: column; align-items: center;
+    background: #ffffff;
+    width: 100%;
+    max-width: 480px;
+    border-radius: var(--radius-lg);
+    padding: 30px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06);
 }
 
-/* Step 1: Unlock */
-.step-content-unlock { display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%; }
-.unlock-icon-container {
-    background: #fdf2f8; width: 100px; height: 100px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center; margin-bottom: 24px; color: #db2777;
-}
-.btn-unlock-gate {
-    background: var(--primary-gradient); color: white; width: 100%; max-width: 320px;
-    padding: 18px; border-radius: 50px; font-weight: 700; border: none; cursor: pointer;
+/* --- Step Content Shared --- */
+.step-content-unlock, .step-content-identify, .step-content-review, .step-content-confirmation {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
-/* Step 2: Identify & Cart */
-.step-content-identify { display: flex; flex-direction: column; width: 100%; }
+/* --- Asset Info Banner (Step 3 & 4) --- */
+.asset-info-banner, .confirmation-summary-card {
+    background: #f0f9ff;
+    border: 1px solid #e0f2fe;
+    padding: 24px;
+    border-radius: var(--radius-lg);
+    width: 100%;
+    margin-bottom: 24px;
+    text-align: left;
+}
+
+.asset-info-banner .label, .summary-header-label {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--primary-blue);
+    text-transform: uppercase;
+    margin-bottom: 15px;
+    display: block;
+    border-bottom: 1px dashed #bae6fd;
+    padding-bottom: 8px;
+}
+
+/* แถวข้อมูลจัดวางแบบซ้าย-ขวา */
+.info-row-summary, .summary-data-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    font-size: 1rem;
+    width: 100%;
+}
+
+.info-label { color: var(--text-muted); font-weight: 500; }
+.info-value, .summary-data-row b { color: var(--text-dark); font-weight: 800; text-align: right; }
+
+/* --- Forms & Inputs --- */
 .input-group-modern { margin-bottom: 20px; width: 100%; }
 .withdraw-input-modern {
     width: 100%; padding: 14px 14px 14px 45px; border-radius: 15px;
-    border: 1px solid #f1f5f9; background: #f8fafc; font-size: 1rem; outline: none;
+    border: 1.5px solid var(--border-soft); background: #f8fafc; font-size: 1rem;
 }
-.part-input-row { display: flex; gap: 10px; align-items: flex-end; width: 100%; }
-.btn-add-part-modern {
-    background: var(--primary-pink); color: white; width: 52px; height: 52px;
-    border-radius: 16px; border: none; display: flex; align-items: center; justify-content: center;
-}
+.part-input-row { display: flex; gap: 10px; align-items: center; width: 100%; }
 
-/* Cart Items */
-.new-cart-item {
-    display: flex; flex-wrap: wrap; align-items: center; background: #fff;
-    border: 1px solid #f1f5f9; padding: 16px; border-radius: 20px; margin-bottom: 12px; gap: 12px;
+/* --- Item Cards (Lists) --- */
+.new-cart-item, .review-item-card {
+    display: flex; align-items: center; gap: 15px; background: #fff;
+    border: 1px solid var(--border-soft); padding: 15px; border-radius: 20px;
+    margin-bottom: 12px; width: 100%;
 }
-.item-thumb { width: 48px; height: 48px; border-radius: 12px; overflow: hidden; border: 1px solid #f1f5f9; }
+.item-thumb { 
+    width: 50px; height: 50px; border-radius: 12px; overflow: hidden; 
+    background: var(--bg-gray); border: 1px solid var(--border-soft);
+}
 .item-thumb img { width: 100%; height: 100%; object-fit: cover; }
-.item-info { flex: 1; min-width: 150px; text-align: left; }
-.item-controls {
-    display: flex; align-items: center; justify-content: flex-end; width: 100%;
-    margin-top: 8px; padding-top: 8px; border-top: 1px dashed #f1f5f9; gap: 15px;
-}
-.qty-stepper { display: flex; align-items: center; background: #f1f5f9; padding: 4px; border-radius: 12px; gap: 8px; }
-.qty-stepper button { width: 28px; height: 28px; border-radius: 8px; border: none; background: white; cursor: pointer; }
+.item-info { flex: 1; text-align: left; }
+.item-name { font-weight: 700; color: var(--text-dark); }
 
-/* Step 3 */
-.step-content-review {
-    display: flex;
-    flex-direction: column;
-    align-items: center; /* จัดลูกๆ ให้อยู่กึ่งกลางแนวแกน X */
-    text-align: center;
-    width: 100%;
+.summary-items-list {
+    background: #ffffff; border-radius: 18px; padding: 5px 15px;
+    margin: 15px 0; border: 1px solid var(--border-soft);
 }
+.summary-item-line {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 0; border-bottom: 1px solid #f1f5f9;
+}
+.summary-item-line:last-child { border-bottom: none; }
 
-/* ปรับแบนเนอร์วันที่ให้อยู่กึ่งกลางและกว้างพอดี */
-.asset-info-banner {
-    background: #f8fafc;
-    border: 1px dashed #cbd5e1;
-    padding: 15px;
-    border-radius: 20px;
-    text-align: center;
-    width: 100%;
-    max-width: 320px; /* จำกัดความกว้างเพื่อความสวยงาม */
-    margin: 0 auto 24px auto; /* จัดกึ่งกลางตัวเอง */
+/* --- Buttons & Badges --- */
+.btn-action-primary, .btn-review-confirm, .btn-unlock-gate {
+    background: var(--accent-gradient);
+    color: white; padding: 16px; border-radius: 50px;
+    font-weight: 700; width: 100%; border: none; cursor: pointer;
+    box-shadow: 0 8px 15px rgba(255, 77, 148, 0.3); transition: var(--transition);
+}
+.btn-action-primary:hover, .btn-review-confirm:hover { transform: translateY(-2px); filter: brightness(1.05); }
+
+.btn-review-edit {
+    padding: 14px; border-radius: 16px; border: 1.5px solid var(--border-soft);
+    background: white; color: var(--text-muted); font-weight: 600; cursor: pointer;
 }
 
-/* ปรับแต่งรายการรีวิวให้แสดงผลชื่อและจำนวนได้ชัดเจน */
-.review-item-card {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    background: white;
-    padding: 12px;
-    border-radius: 18px;
-    margin-bottom: 10px;
-    border: 1px solid #f1f5f9;
-    text-align: left; /* รายละเอียดข้างในชิดซ้ายเพื่อให้อ่านง่าย */
+.total-count-badge {
+    background: var(--primary-pink); color: white; padding: 6px 18px;
+    border-radius: 12px; font-weight: 800; box-shadow: 0 4px 10px rgba(255, 77, 148, 0.2);
 }
 
-/* จัดกลุ่มปุ่มล่างสุด */
-.flex.gap-3.justify-center {
-    display: flex;
-    gap: 12px;
-    width: 100%;
-    max-width: 400px; /* ไม่ให้ปุ่มแผ่กว้างเกินไปบน Laptop */
-    margin: 0 auto;
-}
-
-/* Step 4: Summary Ticket */
-.confirmation-summary-card {
-    width: 100%; background: #f0f7ff; border-radius: 24px; padding: 24px;
-    border: 1px solid #e0e7ff; margin: 20px 0; text-align: left;
-}
-.summary-items-list { background: #ffffff; border-radius: 16px; padding: 12px 16px; margin: 15px 0; }
-.summary-total-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 2px dashed #cbd5e1; font-weight: 800; }
-
-/* Step 5: Success */
+/* --- Success & Specials --- */
 .success-banner-modern {
-    background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 20px;
-    border-radius: 24px; width: 100%; margin-bottom: 30px; text-align: center;
+    background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 24px;
+    border-radius: var(--radius-lg); width: 100%; margin-bottom: 30px; text-align: center;
 }
-.btn-close-gate-final { background: #1e293b; color: white; width: 100%; padding: 18px; border-radius: 20px; font-weight: 700; border: none; cursor: pointer; }
+.summary-total-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 15px; border-top: 2px dashed var(--border-soft); width: 100%;
+}
 
+/* --- Animations --- */
 .animate-fadeIn { animation: fadeIn 0.4s ease-out; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (max-width: 480px) {
+    .withdraw-card { padding: 20px; }
+    .info-row-summary { font-size: 0.9rem; }
+}

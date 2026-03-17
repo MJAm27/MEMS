@@ -26,6 +26,24 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
     const [pendingItems, setPendingItems] = useState([]); 
     const [finalizeData, setFinalizeData] = useState({}); 
     const [machines, setMachines] = useState([]);
+    const [repairTypes, setRepairTypes] = useState([]); 
+    const [departments, setDepartments] = useState([]); 
+    const [filteredDepsMap, setFilteredDepsMap] = useState({});
+
+    const fetchMasterData = useCallback(async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const headers = { Authorization: `Bearer ${token}` };
+            const [repairRes, depRes] = await Promise.all([
+                axios.get(`${API_BASE}/api/repair-types`, { headers }),
+                axios.get(`${API_BASE}/api/departments`, { headers })
+            ]);
+            setRepairTypes(repairRes.data);
+            setDepartments(depRes.data);
+        } catch (err) {
+            console.error("Fetch Master Data Error:", err);
+        }
+    }, []);
 
     // จัดการการเปิด-ปิด Sidebar ตามขนาดหน้าจอ
     useLayoutEffect(() => {
@@ -76,16 +94,25 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
     useEffect(() => {
         fetchPendingBorrows();
         fetchMachines(); 
-    }, [fetchPendingBorrows, fetchMachines]);
+        fetchMasterData();
+    }, [fetchPendingBorrows, fetchMachines, fetchMasterData]);
 
-    const handleInputChange = (borrowId, field, value) => {
+    const handleInputChange = (uniqueKey, field, value) => {
         setFinalizeData(prev => ({
             ...prev,
-            [borrowId]: { 
-                ...(prev[borrowId] || {}),
+            [uniqueKey]: { 
+                ...(prev[uniqueKey] || {}),
                 [field]: value
             }
         }));
+        if (field === 'selectedBuilding') {
+            const filtered = departments.filter(d => d.buildings === value);
+            setFilteredDepsMap(prev => ({ ...prev, [uniqueKey]: filtered }));
+            setFinalizeData(prev => ({
+                ...prev,
+                [uniqueKey]: { ...prev[uniqueKey], departmentId: '' }
+            }));
+        }
     };
 
     const localHandleLogout = () => {
@@ -126,34 +153,36 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
         const input = finalizeData[uniqueKey] || {}; 
         const snInput = input.machineSN ? input.machineSN.trim() : "";
         const qtyInput = parseInt(input.usedQty || 0);
+        const machineNumberInput = input.machineNumber ? input.machineNumber.trim() : "";
+        const machineIdInput = input.machineId;
+        const repairTypeIdInput = input.repairTypeId;
+        const departmentIdInput = input.departmentId;
 
         try {
             const token = localStorage.getItem('token');
             if (!token) return alert("กรุณาเข้าสู่ระบบใหม่");
 
             if (actionType === 'USE') {
-                if (!snInput || qtyInput <= 0) {
-                    return alert("กรุณากรอกเลขครุภัณฑ์และจำนวนที่ใช้จริงให้ถูกต้อง");
-                }
-                
+                if (qtyInput <= 0) return alert("กรุณากรอกจำนวนที่ใช้จริง");
                 await axios.post(`${API_BASE}/api/borrow/finalize-partial`, {
                     transactionId: item.borrow_id,
                     equipmentId: item.equipment_id,
-                    machineSN: snInput,
+                    lotId: item.lot_id,
                     usedQty: qtyInput,
-                    lotId: item.lot_id
+                    machineSN: snInput,
+                    machineNumber: machineNumberInput,
+                    machineId: machineIdInput,
+                    repairTypeId: repairTypeIdInput,
+                    departmentId: departmentIdInput
                 }, { headers: { Authorization: `Bearer ${token}` } });
 
                 alert("ดำเนินการสำเร็จ");
-
-                // --- ส่วนที่แก้ไข: ล้างค่าในช่องกรอกของรายการนี้ ---
+                
                 setFinalizeData(prev => {
                     const newData = { ...prev };
-                    delete newData[uniqueKey]; // ลบข้อมูลการกรอกของแถวนี้ออก
+                    delete newData[uniqueKey];
                     return newData;
                 });
-
-                // ดึงข้อมูลใหม่ทันที
                 fetchPendingBorrows();
             }
         } catch (err) { 
@@ -163,49 +192,131 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
 
     const pendingBorrowListUI = (
         <div className="pending-container fade-in">
-            <div className="section-title">
-                <FaExclamationTriangle className="warn-icon" />
-                <h3>รายการยืมล่วงหน้าที่รอการสรุป</h3>
+            <div className="section-header-main">
+                <div className="title-with-icon">
+                    <FaExclamationTriangle className="warn-icon-header" />
+                    <h3>รายการยืมล่วงหน้าที่รอการสรุป</h3>
+                </div>
+                <span className="pending-count-badge">{pendingItems.length} รายการ</span>
             </div>
+
             {pendingItems.length === 0 ? (
                 <div className="empty-pending-card">ไม่มีรายการอะไหล่ค้างจ่าย</div>
             ) : (
-                <div className="pending-grid">
+                <div className="pending-grid-modern">
                     {pendingItems.map((item, index) => {
                         const uniqueKey = `${item.borrow_id}-${index}`;
-                        const displayQtyToReturn = finalizeData[uniqueKey]?.usedQty || item.borrow_qty;
+                        const cardFilteredDeps = filteredDepsMap[uniqueKey] || [];
+                        
                         return (
-                            <div key={uniqueKey} className="pending-card">
-                                <div className="pending-info">
-                                    <strong>{item.equipment_name}</strong>
-                                    <p>คงเหลือในมือ: <b style={{ color: '#e91e63' }}>{item.borrow_qty}</b> ชิ้น</p>
-                                    <small>วันที่เบิก: {new Date(item.borrow_date).toLocaleDateString('th-TH')}</small>
-                                </div>
-                                <div className="finalize-form">
-                                    <label>ระบุครุภัณฑ์:</label>
-                                    <select 
-                                        value={finalizeData[uniqueKey]?.machineSN || ''} 
-                                        onChange={(e) => handleInputChange(uniqueKey, 'machineSN', e.target.value)}
-                                        style={{ marginBottom: '10px', padding: '8px', borderRadius: '4px', border: '1px solid #ccc', width: '100%' }}
-                                    >
-                                        <option value="">-- เลือกครุภัณฑ์ --</option>
-                                        {machines.map((mac) => (
-                                            <option 
-                                                key={mac.machine_id} 
-                                                value={mac.machine_SN || mac.machine_sn}
-                                            >
-                                                {mac.machine_name} {(mac.machine_SN || mac.machine_sn) ? `(${mac.machine_SN || mac.machine_sn})` : ''}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <label>จำนวนที่ใช้จริง/คืน:</label>
-                                    <div className="action-row">
-                                        <input type="number" placeholder="จำนวน..." min="1" max={item.borrow_qty} value={finalizeData[uniqueKey]?.usedQty || ''} onChange={(e) => handleInputChange(uniqueKey, 'usedQty', e.target.value)} />
-                                        <button className="btn-use-part" onClick={() => handleProcessBorrow(item, 'USE', uniqueKey)}><FaCheckCircle /> บันทึกการใช้</button>
+                            <div key={uniqueKey} className="pending-card-modern">
+                                {/* ส่วนหัวของการ์ด */}
+                                <div className="card-top-info">
+                                    <div className="equipment-main-name">
+                                        <FaBoxOpen className="box-icon" />
+                                        <strong>{item.equipment_name}</strong>
                                     </div>
-                                    <button className="btn-return-part" onClick={() => handlespecificReturn(item, uniqueKey)} style={{ marginTop: '5px', width: '100%' }}>
-                                        <FaReply /> คืนคลัง ({displayQtyToReturn} ชิ้น)
-                                    </button>
+                                    <div className="stock-in-hand">
+                                        <span>ในมือ:</span>
+                                        <strong className="qty-highlight">{item.borrow_qty}</strong>
+                                        <small>ชิ้น</small>
+                                    </div>
+                                </div>
+                                
+                                <div className="date-ref-line">
+                                    <span>วันที่เบิก: {new Date(item.borrow_date).toLocaleDateString('th-TH')}</span>
+                                    <span className="ref-text">ID: {item.borrow_id}</span>
+                                </div>
+
+                                {/* ฟอร์มกรอกข้อมูล */}
+                                <div className="finalize-form-modern">
+                                    <div className="form-row-duo">
+                                        <div className="form-group">
+                                            <label>ประเภทงาน</label>
+                                            <select 
+                                                value={finalizeData[uniqueKey]?.repairTypeId || ''}
+                                                onChange={(e) => handleInputChange(uniqueKey, 'repairTypeId', e.target.value)}
+                                            >
+                                                <option value="">-- เลือกประเภทงาน --</option>
+                                                {repairTypes.map(rt => (
+                                                    <option key={rt.repair_type_id} value={rt.repair_type_id}>{rt.repair_type_name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="form-group">
+                                            <label>เครื่องที่ใช้</label>
+                                            <select 
+                                                value={finalizeData[uniqueKey]?.machineId || ''} 
+                                                onChange={(e) => handleInputChange(uniqueKey, 'machineId', e.target.value)}
+                                            >
+                                                <option value="">-- เลือกเครื่อง --</option>
+                                                {machines.map((mac) => (
+                                                    <option key={mac.machine_id} value={mac.machine_id}>{mac.machine_name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="form-row-duo">
+                                        <div className="form-group">
+                                            <label>ตึก</label>
+                                            <select 
+                                                value={finalizeData[uniqueKey]?.selectedBuilding || ''}
+                                                onChange={(e) => handleInputChange(uniqueKey, 'selectedBuilding', e.target.value)}
+                                            >
+                                                <option value="">-- ตึก --</option>
+                                                {[...new Set(departments.map(d => d.buildings))].map(b => (
+                                                    <option key={b} value={b}>{b}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="form-group">
+                                            <label>แผนก</label>
+                                            <select 
+                                                value={finalizeData[uniqueKey]?.departmentId || ''}
+                                                onChange={(e) => handleInputChange(uniqueKey, 'departmentId', e.target.value)}
+                                                disabled={!finalizeData[uniqueKey]?.selectedBuilding}
+                                            >
+                                                <option value="">-- แผนก --</option>
+                                                {cardFilteredDeps.map(d => (
+                                                    <option key={d.department_id} value={d.department_id}>{d.department_name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="form-row-duo">
+                                        <div className="form-group">
+                                            <label>เลขครุภัณฑ์ (รพ.)</label>
+                                            <input type="text" placeholder="เช่น 1234/67" value={finalizeData[uniqueKey]?.machineNumber || ''} onChange={(e) => handleInputChange(uniqueKey, 'machineNumber', e.target.value)} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>SN (โรงงาน)</label>
+                                            <input type="text" placeholder="Serial Number" value={finalizeData[uniqueKey]?.machineSN || ''} onChange={(e) => handleInputChange(uniqueKey, 'machineSN', e.target.value)} />
+                                        </div>
+                                    </div>
+
+                                    {/* ส่วนบันทึกการใช้ */}
+                                    <div className="action-footer-modern">
+                                        <div className="usage-input-box">
+                                            <label>จำนวนที่ใช้จริง</label>
+                                            <div className="qty-control">
+                                                <input 
+                                                    type="number" 
+                                                    min="1" 
+                                                    max={item.borrow_qty} 
+                                                    value={finalizeData[uniqueKey]?.usedQty || ''} 
+                                                    onChange={(e) => handleInputChange(uniqueKey, 'usedQty', e.target.value)} 
+                                                />
+                                                <button className="btn-confirm-use" onClick={() => handleProcessBorrow(item, 'USE', uniqueKey)}>
+                                                    <FaCheckCircle /> บันทึก
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <button className="btn-return-warehouse" onClick={() => handlespecificReturn(item, uniqueKey)}>
+                                            <FaReply /> คืนคลังทั้งหมด
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         );
