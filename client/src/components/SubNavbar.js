@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { FaCogs, FaIndustry, FaUsers, FaTruck, FaExchangeAlt } from "react-icons/fa";
+import { FaCogs, FaIndustry, FaUsers, FaTruck, FaExchangeAlt , FaBuilding } from "react-icons/fa";
 import "./SubNavbar.css";
 
 const SubNavbar = () => {
@@ -13,6 +13,7 @@ const SubNavbar = () => {
     { name: "จัดการประวัติการเบิกคืน", path: "/dashboard/admin/transactions", icon: <FaExchangeAlt /> },
     { name: "จัดการข้อมูลบริษัทนำเข้าอะไหล่", path: "/dashboard/admin/supplier", icon: <FaTruck /> },
     { name: "จัดการข้อมูลผู้ใช้งาน", path: "/dashboard/admin/user", icon: <FaUsers /> },
+    { name: "จัดการข้อมูลหน่วยงาน", path: "/dashboard/admin/department", icon: <FaBuilding /> },
   ];
 
   return (

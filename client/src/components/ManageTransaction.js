@@ -31,7 +31,7 @@ function ManageTransaction() {
   const [headerData, setHeaderData] = useState({
     type_mode: "withdraw", // withdraw, return, borrow
     user_id: "",
-    machine_SN: "",
+    machine_id: "",
     date: new Date().toISOString().split('T')[0],
     time: new Date().toLocaleTimeString('th-TH', { hour12: false }).slice(0, 5)
   });
@@ -137,7 +137,7 @@ function ManageTransaction() {
     setHeaderData({ 
         type_mode: "withdraw", 
         user_id: "", 
-        machine_SN: "",
+        machine_id: "",
         date: new Date().toISOString().split('T')[0],
         time: new Date().toLocaleTimeString('th-TH', { hour12: false }).slice(0, 5)
     });
@@ -174,13 +174,13 @@ function ManageTransaction() {
 
     // จำลองการแปลงประเภทกลับไปเป็น type_mode สำหรับ Dropdown
     let mappedTypeMode = "withdraw";
-    if (trans.transaction_type_name?.includes("คืน")) mappedTypeMode = "return";
-    if (trans.transaction_type_name?.includes("ล่วงหน้า")) mappedTypeMode = "borrow";
+    if (trans.transaction_type_name?.includes("คืนอะไหล่")) mappedTypeMode = "return";
+    if (trans.transaction_type_name?.includes("เบิกอะไหล่ล่วงหน้า")) mappedTypeMode = "borrow";
 
     setHeaderData({
       type_mode: mappedTypeMode,
       user_id: trans.user_id,
-      machine_SN: trans.machine_SN || "",
+      machine_id: trans.machine_id || "",
       date: trans.date ? new Date(trans.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       time: trans.time || new Date().toLocaleTimeString('th-TH', { hour12: false }).slice(0, 5)
     });
@@ -211,16 +211,34 @@ function ManageTransaction() {
     }
   };
 
-  const filteredData = transactions.filter(t => {
-    const matchesSearch = 
-        t.transaction_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (t.fullname && t.fullname.toLowerCase().includes(searchTerm.toLowerCase()));
+ const filteredData = transactions.filter(t => {
+    if (!t) return false;
+    
+    // 1. ตรวจสอบเงื่อนไขช่องค้นหา
+    const searchLower = (searchTerm || "").toLowerCase().trim();
+    const matchesSearch = searchLower === "" || 
+        (t.transaction_id || "").toString().toLowerCase().includes(searchLower) ||
+        (t.parent_transaction_id || "").toString().toLowerCase().includes(searchLower) ||
+        (t.fullname || "").toString().toLowerCase().includes(searchLower) ||
+        (t.machine_name || "").toString().toLowerCase().includes(searchLower) ||
+        (t.transaction_type_name || "").toString().toLowerCase().includes(searchLower);
 
-    const matchesType = filterType ? t.transaction_type_id.toString() === filterType.toString() : true;
+    // 2. ตรวจสอบเงื่อนไขตัวกรองประเภท Dropdown (ใช้การเทียบชื่อแทน ID)
+    let matchesType = true;
+    if (filterType !== "") {
+        const selectedOption = options.types.find(
+            opt => opt.transaction_type_id.toString() === filterType.toString()
+        );
+        
+        if (selectedOption) {
+            matchesType = (t.transaction_type_name === selectedOption.transaction_type_name);
+        } else {
+            matchesType = false;
+        }
+    }
 
     return matchesSearch && matchesType;
   });
-
   if (loading) {
     return <div className="loading-container">กำลังโหลดข้อมูลประวัติ...</div>;
   }
@@ -272,7 +290,8 @@ function ManageTransaction() {
         <table className="custom-table">
           <thead>
             <tr>
-              <th>เลขที่รายการ</th>
+              <th>เลขที่ทำรายการ</th>
+              <th>อ้างอิง</th>
               <th>วันที่</th>
               <th style={{ minWidth: '150px'}}>ประเภท</th>
               <th>ผู้ดำเนินการ</th>
@@ -286,9 +305,10 @@ function ManageTransaction() {
               filteredData.map((item) => (
                 <tr key={item.transaction_id}>
                   <td className="text-primary fw-bold">{item.transaction_id}</td>
+                  <td>{item.parent_transaction_id || "-"}</td>
                   <td>{new Date(item.date).toLocaleDateString('th-TH')} {item.time}</td>
                   <td>
-                      <span className={`badge ${item.transaction_type_name?.includes('เบิก') ? 'bg-warning' : 'bg-success'}`}>
+                      <span className={`badge ${item.transaction_type_name?.includes('เบิกอะไหล่') ? 'bg-warning' : 'bg-success'}`}>
                           {item.transaction_type_name}
                       </span>
                   </td>
@@ -376,14 +396,14 @@ function ManageTransaction() {
                                         value={headerData.type_mode}
                                         onChange={e => {
                                             const mode = e.target.value;
-                                            const resetMachine = (mode === 'return' || mode === 'borrow') ? "" : headerData.machine_SN;
-                                            setHeaderData({...headerData, type_mode: mode, machine_SN: resetMachine});
+                                            const resetMachine = (mode === 'return' || mode === 'borrow') ? "" : headerData.machine_id;
+                                            setHeaderData({...headerData, type_mode: mode, machine_id: resetMachine});
                                         }}
                                         required
                                     >
-                                        <option value="withdraw">เบิก</option>
-                                        <option value="return">คืน</option>
-                                        <option value="borrow">เบิกล่วงหน้า</option>
+                                        <option value="withdraw">เบิกอะไหล่</option>
+                                        <option value="return">คืนอะไหล่</option>
+                                        <option value="borrow">เบิกอะไหล่ล่วงหน้า</option>
                                     </select>
                                 </div>
                                 <div className="form-group">
@@ -402,12 +422,12 @@ function ManageTransaction() {
                                     <label>ครุภัณฑ์</label>
                                     <select 
                                         className="form-control"
-                                        value={headerData.machine_SN}
-                                        onChange={e => setHeaderData({...headerData, machine_SN: e.target.value})}
+                                        value={headerData.machine_id}
+                                        onChange={e => setHeaderData({...headerData, machine_id: e.target.value})}
                                         disabled={headerData.type_mode === 'return' || headerData.type_mode === 'borrow'}
                                     >
                                         <option value="">-- ไม่ระบุ --</option>
-                                        {options.machines.map(m => <option key={m.machine_SN} value={m.machine_SN}>{m.machine_name}</option>)}
+                                        {options.machines.map(m => <option key={m.machine_id} value={m.machine_id}>{m.machine_name}</option>)}
                                     </select>
                                 </div>
                             </div>

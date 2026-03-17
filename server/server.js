@@ -626,7 +626,7 @@ app.post('/api/borrow/finalize-v2', authenticateToken, async (req, res) => {
             // สร้าง Transaction ใหม่สำหรับการใช้จริง (เพื่อเก็บประวัติแยกตามเลขครุภัณฑ์)
             const newTxId = `WTH-REAL-${Date.now().toString().slice(-8)}`;
             await connection.query(
-                "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_SN, is_pending) VALUES (?, 'T-WTH', CURDATE(), CURTIME(), ?, ?, 0)",
+                "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_id, is_pending) VALUES (?, 'T-WTH', CURDATE(), CURTIME(), ?, ?, 0)",
                 [newTxId, req.user.userId, machineSN]
             );
             await connection.query(
@@ -1173,19 +1173,19 @@ app.get('/api/machine', async (req, res) => {
 // POST /api/machine
 app.post('/api/machine', async (req, res) => {
     try {
-        const { machine_SN, machine_name } = req.body;
+        const { machine_id, machine_name } = req.body;
         console.log("BODY:", req.body);
 
         // ตรวจสอบซ้ำ
-        const [existing] = await db.query("SELECT * FROM machine WHERE machine_SN = ?", [machine_SN]);
+        const [existing] = await db.query("SELECT * FROM machine WHERE machine_id = ?", [machine_id]);
         if (existing.length > 0) {
             return res.status(400).send("รหัสครุภัณฑ์นี้มีอยู่แล้ว");
         }
 
         // เพิ่มเครื่อง
         await db.query(
-            "INSERT INTO machine (machine_SN, machine_name) VALUES (?, ?)",
-            [machine_SN, machine_name]
+            "INSERT INTO machine (machine_id, machine_name) VALUES (?, ?)",
+            [machine_id, machine_name]
         );
         res.send("Machine added successfully");
 
@@ -1200,7 +1200,7 @@ app.get('/api/search/machines', async (req, res) => {
     const { term } = req.query;
     try {
         const [rows] = await pool.query(
-            "SELECT machine_SN, machine_name FROM machine WHERE machine_SN LIKE ? OR machine_name LIKE ? LIMIT 10",
+            "SELECT machine_id, machine_name FROM machine WHERE machine_id LIKE ? OR machine_name LIKE ? LIMIT 10",
             [`%${term}%`, `%${term}%`]
         );
         res.json(rows);
@@ -1394,7 +1394,7 @@ app.put('/api/machine/:sn', async (req, res) => {
         const sn = req.params.sn;
         const { machine_name } = req.body;
 
-        await db.query("UPDATE machine SET machine_name = ? WHERE machine_SN = ?", [machine_name, sn]);
+        await db.query("UPDATE machine SET machine_name = ? WHERE machine_id = ?", [machine_name, sn]);
         res.send("Machine updated successfully");
 
     } catch (err) {
@@ -1407,7 +1407,7 @@ app.put('/api/machine/:sn', async (req, res) => {
 app.delete('/api/machine/:sn', async (req, res) => {
     try {
         const sn = req.params.sn;
-        await db.query("DELETE FROM machine WHERE machine_SN = ?", [sn]);
+        await db.query("DELETE FROM machine WHERE machine_id = ?", [sn]);
         res.send("Machine deleted successfully");
 
     } catch (err) {
@@ -1804,26 +1804,22 @@ app.get("/api/supplier", async (req, res) => {
 
 // 2. เพิ่ม Supplier ใหม่
 app.post("/api/supplier", async (req, res) => {
-    const { supplier_id, supplier_name, contact } = req.body;
+    const { supplier_name, contact } = req.body;
     
     // ตรวจสอบค่าว่าง
-    if (!supplier_id || !supplier_name) {
-        return res.status(400).json({ message: "Please provide Supplier ID and Name" });
+    if (!supplier_name) {
+        return res.status(400).json({ message: "Please provide Supplier Name" });
     }
 
     try {
         // เช็คก่อนว่า ID ซ้ำไหม
-        const [existing] = await db.query("SELECT supplier_id FROM supplier WHERE supplier_id = ?", [supplier_id]);
-        if (existing.length > 0) {
-            return res.status(400).json({ message: "Supplier ID นี้มีอยู่ในระบบแล้ว" });
-        }
+        const sql = "INSERT INTO supplier (supplier_name, contact) VALUES (?, ?)";
+        const [result] = await db.query(sql, [supplier_name, contact]);
 
-        const sql = "INSERT INTO supplier (supplier_id, supplier_name, contact) VALUES (?, ?, ?)";
-        await db.query(sql, [supplier_id, supplier_name, contact]);
-        res.json({ message: "Supplier added successfully", id: supplier_id });
+        res.json({ message: "Supplier added successfully", id: result.insertId });
     } catch (err) {
         console.log(err);
-        res.status(500).send("Error adding machine");
+        res.status(500).send("Error adding supplier");
     }
 });
 
@@ -1864,11 +1860,25 @@ app.delete("/api/supplier/:id", async (req, res) => {
 
 // 1. ดึงประวัติ Transaction ทั้งหมด (พร้อมชื่อคน, ชื่อเครื่อง, ประเภท)
 app.get("/api/transactions", async (req, res) => {
+    // เพิ่ม t.parent_transaction_id ใน SELECT
     const sql = `
-        SELECT t.transaction_id, t.date,t.time, tt.transaction_type_name, u.fullname, m.machine_name, (SELECT COUNT(*) FROM equipment_list el WHERE el.transaction_id = t.transaction_id) as item_count FROM transactions t LEFT JOIN transactions_type tt ON t.transaction_type_id = tt.transaction_type_id LEFT JOIN users u ON t.user_id = u.user_id LEFT JOIN machine m ON t.machine_SN = m.machine_SN ORDER BY t.date DESC, t.transaction_id DESC;
+        SELECT 
+            t.transaction_id, 
+            t.parent_transaction_id,   /* << เพิ่มบรรทัดนี้ครับ */
+            t.date,
+            t.time, 
+            tt.transaction_type_name, 
+            u.fullname, 
+            m.machine_name, 
+            (SELECT COUNT(*) FROM equipment_list el WHERE el.transaction_id = t.transaction_id) as item_count 
+        FROM transactions t 
+        LEFT JOIN transactions_type tt ON t.transaction_type_id = tt.transaction_type_id 
+        LEFT JOIN users u ON t.user_id = u.user_id 
+        LEFT JOIN machine m ON t.machine_id = m.machine_id 
+        ORDER BY t.date DESC, t.transaction_id DESC;
     `;
     try {
-        const [results] = await db.query(sql);
+        const [results] = await db.query(sql); // ถ้าคุณใช้ db.query ตรงนี้ต้องดูให้แน่ใจว่า import และประกาศไว้ถูกนะครับ (บางทีอาจจะเป็น pool.query)
         res.json(results);
     } catch (err) {
         console.error(err);
@@ -1899,7 +1909,7 @@ app.get("/api/transactions/:id/items", async (req, res) => {
 app.get("/api/transaction-options", async (req, res) => {
     try {
         const [users] = await db.query("SELECT user_id, fullname FROM users");
-        const [machines] = await db.query("SELECT machine_SN, machine_name FROM machine");
+        const [machines] = await db.query("SELECT machine_id, machine_name FROM machine");
         const [types] = await db.query("SELECT transaction_type_id, transaction_type_name FROM transactions_type"); 
         const [equipments] = await db.query("SELECT equipment_id, model_size FROM equipment");
         
@@ -1933,7 +1943,7 @@ async function getNextTransactionId(prefix, connection) {
 
 // 4. สร้าง Transaction ใหม่ (ใช้ SQL Transaction เพื่อความปลอดภัย)
 app.post('/api/transactions', authenticateToken, async (req, res) => {
-    const { type_mode, user_id, machine_SN, date, time, items } = req.body;
+    const { type_mode, user_id, machine_id, date, time, items } = req.body;
     let connection;
 
     try {
@@ -1943,7 +1953,8 @@ app.post('/api/transactions', authenticateToken, async (req, res) => {
         let prefix = '';
         let typeId = '';
         let is_pending = 0;
-        let finalMachineSN = machine_SN;
+        let finalMachineSN = machine_id;
+        let finalParentTxId = parent_transaction_id || null;
 
         // เงื่อนไขตามที่คุณระบุ
         if (type_mode === 'withdraw') { // เบิกปกติ
@@ -1952,20 +1963,20 @@ app.post('/api/transactions', authenticateToken, async (req, res) => {
         } else if (type_mode === 'return') { // คืน
             prefix = 'RTN';
             typeId = 'T-RTN';
-            finalMachineSN = null; // ไม่ต้องกรอก machine_SN
+            finalMachineSN = null; // ไม่ต้องกรอก machine_id
         } else if (type_mode === 'borrow') { // เบิกสำหรับยืม (Pending)
             prefix = 'PEND';
             typeId = 'T-WTH';
             is_pending = 1;
-            finalMachineSN = null; // ไม่ต้องกรอก machine_SN
+            finalMachineSN = null; // ไม่ต้องกรอก machine_id
         }
 
         const transactionId = await getNextTransactionId(prefix, 'transactions', 'transaction_id', connection);
 
         // บันทึกลงตาราง transactions
         await connection.query(
-            "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_SN, is_pending) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            [transactionId, typeId, date, time, user_id, finalMachineSN, is_pending]
+            "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_id, is_pending) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [transactionId,finalParentTxId, typeId, date, time, user_id, finalMachineSN, is_pending]
         );
 
         for (const item of items) {
@@ -2187,7 +2198,7 @@ app.post('/api/withdraw/partInfo', async (req, res) => {
 
 // 2. API: Confirm and Cut Stock (POST /api/withdraw/confirm)
 app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
-    const { machine_SN, cartItems } = req.body;
+    const { machine_id, cartItems } = req.body;
     const userId = req.user.userId;
     let connection;
 
@@ -2199,8 +2210,8 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
 
         // 🟢 ขั้นตอนที่ 1: บันทึกรายการหลักก่อน
         await connection.query(
-            "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_SN, is_pending) VALUES (?, 'T-WTH', CURDATE(), CURTIME(), ?, ?, 0)",
-            [transactionId, userId, machine_SN]
+            "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_id, is_pending) VALUES (?, 'T-WTH', CURDATE(), CURTIME(), ?, ?, 0)",
+            [transactionId, userId, machine_id]
         );
 
         // 🟢 ขั้นตอนที่ 2: ผูกเวลาเปิดที่มีอยู่แล้ว (จากตอนเริ่ม Step 1)
@@ -2515,7 +2526,103 @@ app.put('/api/inventory/update-lot/:id', async (req, res) => {
     }
 });
 
-// หมายเหตุ: API ลบ Lot (DELETE /api/inventory/:id) ของคุณมีอยู่ใน server.js อยู่แล้ว จึงไม่ต้องเขียนเพิ่ม
+// ดึงข้อมูลประวัติการใช้งานกล่อง (Access Logs)
+app.get('/api/report/accesslogs', async (req, res) => {
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const sql = `
+           SELECT 
+                al.log_id, 
+                al.time, 
+                al.date, 
+                at.action_type_name,
+                al.transaction_id, 
+                t.parent_transaction_id,
+                u.fullname 
+            FROM accesslogs al
+            LEFT JOIN action_type at ON al.action_type_id = at.action_type_id
+            LEFT JOIN users u ON al.user_id = u.user_id
+            JOIN transactions t ON al.transaction_id = t.transaction_id
+            ORDER BY al.date DESC, al.time DESC;
+        `;
+        const [rows] = await connection.query(sql);
+        res.json(rows);
+    } catch (error) {
+        console.error("Fetch Access Logs Error:", error);
+        res.status(500).json({ error: error.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// 1. ดึงข้อมูลหน่วยงานทั้งหมด
+app.get('/api/departments', async (req, res) => {
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const [rows] = await connection.query("SELECT * FROM department ORDER BY department_id ASC");
+        res.json(rows);
+    } catch (error) {
+        console.error("Fetch Departments Error:", error);
+        res.status(500).json({ error: error.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// 2. เพิ่มหน่วยงานใหม่
+app.post('/api/departments', async (req, res) => {
+    // รับค่า department_id มาด้วย (เพราะไม่ใช่ Auto Increment)
+    const { department_id, department_name, buildings } = req.body;
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const sql = "INSERT INTO department (department_id, department_name, buildings) VALUES (?, ?, ?)";
+        await connection.query(sql, [department_id, department_name, buildings]);
+        res.status(201).json({ message: "เพิ่มหน่วยงานสำเร็จ" });
+    } catch (error) {
+        console.error("Add Department Error:", error);
+        res.status(500).json({ error: error.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// 3. แก้ไขข้อมูลหน่วยงาน
+app.put('/api/departments/:id', async (req, res) => {
+    const { id } = req.params;
+    const { department_name, buildings } = req.body;
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const sql = "UPDATE department SET department_name = ?, buildings = ? WHERE department_id = ?";
+        await connection.query(sql, [department_name, buildings, id]);
+        res.json({ message: "อัปเดตข้อมูลหน่วยงานสำเร็จ" });
+    } catch (error) {
+        console.error("Update Department Error:", error);
+        res.status(500).json({ error: error.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// 4. ลบหน่วยงาน
+app.delete('/api/departments/:id', async (req, res) => {
+    const { id } = req.params;
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const sql = "DELETE FROM department WHERE department_id = ?";
+        await connection.query(sql, [id]);
+        res.json({ message: "ลบหน่วยงานสำเร็จ" });
+    } catch (error) {
+        console.error("Delete Department Error:", error);
+        res.status(500).json({ error: error.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
 
 app.use(express.static(path.join(__dirname, 'build')));
 

@@ -172,20 +172,19 @@ function ManageSupplier() {
               </div>
               <div className="modal-body">
                 
-                {/* ID Field */}
-                <div className="form-group">
-                  <label>รหัสบริษัท (Supplier ID) <span className="text-danger">*</span></label>
-                  <input
-                    type="text"
-                    name="supplier_id"
-                    value={formData.supplier_id}
-                    onChange={handleChange}
-                    disabled={isEditMode} // ห้ามแก้ ID ตอน Edit
-                    required
-                    placeholder="เช่น SUP-001"
-                  />
-                  {isEditMode && <small className="text-muted">รหัสบริษัทไม่สามารถแก้ไขได้</small>}
-                </div>
+                {/* ID Field (แสดงเฉพาะโหมดแก้ไข) */}
+                {isEditMode && (
+                  <div className="form-group">
+                    <label>รหัสบริษัท (Supplier ID)</label>
+                    <input
+                      type="text"
+                      name="supplier_id"
+                      value={formData.supplier_id}
+                      disabled // ห้ามแก้ ID
+                      style={{ backgroundColor: "#f0f0f0", cursor: "not-allowed" }}
+                    />
+                  </div>
+                )}
 
                 {/* Name Field */}
                 <div className="form-group">

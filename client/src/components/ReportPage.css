@@ -237,3 +237,95 @@
         grid-template-columns: 1fr; /* เรียงแถวเดียว */
     }
 }
+
+/* ==================== Access Log Section ==================== */
+.accesslog-section {
+    background: #fff;
+    border-radius: 14px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    margin-top: 10px;
+    border: 1px solid #eee;
+}
+
+.section-title {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.25rem;
+    color: #333;
+    font-weight: 600;
+}
+
+.accesslog-table-container {
+    overflow-x: auto;
+}
+
+.accesslog-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 800px;
+}
+
+.accesslog-table th,
+.accesslog-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.accesslog-table th {
+    background-color: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.accesslog-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.status-badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: inline-block;
+}
+
+/* สีของป้ายสถานะ เปิด (สีฟ้าเดิม) */
+.status-badge.status-open {
+    background-color: #e3f2fd;
+    color: #0d47a1;
+}
+
+/* สีของป้ายสถานะ ปิด (สีแดง) */
+.status-badge.status-close {
+    background-color: #ffebee;
+    color: #c62828;
+}
+
+/* ==================== Access Log Filter ==================== */
+.accesslog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #f8f9fa;
+    padding-bottom: 15px;
+}
+
+.filter-select {
+    padding: 8px 15px;
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+    background-color: #fff;
+    color: #495057;
+    font-size: 0.95rem;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.filter-select:focus {
+    border-color: #e83e8c; /* ปรับสีให้เข้ากับธีมชมพูของคุณ */
+}
