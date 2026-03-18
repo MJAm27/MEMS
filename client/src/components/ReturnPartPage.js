@@ -145,7 +145,7 @@ function ReturnPartPage() {
         if (isScanning) {
             scanner = new Html5QrcodeScanner("reader", { 
                 fps: 10, 
-                qrbox: { width: 250, height: 250 } 
+                qrbox: { width: 350, height: 150} 
             });
             scanner.render((decodedText) => {
                 handleAddItem(decodedText);
@@ -338,7 +338,6 @@ function ReturnPartPage() {
                                             <span className="name font-bold">{item.partName}</span>
                                             <span className="qty-val-pink">x {item.quantity} {item.unit || 'ชิ้น'}</span>
                                         </div>
-                                        <div className="text-xs text-gray-400 mt-1">Lot: {item.lotId}</div>
                                     </div>
                                 </div>
                             ))}
