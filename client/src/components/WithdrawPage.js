@@ -58,9 +58,9 @@ function WithdrawPage({ user }) {
                 const headers = { Authorization: `Bearer ${token}` };
                 
                 const [macRes, depRes, repairRes] = await Promise.all([
-                    axios.get(`${API_BASE}/api/machine`, { headers }),
-                    axios.get(`${API_BASE}/api/departments`, { headers }),
-                    axios.get(`${API_BASE}/api/repair-types`, { headers })
+                    axios.get(`${API_BASE}/machine`, { headers }),
+                    axios.get(`${API_BASE}/departments`, { headers }),
+                    axios.get(`${API_BASE}/repair-types`, { headers })
                 ]);
                 setMachines(macRes.data);
                 setDepartments(depRes.data);

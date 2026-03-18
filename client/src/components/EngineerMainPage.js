@@ -35,8 +35,8 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
             const token = localStorage.getItem('token');
             const headers = { Authorization: `Bearer ${token}` };
             const [repairRes, depRes] = await Promise.all([
-                axios.get(`${API_BASE}/api/repair-types`, { headers }),
-                axios.get(`${API_BASE}/api/departments`, { headers })
+                axios.get(`${API_BASE}/repair-types`, { headers }),
+                axios.get(`${API_BASE}/departments`, { headers })
             ]);
             setRepairTypes(repairRes.data);
             setDepartments(depRes.data);
@@ -69,7 +69,7 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
     const fetchMachines = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get(`${API_BASE}/api/machine`, {
+            const res = await axios.get(`${API_BASE}/machine`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setMachines(res.data);
