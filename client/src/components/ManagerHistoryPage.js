@@ -200,7 +200,9 @@ function ManagerHistoryPage({ viewDate }) {
                                 <th>ประเภท</th>
                                 <th>ประเภทงาน</th>
                                 <th>ตึก/แผนก</th>
-                                <th>เครื่องที่ใช้ / SN</th>
+                                <th>เครื่องที่ใช้</th>           {/* แยกออกมา */}
+                                <th>เลขครุภัณฑ์ (รพ.)</th>      {/* แยกออกมา */}
+                                <th>SN (โรงงาน)</th>           {/* แยกออกมา */}
                                 <th>รายการอะไหล่</th>
                                 <th>เวลาเปิด-ปิดตู้</th>
                             </tr>
@@ -238,12 +240,14 @@ function ManagerHistoryPage({ viewDate }) {
                                             <div className="text-xs text-gray-500">{row.department_name || "-"}</div>
                                         </td>
 
-                                        <td>
-                                            <div className="machine-info-cell">
-                                                <div className="hospital-id">{row.machine_name || row.machine_number || "-"}</div>
-                                                <div className="serial-no">SN: {row.machine_SN || "-"}</div>
-                                            </div>
-                                        </td>
+                                        {/* 1. คอลัมน์เครื่องที่ใช้ */}
+                                        <td>{row.machine_name || "-"}</td>
+
+                                        {/* 2. คอลัมน์เลขครุภัณฑ์ (รพ.) */}
+                                        <td className="font-medium text-slate-700">{row.machine_number || "-"}</td>
+
+                                        {/* 3. คอลัมน์ SN (โรงงาน) */}
+                                        <td className="text-slate-500">{row.machine_SN || "-"}</td>
 
                                         <td className="items-cell">
                                             <div className="items-column-wrapper">
@@ -260,7 +264,6 @@ function ManagerHistoryPage({ viewDate }) {
                                             <div className="access-log-container">
                                                 <div className="time-row"><span className="time-label-open">เปิด</span> <b>{row.open_time || '--:--'}</b></div>
                                                 <div className="time-row"><span className="time-label-close">ปิด</span> <b>{row.close_time || '--:--'}</b></div>
-                                                
                                             </div>
                                         </td>
                                     </tr>
