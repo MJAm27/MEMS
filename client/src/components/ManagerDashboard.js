@@ -309,13 +309,16 @@ function ManagerDashboard() {
                     <table className="report-table">
                         <thead>
                             <tr>
-                                <th>เวลา</th>
-                                <th>ผู้รับผิดชอบ</th>
+                                <th>วันที่/เวลา</th>
+                                <th>ผู้ทำรายการ</th>
+                                <th>ประเภท</th>
                                 <th>ประเภทงาน</th>
-                                <th>เครื่องที่ใช้</th>
                                 <th>ตึก/แผนก</th>
+                                <th>เครื่องที่ใช้</th>         {/* แยกคอลัมน์ */}
+                                <th>เลขครุภัณฑ์ (รพ.)</th>    {/* แยกคอลัมน์ */}
+                                <th>SN (โรงงาน)</th>           {/* แยกคอลัมน์ */}
                                 <th>รายการอะไหล่</th>
-                                <th>สถานะ</th>
+                                <th>เวลาเปิด-ปิดตู้</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -323,16 +326,31 @@ function ManagerDashboard() {
                                 const items = typeof row.items_json === 'string' ? JSON.parse(row.items_json) : (row.items_json || []);
                                 return (
                                     <tr key={idx}>
-                                        <td><span className="time-tag">{row.time}</span></td>
-                                        <td><div className="td-user"><FaUser /> {row.fullname}</div></td>
+                                        <td>
+                                            <div className="date-text">{new Date(row.date).toLocaleDateString('th-TH')}</div>
+                                            <span className="time-tag">{row.time}</span>
+                                        </td>
+                                        <td>
+                                            <div className="td-user">
+                                                {row.profile_img ? (
+                                                    <img src={`${API_BASE_URL}/profile-img/${row.profile_img}`} alt="p" className="user-avatar-mini" />
+                                                ) : (
+                                                    <FaUser />
+                                                )}
+                                                {row.fullname}
+                                            </div>
+                                        </td>
+                                        <td><span className={`badge-type ${row.transaction_type_id}`}>{row.type_name}</span></td>
                                         <td className="font-semibold text-blue-600">{row.repair_type_name || "-"}</td>
-                                        <td>{row.machine_name || "-"} <br/><small>{row.machine_SN || row.machine_number}</small></td>
                                         <td>
                                             <div className="text-xs"><b>{row.buildings || "-"}</b></div>
                                             <div className="text-xs text-gray-500">{row.department_name || "-"}</div>
                                         </td>
+                                        <td>{row.machine_name || "-"}</td>
+                                        <td className="font-bold">{row.machine_number || "-"}</td>
+                                        <td>{row.machine_SN || "-"}</td>
                                         <td>
-                                            <div className="items-column-wrapper"> {/* เพิ่ม Wrapper ตรงนี้ */}
+                                            <div className="items-column-wrapper">
                                                 {items.map((it, i) => (
                                                     <div key={i} className="item-pill">
                                                         <span className="item-name">{it.name}</span> 
@@ -341,11 +359,16 @@ function ManagerDashboard() {
                                                 ))}
                                             </div>
                                         </td>
-                                        <td><span className={`badge-type ${row.transaction_type_id}`}>{row.type_name}</span></td>
+                                        <td>
+                                            <div className="access-log-container" style={{ fontSize: '0.8rem' }}>
+                                                <div><span className="text-green-500">เปิด:</span> {row.open_time || '--:--'}</div>
+                                                <div><span className="text-red-500">ปิด:</span> {row.close_time || '--:--'}</div>
+                                            </div>
+                                        </td>
                                     </tr>
                                 );
                             }) : (
-                                <tr><td colSpan="7" className="empty-row">ไม่มีกิจกรรมในช่วงวันนี้</td></tr>
+                                <tr><td colSpan="10" className="empty-row">ไม่มีกิจกรรมในช่วงวันนี้</td></tr>
                             )}
                         </tbody>
                     </table>
