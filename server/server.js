@@ -458,7 +458,7 @@ app.post('/api/return-part', authenticateToken, async (req, res) => {
 });
 
 // API ตึกและแผนก 
-app.get('/api/departments', authenticateToken, async (req, res) => {
+app.get('/api/departments', async (req, res) => {
     try {
         const [rows] = await pool.query("SELECT * FROM department ORDER BY buildings ASC, department_name ASC");
         res.json(rows);
@@ -468,7 +468,7 @@ app.get('/api/departments', authenticateToken, async (req, res) => {
 });
 
 // API ประเภทงาน
-app.get('/api/repair-types', authenticateToken, async (req, res) => {
+app.get('/api/repair-types', async (req, res) => {
     try {
         const [rows] = await pool.query("SELECT * FROM repair_type");
         res.json(rows);
@@ -1864,17 +1864,22 @@ app.get("/api/transactions", async (req, res) => {
     const sql = `
         SELECT 
             t.transaction_id, 
-            t.parent_transaction_id,   /* << เพิ่มบรรทัดนี้ครับ */
+            t.parent_transaction_id,  
             t.date,
             t.time, 
+            t.machine_number,
+            t.machine_SN,
             tt.transaction_type_name, 
             u.fullname, 
             m.machine_name, 
+            d.department_name,
+            d.buildings,
             (SELECT COUNT(*) FROM equipment_list el WHERE el.transaction_id = t.transaction_id) as item_count 
         FROM transactions t 
         LEFT JOIN transactions_type tt ON t.transaction_type_id = tt.transaction_type_id 
         LEFT JOIN users u ON t.user_id = u.user_id 
         LEFT JOIN machine m ON t.machine_id = m.machine_id 
+        LEFT JOIN department d ON d.department_id = t.department_id
         ORDER BY t.date DESC, t.transaction_id DESC;
     `;
     try {
@@ -1912,8 +1917,11 @@ app.get("/api/transaction-options", async (req, res) => {
         const [machines] = await db.query("SELECT machine_id, machine_name FROM machine");
         const [types] = await db.query("SELECT transaction_type_id, transaction_type_name FROM transactions_type"); 
         const [equipments] = await db.query("SELECT equipment_id, model_size FROM equipment");
+        const [lots] = await db.query("SELECT l.lot_id,l.equipment_id,e.model_size,e.equipment_type_id,et.equipment_name FROM lot l JOIN equipment e ON l.equipment_id = e.equipment_id JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id");
+        const [department] = await db.query("SELECT department_id,department_name,buildings FROM department;");
+        const [repair_type] = await db.query("SELECT repair_type_id,repair_type_name FROM repair_type;");
         
-        res.json({ users, machines, types, equipments });
+        res.json({ users, machines, types, equipments, lots, department, repair_type });
     } catch (err) {
         console.error(err);
         res.status(500).send(err);
@@ -1921,29 +1929,39 @@ app.get("/api/transaction-options", async (req, res) => {
 });
 
 async function getNextTransactionId(prefix, connection) {
-    // หา id ล่าสุดที่ขึ้นต้นด้วย prefix นั้นๆ
     const [rows] = await connection.query(
         "SELECT transaction_id FROM transactions WHERE transaction_id LIKE ? ORDER BY transaction_id DESC LIMIT 1",
         [`${prefix}-%`]
     );
 
-    let nextNumber = 1;
-    if (rows.length > 0) {
-        // ถ้ามีข้อมูลเดิม: แยกเอาเฉพาะตัวเลขออกมาบวกหนึ่ง
-        // เช่น WTH-00000005 -> 5 + 1 = 6
-        const lastId = rows[0].transaction_id;
-        const lastNum = parseInt(lastId.split('-')[1]);
-        nextNumber = lastNum + 1;
-    }
+    let nextNumber = rows.length > 0
+        ? parseInt(rows[0].transaction_id.split('-')[1]) + 1
+        : 1;
 
-    // แปลงกลับเป็น Format เช่น WTH-00000006 (เติม 0 ให้ครบ 8 หลัก)
-    const formattedNum = nextNumber.toString().padStart(8, '0');
-    return `${prefix}-${formattedNum}`;
+    return `${prefix}-${nextNumber.toString().padStart(8, '0')}`;
+}
+
+async function getNextEquipmentListId(connection) {
+    const [rows] = await connection.query(
+        "SELECT equipment_list_id FROM equipment_list ORDER BY equipment_list_id DESC LIMIT 1"
+    );
+
+    let nextNumber = rows.length > 0
+        ? parseInt(rows[0].equipment_list_id.split('-')[1]) + 1
+        : 1;
+
+    return `EL-${nextNumber.toString().padStart(8, '0')}`;
 }
 
 // 4. สร้าง Transaction ใหม่ (ใช้ SQL Transaction เพื่อความปลอดภัย)
-app.post('/api/transactions', authenticateToken, async (req, res) => {
-    const { type_mode, user_id, machine_id, date, time, items } = req.body;
+app.post('/api/transactions', async (req, res) => {
+    // 1. รับค่าทั้งหมดที่ส่งมาจากหน้า React (เพิ่มฟิลด์ใหม่ให้ครบ)
+    const { 
+        type_mode, user_id, machine_id, date, time, items,
+        parent_transaction_id, machine_number, machine_SN, 
+        repair_type_id, department_id, manager_acknowledged
+    } = req.body;
+    
     let connection;
 
     try {
@@ -1953,39 +1971,54 @@ app.post('/api/transactions', authenticateToken, async (req, res) => {
         let prefix = '';
         let typeId = '';
         let is_pending = 0;
-        let finalMachineSN = machine_id;
-        let finalParentTxId = parent_transaction_id || null;
+        
+        // จัดการค่าที่เป็นค่าว่าง ให้กลายเป็น null เพื่อไม่ให้ Database Error
+        let finalMachineId = machine_id ? machine_id : null;
+        let finalParentTxId = parent_transaction_id ? parent_transaction_id : null;
+        let finalRepairTypeId = repair_type_id ? repair_type_id : null;
+        let finalDeptId = department_id ? department_id : null;
+        let finalMachineNumber = machine_number ? machine_number : null;
+        let finalMachineSN = machine_SN ? machine_SN : null;
 
-        // เงื่อนไขตามที่คุณระบุ
+        // 2. เงื่อนไขตามที่คุณระบุ
         if (type_mode === 'withdraw') { // เบิกปกติ
             prefix = 'WTH';
             typeId = 'T-WTH';
         } else if (type_mode === 'return') { // คืน
             prefix = 'RTN';
             typeId = 'T-RTN';
-            finalMachineSN = null; // ไม่ต้องกรอก machine_id
+
         } else if (type_mode === 'borrow') { // เบิกสำหรับยืม (Pending)
             prefix = 'PEND';
             typeId = 'T-WTH';
             is_pending = 1;
-            finalMachineSN = null; // ไม่ต้องกรอก machine_id
+      
         }
 
-        const transactionId = await getNextTransactionId(prefix, 'transactions', 'transaction_id', connection);
+        const transactionId = await getNextTransactionId(prefix, connection)
 
-        // บันทึกลงตาราง transactions
-        await connection.query(
-            "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_id, is_pending) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            [transactionId,finalParentTxId, typeId, date, time, user_id, finalMachineSN, is_pending]
-        );
+        // 3. บันทึกลงตาราง transactions (อัปเดตให้มีฟิลด์ใหม่ครบถ้วน)
+        const insertTxSql = `
+            INSERT INTO transactions (
+                transaction_id, parent_transaction_id, transaction_type_id, 
+                date, time, user_id, machine_id, machine_number, machine_SN, 
+                repair_type_id, department_id, is_pending, manager_acknowledged
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        await connection.query(insertTxSql, [
+            transactionId, finalParentTxId, typeId, date, time, user_id, 
+            finalMachineId, finalMachineNumber, finalMachineSN, 
+            finalRepairTypeId, finalDeptId, is_pending, (manager_acknowledged || 0)
+        ]);
 
+        // 4. บันทึกรายการอะไหล่และตัดสต็อก
         for (const item of items) {
-            const listId = await getNextTransactionId('EL', 'equipment_list', 'equipment_list_id', connection);
+            const listId = await getNextEquipmentListId(connection);
             
             // บันทึกลง equipment_list
             await connection.query(
-                "INSERT INTO equipment_list (equipment_list_id, transaction_id, equipment_id, quantity, lot_id) VALUES (?, ?, ?, ?, ?)",
-                [listId, transactionId, item.equipment_id, item.quantity, item.lot_id]
+                "INSERT INTO equipment_list (equipment_list_id, transaction_id,lot_id, quantity) VALUES (?, ?, ?, ?)",
+                [listId, transactionId, item.lot_id, item.quantity]
             );
 
             // อัปเดตสต็อกในตาราง lot (เบิก/ยืม = ลบ, คืน = บวก)
@@ -1997,9 +2030,101 @@ app.post('/api/transactions', authenticateToken, async (req, res) => {
         }
 
         await connection.commit();
-        res.json({ success: true, transactionId });
+        res.status(201).json({ success: true, transactionId });
     } catch (error) {
         if (connection) await connection.rollback();
+        console.error("Insert Transaction Error:", error);
+        res.status(500).json({ error: error.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// 5. แก้ไข Transaction
+app.put('/api/transactions/:id', async (req, res) => {
+    const transactionId = req.params.id;
+    // รับค่าที่ส่งมาจาก Frontend 
+    const { 
+        type_mode, user_id, machine_id, date, time, items,
+        parent_transaction_id, machine_number, machine_SN, 
+        repair_type_id, department_id, manager_acknowledged
+    } = req.body;
+    
+    let connection;
+
+    try {
+        connection = await pool.getConnection(); // หรือ db.getConnection() ขึ้นอยู่กับคุณตั้งชื่อ
+        await connection.beginTransaction();
+
+        let typeId = '';
+        let is_pending = 0;
+        
+        // แปลงค่าว่างเป็น null
+        let finalMachineId = machine_id ? machine_id : null;
+        let finalParentTxId = parent_transaction_id ? parent_transaction_id : null;
+        let finalRepairTypeId = repair_type_id ? repair_type_id : null;
+        let finalDeptId = department_id ? department_id : null;
+        let finalMachineNumber = machine_number ? machine_number : null;
+        let finalMachineSN = machine_SN ? machine_SN : null;
+
+        // เช็คประเภท
+        if (type_mode === 'withdraw') { typeId = 'T-WTH'; } 
+        else if (type_mode === 'return') { typeId = 'T-RTN'; } 
+        else if (type_mode === 'borrow') { typeId = 'T-WTH'; is_pending = 1; }
+
+        // 1. อัปเดตข้อมูลส่วนหัว (Header) ในตาราง transactions
+        const updateTxSql = `
+            UPDATE transactions 
+            SET parent_transaction_id = ?, transaction_type_id = ?, date = ?, time = ?, 
+                user_id = ?, machine_id = ?, machine_number = ?, machine_SN = ?, 
+                repair_type_id = ?, department_id = ?, is_pending = ?, manager_acknowledged = ?
+            WHERE transaction_id = ?
+        `;
+        await connection.query(updateTxSql, [
+            finalParentTxId, typeId, date, time, user_id, 
+            finalMachineId, finalMachineNumber, finalMachineSN, 
+            finalRepairTypeId, finalDeptId, is_pending, (manager_acknowledged || 0),
+            transactionId
+        ]);
+
+        // ==========================================
+        // 2. จัดการรายการอะไหล่และสต็อก
+        // วิธีที่ปลอดภัยคือ: คืนสต็อกเก่า -> ลบรายการเก่า -> ใส่รายการใหม่ -> อัปเดตสต็อกใหม่
+        // ==========================================
+
+        // 2.1 ดึงรายการเก่ามาคืนสต็อก
+        const [oldItems] = await connection.query("SELECT lot_id, quantity FROM equipment_list WHERE transaction_id = ?", [transactionId]);
+        const [oldTx] = await connection.query("SELECT transaction_type_id FROM transactions WHERE transaction_id = ?", [transactionId]);
+        const isOldReturn = oldTx[0]?.transaction_type_id === 'T-RTN';
+
+        for (const oldItem of oldItems) {
+            // ถ้าบิลเก่าคือ 'คืน' (RTN) ต้องเอาไปลบออก, ถ้า 'เบิก' (WTH) ต้องบวกกลับ
+            const revertStock = isOldReturn ? -oldItem.quantity : oldItem.quantity; 
+            await connection.query("UPDATE lot SET current_quantity = current_quantity + ? WHERE lot_id = ?", [revertStock, oldItem.lot_id]);
+        }
+
+        // 2.2 ลบรายการเก่าทิ้ง
+        await connection.query("DELETE FROM equipment_list WHERE transaction_id = ?", [transactionId]);
+
+        // 2.3 บันทึกรายการใหม่ (ที่อาจจะมีการแก้ไขจำนวน หรือเพิ่ม/ลดรายการ)
+        for (const item of items) {
+            const listId = await getNextEquipmentListId(connection); // ใช้ฟังก์ชันเดิมที่คุณมี
+            
+            await connection.query(
+                "INSERT INTO equipment_list (equipment_list_id, transaction_id, lot_id, quantity) VALUES (?, ?, ?, ?)",
+                [listId, transactionId, item.lot_id, item.quantity]
+            );
+
+            // อัปเดตสต็อกใหม่ตามการแก้ไข
+            const stockChange = (type_mode === 'return') ? item.quantity : -item.quantity;
+            await connection.query("UPDATE lot SET current_quantity = current_quantity + ? WHERE lot_id = ?", [stockChange, item.lot_id]);
+        }
+
+        await connection.commit();
+        res.status(200).json({ success: true, message: "อัปเดตข้อมูลสำเร็จ" });
+    } catch (error) {
+        if (connection) await connection.rollback();
+        console.error("Update Transaction Error:", error);
         res.status(500).json({ error: error.message });
     } finally {
         if (connection) connection.release();

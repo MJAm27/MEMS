@@ -10,8 +10,7 @@
 }
 
 .transaction-modal {
-    max-width: 800px !important; /* ขยายความกว้าง */
-    width: 95%;
+    max-width: 800px !important; 
 }
 
 .badge {

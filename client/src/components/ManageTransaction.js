@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react"; 
 import "./ManageTransaction.css";
-// เพิ่ม FaEdit เข้ามาใน import
 import { FaPlus, FaSearch, FaEye, FaTimes, FaTrash, FaFilter, FaEdit } from "react-icons/fa";
 import axios from "axios";
 import SubNavbar from "./SubNavbar";
@@ -13,9 +12,8 @@ function ManageTransaction() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [viewMode, setViewMode] = useState(false); // true=ดูรายละเอียด, false=เพิ่ม/แก้ไข
+  const [viewMode, setViewMode] = useState(false); 
   
-  // +++ เพิ่ม State สำหรับควบคุมโหมดแก้ไข +++
   const [isEditMode, setIsEditMode] = useState(false);
   const [editTransactionId, setEditTransactionId] = useState(null);
 
@@ -23,15 +21,24 @@ function ManageTransaction() {
     users: [], 
     machines: [], 
     types: [], 
-    equipments: [] ,
-    lots: []
+    equipments: [],
+    lots: [],
+    repair_type: [], 
+    department: []
   });
 
-  // Form Data (Header)
+  // อัปเดต Form Data (Header) ให้ตรงกับ Database ล่าสุด
   const [headerData, setHeaderData] = useState({
-    type_mode: "withdraw", // withdraw, return, borrow
+    type_mode: "withdraw", 
     user_id: "",
     machine_id: "",
+    parent_transaction_id: "",
+    machine_number: "",
+    machine_SN: "",
+    repair_type_id: "",
+    department_id: "",
+    is_pending: 0,
+    manager_acknowledged: 0,
     date: new Date().toISOString().split('T')[0],
     time: new Date().toLocaleTimeString('th-TH', { hour12: false }).slice(0, 5)
   });
@@ -93,7 +100,6 @@ function ManageTransaction() {
     setCartItems(newCart);
   };
 
-  // +++ แก้ไข: ฟังก์ชันบันทึกข้อมูล (เพิ่มเช็คว่าเป็นการสร้างใหม่หรือแก้ไข) +++
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (cartItems.length === 0) {
@@ -101,7 +107,6 @@ function ManageTransaction() {
       return;
     }
     
-    // แก้บั๊กตรงนี้จาก transaction_type_id เป็น type_mode
     if (!headerData.type_mode || !headerData.user_id) {
        alert("กรุณาระบุประเภทและผู้ทำรายการ");
        return; 
@@ -114,11 +119,9 @@ function ManageTransaction() {
       };
 
       if (isEditMode) {
-        // อัปเดตข้อมูล (ต้องมั่นใจว่า Backend มี API รองรับ PUT /api/transactions/:id)
         await axios.put(`${API_BASE_URL}/api/transactions/${editTransactionId}`, payload);
         alert("แก้ไขรายการสำเร็จ!");
       } else {
-        // สร้างรายการใหม่
         await axios.post(`${API_BASE_URL}/api/transactions`, payload);
         alert("บันทึกรายการสำเร็จ!");
       }
@@ -132,12 +135,16 @@ function ManageTransaction() {
     }
   };
 
-  // +++ ล้างข้อมูลฟอร์ม +++
   const handleResetForm = () => {
     setHeaderData({ 
         type_mode: "withdraw", 
         user_id: "", 
         machine_id: "",
+        department_id: "",       // +++ เพิ่ม +++
+        repair_type_id: "",      // +++ เพิ่ม +++
+        machine_number: "",      // +++ เพิ่ม +++
+        machine_SN: "",          // +++ เพิ่ม +++
+        parent_transaction_id: "", // +++ เพิ่ม +++
         date: new Date().toISOString().split('T')[0],
         time: new Date().toLocaleTimeString('th-TH', { hour12: false }).slice(0, 5)
     });
@@ -146,14 +153,12 @@ function ManageTransaction() {
     setEditTransactionId(null);
   };
 
-  // +++ ฟังก์ชันสำหรับกดเปิด Modal เพิ่มข้อมูลใหม่ +++
   const handleOpenAdd = () => {
       handleResetForm();
       setViewMode(false);
       setShowModal(true);
   };
 
-  // +++ เปิด Modal ดูรายละเอียด +++
   const handleViewDetail = async (trans) => {
     setSelectedTransaction(trans);
     setViewMode(true);
@@ -166,27 +171,30 @@ function ManageTransaction() {
     }
   };
 
-  // +++ ฟังก์ชันสำหรับกดแก้ไขข้อมูล +++
   const handleEdit = async (trans) => {
     setViewMode(false);
     setIsEditMode(true);
     setEditTransactionId(trans.transaction_id);
 
-    // จำลองการแปลงประเภทกลับไปเป็น type_mode สำหรับ Dropdown
     let mappedTypeMode = "withdraw";
     if (trans.transaction_type_name?.includes("คืนอะไหล่")) mappedTypeMode = "return";
     if (trans.transaction_type_name?.includes("เบิกอะไหล่ล่วงหน้า")) mappedTypeMode = "borrow";
 
+    // +++ นำ ID ที่ได้จาก Backend มาเซ็ตค่าให้ Form +++
     setHeaderData({
       type_mode: mappedTypeMode,
-      user_id: trans.user_id,
+      user_id: trans.user_id || "", 
       machine_id: trans.machine_id || "",
+      department_id: trans.department_id || "",     // เพิ่ม
+      repair_type_id: trans.repair_type_id || "",   // เพิ่ม
+      machine_number: trans.machine_number || "",   // เพิ่ม
+      machine_SN: trans.machine_SN || "",           // เพิ่ม
+      parent_transaction_id: trans.parent_transaction_id || "",
       date: trans.date ? new Date(trans.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       time: trans.time || new Date().toLocaleTimeString('th-TH', { hour12: false }).slice(0, 5)
     });
 
     try {
-        // ดึงรายการย่อยมาใส่ในตะกร้า
         const res = await axios.get(`${API_BASE_URL}/api/transactions/${trans.transaction_id}/items`);
         setCartItems(res.data);
     } catch (error) {
@@ -196,25 +204,21 @@ function ManageTransaction() {
     setShowModal(true);
   };
 
-  // +++ ฟังก์ชันสำหรับลบข้อมูล +++
   const handleDelete = async (transaction_id) => {
     if (window.confirm(`คุณต้องการลบรายการเลขที่ ${transaction_id} ใช่หรือไม่? \n(คำเตือน: หากลบแล้วจะไม่สามารถกู้คืนได้)`)) {
       try {
-        // ต้องมั่นใจว่า Backend มี API รองรับ DELETE /api/transactions/:id
         await axios.delete(`${API_BASE_URL}/api/transactions/${transaction_id}`);
         fetchTransactions(); 
         alert("ลบข้อมูลสำเร็จ");
       } catch (error) {
         console.error("Error deleting:", error);
-        alert("ไม่สามารถลบได้ เกิดข้อผิดพลาดจากระบบฐานข้อมูล (อาจเกิดจากการผูก Foreign Key)");
+        alert("ไม่สามารถลบได้ เกิดข้อผิดพลาดจากระบบฐานข้อมูล");
       }
     }
   };
 
  const filteredData = transactions.filter(t => {
     if (!t) return false;
-    
-    // 1. ตรวจสอบเงื่อนไขช่องค้นหา
     const searchLower = (searchTerm || "").toLowerCase().trim();
     const matchesSearch = searchLower === "" || 
         (t.transaction_id || "").toString().toLowerCase().includes(searchLower) ||
@@ -223,25 +227,21 @@ function ManageTransaction() {
         (t.machine_name || "").toString().toLowerCase().includes(searchLower) ||
         (t.transaction_type_name || "").toString().toLowerCase().includes(searchLower);
 
-    // 2. ตรวจสอบเงื่อนไขตัวกรองประเภท Dropdown (ใช้การเทียบชื่อแทน ID)
     let matchesType = true;
     if (filterType !== "") {
         const selectedOption = options.types.find(
             opt => opt.transaction_type_id.toString() === filterType.toString()
         );
-        
-        if (selectedOption) {
-            matchesType = (t.transaction_type_name === selectedOption.transaction_type_name);
-        } else {
-            matchesType = false;
-        }
+        matchesType = selectedOption ? (t.transaction_type_name === selectedOption.transaction_type_name) : false;
     }
 
     return matchesSearch && matchesType;
   });
+
   if (loading) {
     return <div className="loading-container">กำลังโหลดข้อมูลประวัติ...</div>;
   }
+  
 
   return (
     <div className="manage-transaction-container fade-in">
@@ -256,7 +256,6 @@ function ManageTransaction() {
       </div>
 
       <div style={{ display: "flex", gap: "10px", marginBottom: "20px", flexWrap: "wrap" }}>
-        
         <div className="search-bar-wrapper" style={{ flex: 1, minWidth: "250px", marginBottom: 0 }}>
           <FaSearch className="search-icon" />
           <input
@@ -275,7 +274,7 @@ function ManageTransaction() {
                 onChange={(e) => setFilterType(e.target.value)}
                 style={{ paddingLeft: "35px", height: "100%", cursor: "pointer" }}
             >
-                <option value="">ทั้งหมด</option>
+                <option value="">ทั้งหมดประเภท</option>
                 {options.types.map((t) => (
                     <option key={t.transaction_type_id} value={t.transaction_type_id}>
                         {t.transaction_type_name}
@@ -283,7 +282,6 @@ function ManageTransaction() {
                 ))}
             </select>
         </div>
-
       </div>
 
       <div className="table-container">
@@ -294,8 +292,8 @@ function ManageTransaction() {
               <th>อ้างอิง</th>
               <th>วันที่</th>
               <th style={{ minWidth: '150px'}}>ประเภท</th>
-              <th>ผู้ดำเนินการ</th>
-              <th>ครุภัณฑ์</th>
+              <th>ผู้ทำรายการ</th>
+              <th>สถานะ</th>
               <th style={{textAlign:'center'}}>จำนวนรายการ</th>
               <th style={{textAlign:'center', minWidth: '150px'}}>จัดการ</th>
             </tr>
@@ -308,21 +306,23 @@ function ManageTransaction() {
                   <td>{item.parent_transaction_id || "-"}</td>
                   <td>{new Date(item.date).toLocaleDateString('th-TH')} {item.time}</td>
                   <td>
-                      <span className={`badge ${item.transaction_type_name?.includes('เบิกอะไหล่') ? 'bg-warning' : 'bg-success'}`}>
-                          {item.transaction_type_name}
+                      <span className={`badge ${item.transaction_type_name && item.transaction_type_name.indexOf('เบิก') !== -1 ? 'bg-warning' : 'bg-success'}`}>
+                          {item.transaction_type_name || "ไม่ระบุ"}
                       </span>
                   </td>
                   <td>{item.fullname}</td>
-                  <td>{item.machine_name || "-"}</td>
+                  <td>
+                      <span className={`badge ${item.is_pending ? 'bg-warning' : 'bg-success'}`} style={{fontSize: '0.75rem'}}>
+                          {item.is_pending ? 'รอดำเนินการ' : 'เสร็จสิ้น'}
+                      </span>
+                  </td>
                   <td style={{textAlign:'center'}}>{item.item_count}</td>
                   <td style={{textAlign:'center'}}>
                     <div>
                       <div>
                         <button className="action-btn view-btn" onClick={() => handleViewDetail(item)} title="ดูรายละเอียด">
                           <FaEye /> 
-                          <span style={{ fontSize: "0.8rem", marginLeft: "5px", fontWeight: "normal" }}>
-                            ดูรายการ
-                          </span>
+                          <span style={{ fontSize: "0.8rem", marginLeft: "5px", fontWeight: "normal" }}>ดูรายการ</span>
                         </button>
                       </div>
                       <div>
@@ -338,7 +338,7 @@ function ManageTransaction() {
                 </tr>
               ))
             ) : (
-                <tr><td colSpan="7" style={{textAlign:'center', padding: '20px'}}>ไม่พบข้อมูลที่ค้นหา</td></tr>
+                <tr><td colSpan="8" style={{textAlign:'center', padding: '20px'}}>ไม่พบข้อมูลที่ค้นหา</td></tr>
             )}
           </tbody>
         </table>
@@ -346,9 +346,8 @@ function ManageTransaction() {
 
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal-content transaction-modal">
+          <div className="modal-content transaction-modal" style={{ maxWidth: '900px' }}>
             <div className="modal-header">
-              {/* เปลี่ยนชื่อ Header ตามโหมด */}
               <h3>{viewMode ? "รายละเอียดรายการ" : (isEditMode ? `แก้ไขรายการ: ${editTransactionId}` : "สร้างรายการใหม่")}</h3>
               <button className="close-btn" onClick={() => setShowModal(false)}><FaTimes /></button>
             </div>
@@ -356,12 +355,19 @@ function ManageTransaction() {
             <div className="modal-body">
                 {viewMode ? (
                     <div>
-                        <div className="info-grid">
+                        <div className="info-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                             <p><strong>ID:</strong> {selectedTransaction?.transaction_id}</p>
-                            <p><strong>วันที่:</strong> {new Date(selectedTransaction?.date).toLocaleString()}</p>
+                            <p><strong>อ้างอิง:</strong> {selectedTransaction?.parent_transaction_id || "-"}</p>
+                            <p><strong>วันที่:</strong> {new Date(selectedTransaction?.date).toLocaleDateString('th-TH')} {selectedTransaction?.time}</p>
                             <p><strong>ประเภท:</strong> {selectedTransaction?.transaction_type_name}</p>
                             <p><strong>ผู้ทำรายการ:</strong> {selectedTransaction?.fullname}</p>
-                            <p><strong>ครุภัณฑ์:</strong> {selectedTransaction?.machine_name || "-"}</p>
+                            <p><strong>แผนก/ตึก:</strong> {selectedTransaction?.department_name  || "-"} {selectedTransaction?.buildings  || "-"}</p>
+                            <p><strong>ประเภทงานซ่อม:</strong> {selectedTransaction?.repair_type_name || "-"}</p>
+                            <p><strong>เครื่องที่ใช้:</strong> {selectedTransaction?.machine_name || "-"}</p>
+                            <p><strong>เลขครุภัณฑ์:</strong> {selectedTransaction?.machine_number || "-"}</p>
+                            <p><strong>SN (โรงงาน):</strong> {selectedTransaction?.machine_SN || "-"}</p>
+                            <p><strong>สถานะ:</strong> {selectedTransaction?.is_pending ? "รอดำเนินการ" : "เสร็จสิ้น"}</p>
+                            <p><strong>รับทราบโดยผู้จัดการ:</strong> {selectedTransaction?.manager_acknowledged ? "รับทราบแล้ว" : "ยังไม่รับทราบ"}</p>
                         </div>
                         <hr/>
                         <h5>รายการอะไหล่</h5>
@@ -388,17 +394,22 @@ function ManageTransaction() {
                     <form onSubmit={handleSubmit}>
                         <div className="section-box">
                             <h4>1. ข้อมูลทั่วไป</h4>
-                            <div className="form-grid">
+                            <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                                 <div className="form-group">
                                     <label>ประเภทรายการ <span className="text-danger">*</span></label>
                                     <select 
-                                        className="form-control"
-                                        value={headerData.type_mode}
+                                        className="form-control" 
+                                        value={headerData.type_mode} 
                                         onChange={e => {
-                                            const mode = e.target.value;
-                                            const resetMachine = (mode === 'return' || mode === 'borrow') ? "" : headerData.machine_id;
-                                            setHeaderData({...headerData, type_mode: mode, machine_id: resetMachine});
-                                        }}
+                                            const newMode = e.target.value;
+                                            setHeaderData({
+                                                ...headerData, 
+                                                type_mode: newMode,
+                                                // ถ้ารูปแบบไม่ใช่ borrow (เบิกอะไหล่ล่วงหน้า) ให้รีเซ็ตค่ากลับเป็น 0 (ปกติ)
+                                                is_pending: newMode === 'borrow' ? headerData.is_pending : 0,
+                                                manager_acknowledged: newMode === 'borrow' ? headerData.manager_acknowledged : 0
+                                            });
+                                        }} 
                                         required
                                     >
                                         <option value="withdraw">เบิกอะไหล่</option>
@@ -408,33 +419,82 @@ function ManageTransaction() {
                                 </div>
                                 <div className="form-group">
                                     <label>ผู้ทำรายการ <span className="text-danger">*</span></label>
-                                    <select 
-                                        className="form-control"
-                                        value={headerData.user_id}
-                                        onChange={e => setHeaderData({...headerData, user_id: e.target.value})}
-                                        required
-                                    >
+                                    <select className="form-control" value={headerData.user_id} onChange={e => setHeaderData({...headerData, user_id: e.target.value})} required>
                                         <option value="">-- เลือกผู้ใช้ --</option>
                                         {options.users.map(u => <option key={u.user_id} value={u.user_id}>{u.fullname}</option>)}
                                     </select>
                                 </div>
                                 <div className="form-group">
-                                    <label>ครุภัณฑ์</label>
-                                    <select 
-                                        className="form-control"
-                                        value={headerData.machine_id}
-                                        onChange={e => setHeaderData({...headerData, machine_id: e.target.value})}
-                                        disabled={headerData.type_mode === 'return' || headerData.type_mode === 'borrow'}
-                                    >
-                                        <option value="">-- ไม่ระบุ --</option>
-                                        {options.machines.map(m => <option key={m.machine_id} value={m.machine_id}>{m.machine_name}</option>)}
+                                    <label>รหัสอ้างอิง (Parent ID)</label>
+                                    <input type="text" className="form-control" placeholder="ถ้ามี..." value={headerData.parent_transaction_id} onChange={e => setHeaderData({...headerData, parent_transaction_id: e.target.value})} />
+                                </div>
+                                <div className="form-group">
+                                    <label>แผนก / ตึก</label>
+                                    <select className="form-control" value={headerData.department_id} onChange={e => setHeaderData({...headerData, department_id: e.target.value})}>
+                                        <option value="">เลือกแผนก</option>
+                                        {options.department && options.department.map(d => (
+                                            <option key={d.department_id} value={d.department_id}>{d.department_name}</option>
+                                        ))}
                                     </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>ประเภทงานซ่อม</label>
+                                    <select className="form-control" value={headerData.repair_type_id} onChange={e => setHeaderData({...headerData, repair_type_id: e.target.value})}>
+                                        <option value="">-- ไม่ระบุ --</option>
+                                        {options.repair_type?.map(r => <option key={r.repair_type_id} value={r.repair_type_id}>{r.repair_type_name}</option>)}
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>สถานะรายการ</label>
+                                    <select className="form-control" value={headerData.is_pending} onChange={e => setHeaderData({...headerData, is_pending: Number(e.target.value)})}>
+                                        <option value={0}>ปกติ / เสร็จสิ้น</option>
+                                        <option value={1}>รอดำเนินการ (Pending)</option>
+                                    </select>
+                                </div>
+                                <div className="form-group" style={{ display: 'flex', alignItems: 'center', marginTop: '10px' }}>
+                                    <input 
+                                        type="checkbox" 
+                                        id="mgrAck" 
+                                        checked={headerData.manager_acknowledged === 1} 
+                                        onChange={e => setHeaderData({...headerData, manager_acknowledged: e.target.checked ? 1 : 0})} 
+                                        style={{ marginRight: '8px', transform: 'scale(1.2)' }} 
+                                        disabled={headerData.type_mode !== 'borrow'}
+                                    />
+                                    <label 
+                                        htmlFor="mgrAck" 
+                                        style={{ 
+                                            marginBottom: 0, 
+                                            cursor: headerData.type_mode !== 'borrow' ? 'not-allowed' : 'pointer',
+                                            color: headerData.type_mode !== 'borrow' ? '#aaa' : '#333' 
+                                        }}
+                                    >รับทราบโดยผู้จัดการแล้ว</label>
                                 </div>
                             </div>
                         </div>
 
                         <div className="section-box">
-                            <h4>2. เพิ่มรายการอะไหล่</h4>
+                            <h4>2. ข้อมูลเครื่องมือ / ครุภัณฑ์</h4>
+                            <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
+                                <div className="form-group">
+                                    <label>เครื่องที่นำไปใช้</label>
+                                    <select className="form-control" value={headerData.machine_id} onChange={e => setHeaderData({...headerData, machine_id: e.target.value})}>
+                                        <option value="">-- ไม่ระบุ --</option>
+                                        {options.machines.map(m => <option key={m.machine_id} value={m.machine_id}>{m.machine_name}</option>)}
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>เลขครุภัณฑ์ (รพ.)</label>
+                                    <input type="text" className="form-control" placeholder="เลขครุภัณฑ์..." value={headerData.machine_number} onChange={e => setHeaderData({...headerData, machine_number: e.target.value})} />
+                                </div>
+                                <div className="form-group">
+                                    <label>SN (โรงงาน)</label>
+                                    <input type="text" className="form-control" placeholder="Serial Number..." value={headerData.machine_SN} onChange={e => setHeaderData({...headerData, machine_SN: e.target.value})} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="section-box">
+                            <h4>3. เพิ่มรายการอะไหล่</h4>
                             <div className="add-item-row">
                                 <select 
                                     className="form-control" 
@@ -503,7 +563,6 @@ function ManageTransaction() {
 
                         <div className="modal-footer" style={{marginTop: '20px'}}>
                              <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>ยกเลิก</button>
-                             {/* เปลี่ยนชื่อปุ่มบันทึกตามโหมด */}
                              <button type="submit" className="btn-primary">{isEditMode ? "บันทึกการแก้ไข" : "บันทึกข้อมูล"}</button>
                         </div>
                     </form>
