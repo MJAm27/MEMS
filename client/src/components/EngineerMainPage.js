@@ -244,7 +244,7 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                                             </select>
                                         </div>
                                         <div className="form-group">
-                                            <label>เครื่องที่ใช้</label>
+                                            <label>เครื่องที่นำไปใช้</label>
                                             <select 
                                                 value={finalizeData[uniqueKey]?.machineId || ''} 
                                                 onChange={(e) => handleInputChange(uniqueKey, 'machineId', e.target.value)}

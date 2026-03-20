@@ -87,7 +87,7 @@ function ManageMachine() {
 
   // 4. ลบข้อมูล (DELETE)
   const handleDelete = async (sn) => {
-    if (window.confirm(`คุณต้องการลบเครื่องจักรเลขที่ ${sn} ใช่หรือไม่?`)) {
+    if (window.confirm(`คุณต้องการลบเครื่องเลขที่ ${sn} ใช่หรือไม่?`)) {
       try {
         await axios.delete(`${process.env.REACT_APP_API_URL}/api/machine/${sn}`);
         fetchMachines(); // โหลดข้อมูลใหม่หลังจากลบ

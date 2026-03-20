@@ -60,6 +60,15 @@ function ReportPage() {
     return log.action_type_name === accessLogFilter;
   });
 
+const parseItems = (itemsJson) => {
+    if (!itemsJson) return [];
+    try {
+        return typeof itemsJson === 'string' ? JSON.parse(itemsJson) : itemsJson;
+    } catch (error) {
+        return [];
+    }
+  };
+
   return (
     <div className="report-page fade-in">
       <h1 className="page-title">Dashboard ภาพรวม</h1>
@@ -144,49 +153,67 @@ function ReportPage() {
       <div className="accesslog-section">
         <div className="accesslog-header">
           <h3 className="section-title" style={{ margin: 0 }}>รายงานการใช้งานกล่อง</h3>
-          <select 
-            className="filter-select" 
-            value={accessLogFilter} 
-            onChange={(e) => setAccessLogFilter(e.target.value)}
-          >
-            <option value="all">สถานะทั้งหมด</option>
-            <option value="เปิดประตู">เปิดประตู</option>
-            <option value="ปิดประตู">ปิดประตู</option>
-          </select>
         </div>
-        <div className="accesslog-table-container">
-          <table className="accesslog-table">
+        <div className="table-responsive">
+          <table className="report-table">
             <thead>
               <tr>
-                <th>log_id</th>
-                <th>เวลา (time)</th>
-                <th>วันที่ (date)</th>
-                <th style={{ minWidth: '120px'}}>สถานะ</th>
-                <th>เลขที่ทำรายการ</th>
-                <th>อ้างอิง</th> {/* เพิ่มช่องนี้ */}
+                <th>วันที่/เวลา</th>
                 <th>ผู้ทำรายการ</th>
+                <th>ประเภทงาน</th>
+                <th>ตึก/แผนก</th>
+                <th>เครื่องที่นำใช้</th>
+                <th>เลขครุภัณฑ์ (รพ.)</th>
+                <th>SN (โรงงาน)</th>
+                <th>รายการอะไหล่</th>
+                <th>เวลาเปิด-ปิดตู้</th>
               </tr>
             </thead>
             <tbody>
               {filteredAccessLogs.length > 0 ? (
-                filteredAccessLogs.map((log) => (
-                  <tr key={log.log_id}>
-                    <td>{log.log_id}</td>
-                    <td>{log.time || "-"}</td>
-                    <td>{formatDate(log.date)}</td>
+                filteredAccessLogs.map((row) => (
+                  <tr key={row.transaction_id || row.log_id}>
                     <td>
-                      <span className={`status-badge ${log.action_type_name === 'เปิดประตู' ? 'status-open' : 'status-close'}`}>
-                        {log.action_type_name || "-"}
-                      </span>
+                      <div>{formatDate(row.date)}</div>
+                      <div style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '4px' }}>{row.time}</div>
                     </td>
-                    <td>{log.transaction_id || "-"}</td>
-                    <td>{log.parent_transaction_id || "-"}</td> 
-                    <td>{log.fullname || "-"}</td>
+                    <td>
+                      <div style={{ fontWeight: '500', color: '#1e293b' }}>{row.fullname || "-"}</div>
+                      <small className="tx-id-sub">Ref: {row.transaction_id || "-"}</small>
+                    </td>
+                    <td>{row.repair_type_name || "-"}</td>
+                    <td>
+                      <div>{row.buildings || "-"}</div>
+                      <div style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '4px' }}>{row.department_name || "-"}</div>
+                    </td>
+                    <td>{row.machine_name || "-"}</td>
+                    <td>{row.machine_number || "-"}</td>
+                    <td>{row.machine_SN || "-"}</td>
+                    <td>
+                      <div className="items-list-vertical">
+                        {parseItems(row.items_json).map((it, i) => (
+                          <div key={i} className="item-pill-vertical">
+                            <span className="item-name">{it.name}</span>
+                            <span className="item-qty">x{it.qty}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </td>
+                    <td style={{ minWidth: '130px' }}>
+                      <div className="time-row">
+                        <span className="time-label-open">เปิด</span> 
+                        <b>{row.open_time || '--:--'}</b>
+                      </div>
+                      <div className="time-row">
+                        <span className="time-label-close">ปิด</span> 
+                        <b>{row.close_time || '--:--'}</b>
+                      </div>
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="7" className="text-center text-muted py-4">
+                  <td colSpan="9" className="text-center py-4" style={{ color: '#94a3b8' }}>
                     ไม่มีข้อมูลการใช้งาน
                   </td>
                 </tr>

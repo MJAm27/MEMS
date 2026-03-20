@@ -2526,30 +2526,45 @@ app.put('/api/inventory/update-lot/:id', async (req, res) => {
     }
 });
 
-// ดึงข้อมูลประวัติการใช้งานกล่อง (Access Logs)
+// ดึงข้อมูลประวัติการทำรายการ (แทนที่ของเดิม)
 app.get('/api/report/accesslogs', async (req, res) => {
     let connection;
     try {
         connection = await pool.getConnection();
         const sql = `
-           SELECT 
-                al.log_id, 
-                al.time, 
-                al.date, 
-                at.action_type_name,
-                al.transaction_id, 
-                t.parent_transaction_id,
-                u.fullname 
-            FROM accesslogs al
-            LEFT JOIN action_type at ON al.action_type_id = at.action_type_id
-            LEFT JOIN users u ON al.user_id = u.user_id
-            JOIN transactions t ON al.transaction_id = t.transaction_id
-            ORDER BY al.date DESC, al.time DESC;
+            SELECT 
+                t.transaction_id, 
+                t.date, 
+                t.time, 
+                u.fullname, 
+                rt.repair_type_name, 
+                d.buildings, 
+                d.department_name, 
+                m.machine_name, 
+                t.machine_number, 
+                t.machine_SN,
+                (SELECT JSON_ARRAYAGG(
+                    JSON_OBJECT('name', et.equipment_name, 'qty', el.quantity)
+                 ) 
+                 FROM equipment_list el 
+                 INNER JOIN lot l ON el.lot_id = l.lot_id 
+                 INNER JOIN equipment e ON l.equipment_id = e.equipment_id 
+                 INNER JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id 
+                 WHERE el.transaction_id = t.transaction_id) as items_json,
+                (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-001' ORDER BY time DESC LIMIT 1) as open_time,
+                (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-002' ORDER BY time DESC LIMIT 1) as close_time
+            FROM transactions t
+            LEFT JOIN users u ON t.user_id = u.user_id
+            LEFT JOIN repair_type rt ON t.repair_type_id = rt.repair_type_id
+            LEFT JOIN department d ON t.department_id = d.department_id
+            LEFT JOIN machine m ON t.machine_id = m.machine_id
+            ORDER BY t.date DESC, t.time DESC
+            LIMIT 200
         `;
         const [rows] = await connection.query(sql);
         res.json(rows);
     } catch (error) {
-        console.error("Fetch Access Logs Error:", error);
+        console.error("Report Access Logs Error:", error);
         res.status(500).json({ error: error.message });
     } finally {
         if (connection) connection.release();
