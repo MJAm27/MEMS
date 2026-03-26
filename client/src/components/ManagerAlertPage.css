@@ -183,3 +183,7 @@
 .btn-acknowledge:active {
   transform: scale(0.95);
 }
+
+.item-details p {
+  text-align: left;
+}

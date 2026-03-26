@@ -82,6 +82,7 @@
     overflow-x: auto;
     padding-bottom: 10px;
     -webkit-overflow-scrolling: touch;
+    flex-wrap: wrap;
 }
 
 .tab-btn {
