@@ -43,6 +43,7 @@
     border-radius: 15px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.03);
     border: 1px solid #e2e8f0;
+    flex-wrap: wrap;
 }
 
 .filter-label {
@@ -123,6 +124,7 @@
     overflow-x: auto; /* เลื่อนซ้ายขวาได้ในมือถือ */
     white-space: nowrap;
     scrollbar-width: none; /* ซ่อน scrollbar */
+    flex-wrap: wrap;
 }
 
 .tab-navigation-wrapper::-webkit-scrollbar {

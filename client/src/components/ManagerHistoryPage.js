@@ -200,7 +200,7 @@ function ManagerHistoryPage({ viewDate }) {
                                 <th>ประเภท</th>
                                 <th>ประเภทงาน</th>
                                 <th>ตึก/แผนก</th>
-                                <th>เครื่องที่ใช้</th>           
+                                <th>เครื่องที่นำไปใช้</th>           
                                 <th>เลขครุภัณฑ์ (รพ.)</th>     
                                 <th>SN (โรงงาน)</th>          
                                 <th>รายการอะไหล่</th>
@@ -240,13 +240,10 @@ function ManagerHistoryPage({ viewDate }) {
                                             <div className="text-xs text-gray-500">{row.department_name || "-"}</div>
                                         </td>
 
-                                        {/* 1. คอลัมน์เครื่องที่ใช้ */}
                                         <td>{row.machine_name || "-"}</td>
 
-                                        {/* 2. คอลัมน์เลขครุภัณฑ์ (รพ.) */}
                                         <td className="font-medium text-slate-700">{row.machine_number || "-"}</td>
 
-                                        {/* 3. คอลัมน์ SN (โรงงาน) */}
                                         <td className="text-slate-500">{row.machine_SN || "-"}</td>
 
                                         <td className="items-cell">

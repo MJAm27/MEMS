@@ -109,27 +109,6 @@
     background: #5a6268;
 }
 
-/* ==================== Chart Placeholder ==================== */
-.chart-placeholder {
-    height: 320px;
-    background: repeating-linear-gradient(
-        45deg,
-        #f8f9fa,
-        #f8f9fa 10px,
-        #ffffff 10px,
-        #ffffff 20px
-    );
-    border-radius: 16px;
-    border: 2px dashed #dee2e6;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    font-weight: 600;
-    color: #6c757d;
-}
-
-/* ==================== Responsive ==================== */
 @media (max-width: 768px) {
     .summary-card strong {
         font-size: 30px;
@@ -144,10 +123,6 @@
     }
 }
 
-/* ... (CSS เดิม) ... */
-
-/* เพิ่มต่อท้ายไฟล์ */
-
 .section-title {
     margin-top: 30px;
     margin-bottom: 15px;
@@ -157,7 +132,6 @@
     padding-left: 10px;
 }
 
-/* Grid สำหรับกราฟ 4 ช่อง */
 .chart-dashboard-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); /* ปรับขนาดอัตโนมัติ */
@@ -266,42 +240,45 @@
     min-width: 800px;
 }
 
-.accesslog-table th,
-.accesslog-table td {
-    padding: 12px 15px;
-    text-align: left;
-    border-bottom: 1px solid #f0f0f0;
-}
-
 .accesslog-table th {
-    background-color: #f8f9fa;
-    color: #495057;
-    font-weight: 600;
+    background: #f8fafc;
+    color: #64748b;
+    text-align: left;
+    padding: 16px;
+    font-weight: 700;
+    border-bottom: 2px solid #f1f5f9;
     white-space: nowrap;
 }
 
+.accesslog-table td {
+    padding: 16px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #1e293b;
+    vertical-align: middle;
+}
+
 .accesslog-table tbody tr:hover {
-    background-color: #f8f9fa;
+    background-color: #f8fafc;
 }
 
 .status-badge {
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 50px;
+    font-size: 13px;
+    font-weight: 700;
     display: inline-block;
+    text-align: center;
 }
 
-/* สีของป้ายสถานะ เปิด (สีฟ้าเดิม) */
 .status-badge.status-open {
-    background-color: #e3f2fd;
-    color: #0d47a1;
+    background-color: #dcfce7;
+    color: #166534;
 }
 
 /* สีของป้ายสถานะ ปิด (สีแดง) */
 .status-badge.status-close {
-    background-color: #ffebee;
-    color: #c62828;
+    background-color: #fee2e2;
+    color: #991b1b;
 }
 
 /* ==================== Access Log Filter ==================== */
@@ -328,4 +305,95 @@
 
 .filter-select:focus {
     border-color: #e83e8c; /* ปรับสีให้เข้ากับธีมชมพูของคุณ */
+}
+
+.report-table {
+    width: 100%;
+    border-collapse: collapse;
+    white-space: nowrap;
+}
+
+.report-table th {
+    background: #f8fafc;
+    color: #64748b;
+    text-align: left;
+    padding: 16px;
+    font-weight: 700;
+    border-bottom: 2px solid #f1f5f9;
+}
+
+.report-table td {
+    padding: 16px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #1e293b;
+    vertical-align: middle;
+}
+
+.report-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.tx-id-sub {
+    display: block;
+    color: #94a3b8;
+    font-size: 0.8rem;
+    margin-top: 4px;
+}
+
+.items-list-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 180px;
+}
+
+.item-pill-vertical {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f8fafc;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.item-name {
+    color: #334155;
+    font-size: 0.85rem;
+    font-weight: 500;
+    white-space: normal;
+    word-break: break-word;
+}
+
+.item-qty {
+    background-color: #e2e8f0;
+    color: #0f172a;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    margin-left: 10px;
+}
+
+.time-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+    color: #334155;
+}
+
+.time-row:last-child {
+    margin-bottom: 0;
+}
+
+.time-label-open, .time-label-close {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    color: white;
+    font-weight: 600;
+    width: 35px;
+    text-align: center;
 }
