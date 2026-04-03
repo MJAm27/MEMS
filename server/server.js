@@ -5,7 +5,7 @@ const jwt = require("jsonwebtoken");
 const speakeasy = require("speakeasy");
 const qrcode = require("qrcode");
 const cors = require('cors');
-const axios = require('axios'); // สำหรับเชื่อมต่อ ESP8266
+const axios = require('axios'); 
 const multer = require('multer'); 
 const path = require('path'); 
 
@@ -1133,7 +1133,7 @@ app.get('/api/alerts/high-value', async (req, res) => {
             JOIN lot l ON el.lot_id = l.lot_id
             JOIN equipment e ON l.equipment_id = e.equipment_id
             JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
-            WHERE l.price > 500 
+            WHERE l.price > 5000 
               AND t.manager_acknowledged = 0
             ORDER BY t.date DESC, t.time DESC
         `;
