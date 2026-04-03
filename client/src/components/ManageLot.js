@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import "./ManageEquipment.css";
 import { FaTimes,FaPlus,FaSearch, FaArrowLeft, FaEdit, FaTrash } from "react-icons/fa";
 import axios from "axios";
-import * as XLSX from 'xlsx';
 import Barcode from 'react-barcode';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
@@ -55,26 +54,6 @@ function ManageLot() {
 
     return matchLot || matchSupplier;
   });
-
-  const handleExportExcel = () => {
-    const dataToExport = filteredLots.map(item => ({
-        "รหัสLot": item.lot_id,
-        "รหัสประเภท": item.equipment_type_id,
-        "ประเภทอะไหล่": item.equipment_name,
-        "รหัสอะไหล่": item.equipment_id,
-        "รุ่น/ขนาด": item.model_size,
-        "จำนวนคงเหลือ": item.current_quantity || 0,
-        "ราคาต้นทุน": item.price || 0,
-        "วันที่นำเข้า": item.import_date ? new Date(item.import_date).toLocaleDateString('th-TH') : "-",
-        "วันหมดอายุ": item.expiry_date ? new Date(item.expiry_date).toLocaleDateString('th-TH') : "-",
-        "บริษัทนำเข้า": item.supplier_name || "-"
-    }));
-
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, `LotData_${equipmentId}`);
-    XLSX.writeFile(workbook, `Lot_Report_${equipmentId}.xlsx`);
-  };
 
   const handleAddNew = () => {
     setFormData({ lot_id: "", supplier_id: "", import_date: "", expiry_date: "", current_quantity: "", price: "" });
@@ -176,13 +155,6 @@ function ManageLot() {
           </div>
 
           <div className="header-actions" style={{ display: 'flex', gap: '10px' }}>
-              <button 
-                  className="btn-success" 
-                  onClick={handleExportExcel} 
-                  style={{ backgroundColor: '#28a745', color: 'white', border: 'none', padding: '10px 15px', borderRadius: '5px' }}
-              >
-                  Export to Excel
-              </button>
               <button className="btn-primary" onClick={handleAddNew}>
                   <FaPlus /> เพิ่ม Lot ใหม่
               </button>
