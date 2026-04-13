@@ -201,6 +201,7 @@
     font-weight: 700;
     font-size: 0.95rem;
     transition: all 0.2s;
+    font-family: 'Kanit', sans-serif;
 }
 
 .btn-view-more:hover {
