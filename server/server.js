@@ -144,6 +144,8 @@ async function logActionToDB(userId, actionTypeId, transactionId = null) {
 /**
  * ฟังก์ชัน MQTT Helper สำหรับส่งคำสั่งไปยัง ESP8266 (OPEN/CLOSE) ผ่าน MQTT Broker
  */
+
+
 async function commandServo(action) { 
     const topic = "esp8266/test"; 
     const message = `${action.toUpperCase()}:${SECRET_PASSKEY}`; 
