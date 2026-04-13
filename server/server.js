@@ -1545,6 +1545,7 @@ app.get("/api/alerts/expire", async (req, res) => {
             l.lot_id,
             l.equipment_id,
             et.equipment_name,
+            e.model_size,
             et.img,
             s.supplier_name,
             l.expiry_date,
@@ -1574,6 +1575,7 @@ app.get("/api/alerts/low-stock", async (req, res) => {
             e.equipment_id,
             et.equipment_name,
             et.img,
+            e.model_size,
             e.alert_quantity,
             COALESCE(SUM(l.current_quantity), 0) as total_stock
         FROM equipment e

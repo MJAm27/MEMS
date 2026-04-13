@@ -96,7 +96,7 @@ function AlertPage() {
                   </div>
                   <div className="item-details">
                     <h4 className="text-danger">จำนวน : {item.current_quantity} ชิ้น</h4>
-                    <h3>{item.equipment_name}</h3>
+                    <h3>{item.equipment_name} {item.model_size}</h3>
                     <p><strong>Lot ID:</strong> {item.lot_id}</p>
                     <p><strong>บริษัท:</strong> {item.supplier_name || "-"}</p>
                     <p><strong>วันหมดอายุ:</strong> {formatDate(item.expiry_date)}</p>
@@ -126,7 +126,7 @@ function AlertPage() {
                   </div>
                   <div className="item-details">
                     <h4 className="text-danger">เหลือปัจจุบัน : {item.total_stock} ชิ้น</h4>
-                    <h3>{item.equipment_name}</h3>
+                    <h3>{item.equipment_name} {item.model_size}</h3>
                     <p><strong>จุดสั่งซื้อ (Alert):</strong> {item.alert_quantity} ชิ้น</p>
                     <p className="warning-text">
                        กรุณาสั่งซื้อเพิ่ม
