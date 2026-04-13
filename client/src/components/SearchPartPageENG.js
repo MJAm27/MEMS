@@ -149,7 +149,6 @@ function SearchPartPageENG() {
                         </div>
                         <div className="modal-body">
                             <div className="modal-detail-grid">
-                                {/* ฝั่งซ้าย: รูปภาพขนาดใหญ่ */}
                                 <div className="modal-image-section">
                                     {selectedPart.img ? (
                                         <img src={`${API_BASE}/uploads/${selectedPart.img}`} alt="Part" className="large-part-img" />
@@ -173,32 +172,37 @@ function SearchPartPageENG() {
                             </div>
 
                             <hr className="modal-divider" />
-                            
-                            <h4><FaWarehouse /> ข้อมูลแยกตามล็อต</h4>
-                            <div className="table-responsive">
-                                <table className="lot-table">
-                                    <thead>
-                                        <tr>
-                                            <th>รหัสล็อต</th>
-                                            <th>วันที่นำเข้า</th>
-                                            <th>วันหมดอายุ</th>
-                                            <th>จำนวนคงเหลือ</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {selectedPart.lots && selectedPart.lots.map((lot) => (
-                                            <tr key={lot.lot_id} className={new Date(lot.expiry_date) < new Date() ? "expired-row" : ""}>
-                                                <td>{lot.lot_id}</td>
-                                                <td>{new Date(lot.import_date).toLocaleDateString('th-TH')}</td>
-                                                <td>
-                                                    <FaCalendarAlt className="mr-1" /> 
-                                                    {lot.expiry_date ? new Date(lot.expiry_date).toLocaleDateString('th-TH') : 'ไม่มี'}
-                                                </td>
-                                                <td><strong className="text-pink">{lot.current_quantity}</strong></td>
+                            <div className="lot-section">
+                                <h4 className="section-subtitle"><FaWarehouse /> ข้อมูลแยกตามล็อต</h4>
+                                <div className="table-responsive">
+                                    <table className="lot-table-modern">
+                                        <thead>
+                                            <tr>
+                                                <th><FaBarcode /> รหัสล็อต</th>
+                                                <th><FaCalendarAlt /> วันที่นำเข้า</th>
+                                                <th><FaCalendarAlt /> วันหมดอายุ</th>
+                                                <th className="text-center">จำนวนคงเหลือ</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody>
+                                            {selectedPart.lots && selectedPart.lots.map((lot) => (
+                                                <tr key={lot.lot_id} className={new Date(lot.expiry_date) < new Date() ? "expired-row" : ""}>
+                                                    <td className="lot-id-cell">{lot.lot_id}</td>
+                                                    <td>{new Date(lot.import_date).toLocaleDateString('th-TH')}</td>
+                                                    <td>
+                                                        <span className={new Date(lot.expiry_date) < new Date() ? "expiry-badge-expired" : "expiry-badge"}>
+                                                            {lot.expiry_date ? new Date(lot.expiry_date).toLocaleDateString('th-TH') : 'ไม่มี'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="text-center">
+                                                        <strong className="qty-val">{lot.current_quantity}</strong> 
+                                                        <span className="unit-text"> {selectedPart.unit}</span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>

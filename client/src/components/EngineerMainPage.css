@@ -136,6 +136,7 @@ body {
     border: 2px solid #f1f5f9; background: white; display: flex;
     flex-direction: column; align-items: center; gap: 12px; cursor: pointer;
     transition: var(--transition);
+    font-family: 'Kanit', sans-serif;
 }
 .action-button:hover { 
     border-color: var(--primary-color); 
@@ -143,7 +144,10 @@ body {
     box-shadow: 0 10px 25px rgba(255, 77, 148, 0.15); 
 }
 .action-icon { font-size: 2.2rem; color: var(--primary-color); }
-.action-button span { font-weight: 700; color: var(--text-dark); }
+.action-button span { 
+    font-family: 'Kanit', sans-serif;
+    font-weight: 700; 
+    color: var(--text-dark); }
 
 /* ==================== Pending List Modern UI ==================== */
 .pending-container { 

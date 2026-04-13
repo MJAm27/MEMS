@@ -1,8 +1,29 @@
-.alert-page { padding: 25px; background: #f8f9fa; min-height: 100vh; }
+@import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap');
+
+/* กำหนดฟอนต์หลักให้คอนเทนเนอร์ครอบคลุมทั้งหน้า */
+.alert-page-container {
+    font-family: 'Kanit', sans-serif;
+}
+
+.alert-page { 
+    padding: 25px; 
+    background: #f8f9fa; 
+    min-height: 100vh; 
+    font-family: 'Kanit', sans-serif;
+}
 
 .alert-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
 
-.stat-item { padding: 10px 20px; border-radius: 10px; color: white; display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.stat-item { 
+    padding: 10px 20px; 
+    border-radius: 10px; 
+    color: white; 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    font-weight: 600; 
+    font-family: 'Kanit', sans-serif;
+}
 .stat-item.expire { background: #f39c12; }
 .stat-item.low { background: #e74c3c; }
 .stat-item.expensive { background: #3498db; }
@@ -10,11 +31,24 @@
 .filter-panel { display: flex; justify-content: space-between; margin-bottom: 25px; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
 
 .type-selector { display: flex; gap: 10px; }
-.type-selector button { padding: 8px 16px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 20px; cursor: pointer; transition: 0.3s; }
+.type-selector button { 
+    padding: 8px 16px; 
+    border: 1px solid #ddd; 
+    background: #f8f9fa; 
+    border-radius: 20px; 
+    cursor: pointer; 
+    transition: 0.3s; 
+    font-family: 'Kanit', sans-serif;
+}
 .type-selector button.active { background: #1a5276; color: white; border-color: #1a5276; }
 
 .search-box { display: flex; align-items: center; gap: 10px; border: 1px solid #ddd; padding: 5px 15px; border-radius: 20px; width: 300px; }
-.search-box input { border: none; outline: none; width: 100%; }
+.search-box input { 
+    border: none; 
+    outline: none; 
+    width: 100%; 
+    font-family: 'Kanit', sans-serif;
+}
 
 .alert-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
 
@@ -25,28 +59,67 @@
 .alert-card.expensive { border-left-color: #3498db; }
 
 .card-icon { font-size: 30px; color: #7f8c8d; }
-.alert-card.expire .card-icon { color: #f39c12; }
-.alert-card.low-stock .card-icon { color: #e74c3c; }
-.alert-card.expensive .card-icon { color: #3498db; }
 
-.card-content h3 { margin: 0 0 10px 0; color: #2c3e50; font-size: 18px; }
-.card-content .desc { font-size: 14px; color: #7f8c8d; margin-bottom: 15px; }
-
-.card-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 10px; }
-.card-footer span { font-size: 13px; color: #95a5a6; }
-.btn-detail { background: #f1f2f6; border: none; padding: 5px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 5px; color: #1a5276; }
-
-.high-value-border {
-  border-left: 5px solid #27ae60;
-  display: flex;
-  align-items: center;
-  padding: 20px;
+.card-content h3 { 
+    margin: 0 0 10px 0; 
+    color: #2c3e50; 
+    font-size: 18px; 
+    font-family: 'Kanit', sans-serif;
+}
+.card-content .desc { 
+    font-size: 14px; 
+    color: #7f8c8d; 
+    margin-bottom: 15px; 
+    font-family: 'Kanit', sans-serif;
 }
 
-.flex-row-between {
+.card-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 10px; }
+.card-footer span { 
+    font-size: 13px; 
+    color: #95a5a6; 
+    font-family: 'Kanit', sans-serif;
+}
+.btn-detail { 
+    background: #f1f2f6; 
+    border: none; 
+    padding: 5px 12px; 
+    border-radius: 5px; 
+    cursor: pointer; 
+    font-size: 12px; 
+    display: flex; 
+    align-items: center; 
+    gap: 5px; 
+    color: #1a5276; 
+    font-family: 'Kanit', sans-serif;
+}
+
+/* ส่วนของ Tabs */
+.alert-tab-card {
+    /* ...คงเดิม... */
+    font-family: 'Kanit', sans-serif;
+}
+
+.tab-text h3 {
+    margin: 0;
+    font-family: 'Kanit', sans-serif;
+    font-weight: 500;
+}
+
+.badge-count {
+    font-family: 'Kanit', sans-serif;
+}
+
+/* ส่วนหัวข้อ Alert Content */
+.alert-content-header h3 {
+    font-family: 'Kanit', sans-serif;
+    font-weight: 600;
+}
+
+.high-value-border {
+    border-left: 5px solid #27ae60;
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    padding: 20px;
 }
 
 .type-badge {
@@ -56,134 +129,71 @@
     border-radius: 50px;
     font-size: 0.75rem;
     font-weight: bold;
+    font-family: 'Kanit', sans-serif;
 }
 
-.info-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-top: 10px;
-    font-size: 0.9rem;
+/* ปรับฟอนต์ในรายละเอียดสินค้า */
+.item-details h3, 
+.item-details h4, 
+.item-details p {
+    font-family: 'Kanit', sans-serif;
 }
 
-/* โซนวางปุ่ม */
-.acknowledge-action-zone {
-  padding: 0 15px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.warning-text, .warning-text-box {
+    font-family: 'Kanit', sans-serif;
 }
 
-/* ตัวปุ่มใหม่สไตล์ Modern Floating */
+.no-data, .loading-text {
+    font-family: 'Kanit', sans-serif;
+}
+
+/* โซนปุ่ม Acknowledge */
 .btn-modern-check {
-  position: relative;
-  width: 54px;
-  height: 54px;
-  border-radius: 18px; /* ทรงสี่เหลี่ยมโค้งมนมนสมัยใหม่ */
-  border: none;
-  background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
-  color: white;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  box-shadow: 0 10px 20px rgba(46, 204, 113, 0.3);
-  overflow: visible;
+    position: relative;
+    width: 54px;
+    height: 54px;
+    border-radius: 18px; 
+    border: none;
+    background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 10px 20px rgba(46, 204, 113, 0.3);
+    overflow: visible;
+    font-family: 'Kanit', sans-serif;
 }
 
-/* เอฟเฟกต์ไอคอนสั่นเบาๆ เพื่อดึงสายตา */
-.check-icon-wrapper {
-  font-size: 1.4rem;
-  transition: transform 0.3s ease;
-}
-
-/* เมื่อเอาเมาส์วาง (Hover) */
-.btn-modern-check:hover {
-  transform: translateY(-5px) scale(1.05);
-  box-shadow: 0 15px 25px rgba(46, 204, 113, 0.4);
-  background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
-}
-
-.btn-modern-gradient:hover .check-icon-wrapper {
-  transform: scale(1.2);
-}
-
-/* เอฟเฟกต์ตอนกด (Active) */
-.btn-modern-check:active {
-  transform: scale(0.9);
-  box-shadow: 0 5px 10px rgba(46, 204, 113, 0.2);
-}
-
-/* สร้างวงแหวนกระจายรอบปุ่ม (Pulse Effect) เพื่อบอกว่าเป็นรายการที่ต้องจัดการ */
-.btn-modern-check::after {
-  content: '';
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border-radius: 18px;
-  background: rgba(46, 204, 113, 0.4);
-  z-index: -1;
-  animation: pulse-green 2s infinite;
-}
-
-@keyframes pulse-green {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1.6);
-    opacity: 0;
-  }
-}
-
-/* Tooltip เล็กๆ บอกความหมาย */
 .btn-tooltip {
-  position: absolute;
-  bottom: -30px;
-  background: #2c3e50;
-  color: white;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 0.7rem;
-  opacity: 0;
-  visibility: hidden;
-  transition: 0.3s;
-  white-space: nowrap;
-}
-
-.btn-modern-check:hover .btn-tooltip {
-  opacity: 1;
-  visibility: visible;
-  bottom: -35px;
+    position: absolute;
+    bottom: -30px;
+    background: #2c3e50;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: 0.3s;
+    white-space: nowrap;
+    font-family: 'Kanit', sans-serif;
 }
 
 .btn-acknowledge {
-  background-color: #2ecc71;
-  color: white;
-  border: none;
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 6px rgba(46, 204, 113, 0.2);
-}
-
-.btn-acknowledge:hover {
-  background-color: #27ae60;
-  transform: scale(1.05);
-}
-
-.btn-acknowledge:active {
-  transform: scale(0.95);
-}
-
-.item-details p {
-  text-align: left;
+    background-color: #2ecc71;
+    color: white;
+    border: none;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px rgba(46, 204, 113, 0.2);
+    font-family: 'Kanit', sans-serif;
 }

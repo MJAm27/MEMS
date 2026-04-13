@@ -1,4 +1,5 @@
 /* ManageMachine.css */
+@import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap');
 
 .manage-machine-container {
   background-color: #fff;
@@ -6,6 +7,8 @@
   padding: 30px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   min-height: 80vh;
+  /* ⭐️ เพิ่มฟอนต์ไม่มีหัว */
+  font-family: 'Kanit', sans-serif;
 }
 
 /* Header Section */
@@ -16,6 +19,7 @@
   margin-bottom: 25px;
   flex-wrap: wrap;
   gap: 15px;
+  font-family: 'Kanit', sans-serif;
 }
 
 .page-title-text {
@@ -23,12 +27,14 @@
   color: #343a40;
   margin: 0 0 5px 0;
   font-weight: 700;
+  font-family: 'Kanit', sans-serif;
 }
 
 .page-subtitle-text {
   color: #6c757d;
   margin: 0;
   font-size: 0.95rem;
+  font-family: 'Kanit', sans-serif;
 }
 
 /* Buttons */
@@ -44,6 +50,8 @@
   gap: 8px;
   font-weight: 500;
   transition: all 0.2s;
+  /* ⭐️ เพิ่มฟอนต์ไม่มีหัว */
+  font-family: 'Kanit', sans-serif;
 }
 
 .btn-primary:hover {
@@ -61,6 +69,8 @@
   cursor: pointer;
   font-weight: 500;
   transition: all 0.2s;
+  /* ⭐️ เพิ่มฟอนต์ไม่มีหัว */
+  font-family: 'Kanit', sans-serif;
 }
 
 .btn-secondary:hover {
@@ -82,6 +92,8 @@
   font-size: 1rem;
   outline: none;
   transition: border-color 0.2s;
+  /* ⭐️ เพิ่มฟอนต์ไม่มีหัว */
+  font-family: 'Kanit', sans-serif;
 }
 
 .search-bar-wrapper input:focus {
@@ -114,6 +126,8 @@
   padding: 15px;
   border-bottom: 2px solid #dee2e6;
   text-align: left;
+  /* ⭐️ เพิ่มฟอนต์ไม่มีหัว */
+  font-family: 'Kanit', sans-serif;
 }
 
 .custom-table td {
@@ -121,6 +135,8 @@
   border-bottom: 1px solid #f1f3f5;
   color: #333;
   vertical-align: middle;
+  /* ⭐️ เพิ่มฟอนต์ไม่มีหัว */
+  font-family: 'Kanit', sans-serif;
 }
 
 .custom-table tr:hover td {
@@ -135,7 +151,7 @@
 .text-primary { color: var(--primary-color, #e83e8c); }
 .text-danger { color: #dc3545; }
 .fw-bold { font-weight: 600; }
-.text-muted { color: #6c757d; font-size: 0.85rem; }
+.text-muted { color: #6c757d; font-size: 0.85rem; font-family: 'Kanit', sans-serif; }
 
 /* Action Buttons in Table */
 .action-btn {
@@ -159,6 +175,7 @@
   text-align: center;
   padding: 40px !important;
   color: #adb5bd;
+  font-family: 'Kanit', sans-serif;
 }
 
 /* Modal Styles */
@@ -182,6 +199,8 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
+  /* ⭐️ เพิ่มฟอนต์ไม่มีหัว */
+  font-family: 'Kanit', sans-serif;
 }
 
 .modal-header {
@@ -192,7 +211,12 @@
   align-items: center;
 }
 
-.modal-header h3 { margin: 0; font-size: 1.25rem; }
+.modal-header h3 { 
+  margin: 0; 
+  font-size: 1.25rem; 
+  font-weight: 600;
+  font-family: 'Kanit', sans-serif;
+}
 
 .close-btn {
   background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #aaa;
@@ -207,6 +231,7 @@
   margin-bottom: 8px;
   font-weight: 500;
   color: #333;
+  font-family: 'Kanit', sans-serif;
 }
 
 .form-group input {
@@ -215,6 +240,8 @@
   border: 1px solid #ced4da;
   border-radius: 6px;
   font-size: 1rem;
+  /* ⭐️ เพิ่มฟอนต์ไม่มีหัว */
+  font-family: 'Kanit', sans-serif;
 }
 .form-group input:focus {
   border-color: var(--primary-color, #e83e8c);
@@ -235,6 +262,7 @@
   background-color: #f8f9fa;
   border-bottom-left-radius: 12px;
   border-bottom-right-radius: 12px;
+  font-family: 'Kanit', sans-serif;
 }
 
 @keyframes fadeIn {

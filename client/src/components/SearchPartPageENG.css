@@ -251,12 +251,13 @@
 
 .modal-content {
     background: white;
-    padding: 30px;
-    border-radius: 20px;
-    width: 90%;
-    max-width: 600px;
-    max-height: 80vh;
+    padding: 35px;
+    border-radius: 25px;
+    width: 95%;
+    max-width: 1000px; 
+    max-height: 85vh;
     overflow-y: auto;
+    font-family: 'Kanit', sans-serif;
 }
 
 /* รูปภาพบน Card */
@@ -290,18 +291,100 @@
 /* การจัดเลย์เอาต์ใน Modal */
 .modal-detail-grid {
     display: grid;
-    grid-template-columns: 200px 1fr;
-    gap: 25px;
-    margin-bottom: 20px;
+    grid-template-columns: 280px 1fr;
+    gap: 40px;
+    margin-bottom: 30px;
 }
 
 .modal-image-section {
-    width: 200px;
-    height: 200px;
+    width: 100%;
+    height: 280px;
     border-radius: 20px;
-    overflow: hidden;
-    background: #f1f5f9;
+    background: #f8fafc;
     border: 1px solid #e2e8f0;
+}
+
+.lot-section {
+    margin-top: 10px;
+}
+
+.section-subtitle {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 15px;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.table-responsive {
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden; /* ให้ขอบตารางมนตาม Container */
+}
+
+.lot-table-modern {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+.lot-table-modern th {
+    background: #f1f5f9;
+    padding: 18px 20px;
+    text-align: left;
+    font-weight: 600;
+    color: #475569;
+    font-size: 0.95rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.lot-table-modern td {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+    font-size: 1rem;
+}
+
+.lot-table-modern tr:hover {
+    background-color: #f8fafc;
+}
+
+.lot-id-cell {
+    font-family: monospace; /* รหัสล็อตใช้ Font ตัวตรงจะอ่านง่าย */
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.qty-val {
+    font-size: 1.2rem;
+    color: var(--primary-pink);
+    font-weight: 700;
+}
+
+.unit-text {
+    font-size: 0.85rem;
+    color: #94a3b8;
+}
+
+.text-center { text-align: center; }
+
+/* Badge สำหรับวันหมดอายุ */
+.expiry-badge {
+    background: #f1f5f9;
+    padding: 4px 12px;
+    border-radius: 50px;
+    font-size: 0.9rem;
+}
+
+.expiry-badge-expired {
+    background: #fff1f2;
+    color: #e11d48;
+    padding: 4px 12px;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    font-weight: 600;
 }
 
 .large-part-img {
