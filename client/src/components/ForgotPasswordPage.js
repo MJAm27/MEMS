@@ -94,10 +94,17 @@ function ForgotPasswordPage() {
                         <p className="text-muted mb-4">กรอกรหัส 6 หลักจากแอป Authenticator</p>
                         <div className="otpInputContainer" style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '20px' }}>
                             {otpCode.map((digit, index) => (
-                                <input key={index} type="text" maxLength="1" value={digit}
+                                <input 
+                                    key={index} 
+                                    type="text" 
+                                    maxLength="1" 
+                                    value={digit}
                                     onChange={(e) => handleOtpChange(e, index)}
+                                    onKeyDown={(e) => handleKeyDown(e, index)} 
                                     ref={(el) => (inputRefs.current[index] = el)}
-                                    className="otpInputField" style={{ width: '40px', height: '50px', textAlign: 'center' }} />
+                                    className="otpInputField" 
+                                    style={{ width: '40px', height: '50px', textAlign: 'center' }} 
+                                />
                             ))}
                         </div>
                         <button type="submit" className="loginButton" disabled={loading}>

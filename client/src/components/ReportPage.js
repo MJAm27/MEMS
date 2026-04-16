@@ -23,7 +23,7 @@ function ReportPage() {
   });
 
   const [accessLogs, setAccessLogs] = useState([]);
-  const [accessLogFilter, setAccessLogFilter] = useState("all");
+  const [accessLogFilter] = useState("all");
 
   useEffect(() => {
     fetchReport();
@@ -93,15 +93,19 @@ const parseItems = (itemsJson) => {
       <div className="report-usage-grid">
         <div className="usage-card">
           <span>เบิกรายวัน</span>
+          <strong>{usage.borrow.daily}</strong> 
         </div>
         <div className="usage-card">
           <span>เบิกรายเดือน</span>
+          <strong>{usage.borrow.monthly}</strong> 
         </div>
         <div className="usage-card">
           <span>คืนรายวัน</span>
+          <strong>{usage.return.daily}</strong>
         </div>
         <div className="usage-card">
           <span>คืนรายเดือน</span>
+          <strong>{usage.return.monthly}</strong> 
         </div>
       </div>
 
