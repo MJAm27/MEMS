@@ -140,11 +140,11 @@ function ManageTransaction() {
         type_mode: "withdraw", 
         user_id: "", 
         machine_id: "",
-        department_id: "",       // +++ เพิ่ม +++
-        repair_type_id: "",      // +++ เพิ่ม +++
-        machine_number: "",      // +++ เพิ่ม +++
-        machine_SN: "",          // +++ เพิ่ม +++
-        parent_transaction_id: "", // +++ เพิ่ม +++
+        department_id: "",      
+        repair_type_id: "",      
+        machine_number: "",      
+        machine_SN: "",          
+        parent_transaction_id: "", 
         date: new Date().toISOString().split('T')[0],
         time: new Date().toLocaleTimeString('th-TH', { hour12: false }).slice(0, 5)
     });
@@ -224,7 +224,7 @@ function ManageTransaction() {
         (t.transaction_id || "").toString().toLowerCase().includes(searchLower) ||
         (t.parent_transaction_id || "").toString().toLowerCase().includes(searchLower) ||
         (t.fullname || "").toString().toLowerCase().includes(searchLower) ||
-        (t.machine_name || "").toString().toLowerCase().includes(searchLower) ||
+        (t.machine_type_name || "").toString().toLowerCase().includes(searchLower) ||
         (t.transaction_type_name || "").toString().toLowerCase().includes(searchLower);
 
     let matchesType = true;
@@ -363,7 +363,7 @@ function ManageTransaction() {
                             <p><strong>ผู้ทำรายการ:</strong> {selectedTransaction?.fullname}</p>
                             <p><strong>แผนก/ตึก:</strong> {selectedTransaction?.department_name  || "-"} {selectedTransaction?.buildings  || "-"}</p>
                             <p><strong>ประเภทงานซ่อม:</strong> {selectedTransaction?.repair_type_name || "-"}</p>
-                            <p><strong>เครื่องที่ใช้:</strong> {selectedTransaction?.machine_name || "-"}</p>
+                            <p><strong>เครื่องที่ใช้:</strong> {selectedTransaction?.machine_type_name || "-"}</p>
                             <p><strong>เลขครุภัณฑ์:</strong> {selectedTransaction?.machine_number || "-"}</p>
                             <p><strong>SN (โรงงาน):</strong> {selectedTransaction?.machine_SN || "-"}</p>
                             <p><strong>สถานะ:</strong> {selectedTransaction?.is_pending ? "รอดำเนินการ" : "เสร็จสิ้น"}</p>
@@ -479,7 +479,11 @@ function ManageTransaction() {
                                     <label>เครื่องที่นำไปใช้</label>
                                     <select className="form-control" value={headerData.machine_id} onChange={e => setHeaderData({...headerData, machine_id: e.target.value})}>
                                         <option value="">-- ไม่ระบุ --</option>
-                                        {options.machines.map(m => <option key={m.machine_id} value={m.machine_id}>{m.machine_name}</option>)}
+                                        {options.machines.map(m => (
+                                            <option key={m.machine_id} value={m.machine_id}>
+                                                {m.machine_type_name ? `${m.machine_type_name} - ${m.machine_supplier || ''} - ${m.machine_model || ''}` : (m.machine_type_name || m.machine_id)}
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
                                 <div className="form-group">

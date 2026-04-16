@@ -1946,7 +1946,15 @@ app.get("/api/transactions/:id/items", async (req, res) => {
 app.get("/api/transaction-options", async (req, res) => {
     try {
         const [users] = await db.query("SELECT user_id, fullname FROM users");
-        const [machines] = await db.query("SELECT machine_id, machine_name FROM machine");
+        const [machines] = await db.query(`
+            SELECT 
+                m.machine_id, 
+                mt.machine_type_name,
+                m.machine_supplier, 
+                m.machine_model 
+            FROM machine m
+            LEFT JOIN machine_type mt ON m.machine_type_id = mt.machine_type_id
+        `);
         const [types] = await db.query("SELECT transaction_type_id, transaction_type_name FROM transactions_type"); 
         const [equipments] = await db.query("SELECT equipment_id, model_size FROM equipment");
         const [lots] = await db.query("SELECT l.lot_id,l.equipment_id,e.model_size,e.equipment_type_id,et.equipment_name FROM lot l JOIN equipment e ON l.equipment_id = e.equipment_id JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id");
