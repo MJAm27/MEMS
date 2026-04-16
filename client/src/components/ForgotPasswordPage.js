@@ -78,7 +78,7 @@ function ForgotPasswordPage() {
         <div className="background">
             <div className="loginCard animate-fadeIn">
                 <img src={logo} alt="Logo" className="logo" />
-                <h2 className="header">กู้คืนรหัสผ่าน</h2>
+                <h2 className="header">รีเซตรหัสผ่าน</h2>
                 
                 {step === 1 ? (
                     <form onSubmit={handleCheckEmail} className="formContainer">
