@@ -27,12 +27,13 @@
     font-size: 1.5rem;
     color: #1e293b;
     margin: 0;
+    font-weight: 700;
 }
 
-/* --- 2. Filters Responsive Grid --- */
-.history-filters-wrapper {
+/* --- 2. Filters Grid --- */
+.history-filters-grid-manager {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 15px;
 }
 
@@ -44,26 +45,15 @@
     margin-bottom: 6px;
 }
 
-.input-with-icon {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.input-with-icon .icon {
-    position: absolute;
-    left: 12px;
-    color: #94a3b8;
-}
-
 .modern-input, .modern-select {
     width: 100%;
-    padding: 10px 10px 10px 38px;
+    padding: 10px 12px;
     border: 1px solid #e2e8f0;
     border-radius: 10px;
     font-size: 0.9rem;
     transition: all 0.2s;
     background-color: #ffffff;
+    font-family: 'Prompt', sans-serif;
 }
 
 .modern-select.highlight {
@@ -71,168 +61,169 @@
     background-color: #fff1f2;
 }
 
-/* --- 3. Desktop Table (Laptop Only) --- */
+/* --- 3. Table Layout & Sticky/Scroll Logic --- */
 .history-card {
     background: white;
     border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.table-responsive-wrapper {
+    width: 100%;
+    overflow-x: auto; /* เปิดให้สไลด์แนวนอน */
+    -webkit-overflow-scrolling: touch;
 }
 
 .manager-table {
     width: 100%;
-    border-collapse: collapse;
+    min-width: 1550px; /* กำหนดความกว้างเพื่อให้สไลด์ได้ */
+    border-collapse: separate; 
+    border-spacing: 0;
+}
+
+/* การตรึงคอลัมน์แรก (วันที่/เวลา) */
+.sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background-color: #f1f5f9 !important;
+    border-right: 2px solid #e2e8f0 !important;
+}
+
+/* พื้นหลังของแถวข้อมูลในคอลัมน์ที่ถูกตรึง */
+td.sticky-col {
+    background-color: #ffffff !important;
 }
 
 .manager-table th {
     background-color: #f1f5f9;
-    padding: 15px;
+    padding: 18px 15px;
     text-align: left;
     font-size: 0.85rem;
+    font-weight: 700;
     color: #475569;
-    text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .manager-table td {
-    padding: 16px;
+    padding: 16px 15px;
     border-bottom: 1px solid #f1f5f9;
-    vertical-align: middle;
+    vertical-align: top; /* จัดให้ข้อมูลบรรทัดแรกอยู่ตรงกัน */
 }
 
-/* User Info Cell */
-.user-info-cell {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
+/* --- 4. Content Styling --- */
 
-.user-avatar-mini {
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    overflow: hidden;
-    background: #e2e8f0;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    font-weight: 600;
-    color: #334155;
-    font-size: 14px;
-}
-
-.user-avatar-mini img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.user-name-text {
-    font-weight: 500;
-    color: #334155;
-    font-size: 0.9rem;
-}
-
-/* Items List Styling */
-.items-cell .item-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    font-size: 0.85rem;
-    padding: 2px 0;
-}
-
-.item-q { color: #db2777; font-weight: bold; }
-
-/* Access Logs Styling */
-.access-log-container {
-    font-size: 0.85rem;
-}
-
-.time-label-open { color: #059669; font-weight: bold; margin-right: 5px; }
-.time-label-close { color: #dc2626; font-weight: bold; margin-right: 5px; }
-.duration-tag {
-    display: inline-block;
-    background: #fdf2f8;
-    color: #be185d;
-    padding: 2px 8px;
-    border-radius: 6px;
-    margin-top: 5px;
+/* วันที่และเวลา */
+.date-text { font-weight: 700; color: #1e293b; margin-bottom: 4px; }
+.time-tag { 
+    background: #f1f5f9; 
+    padding: 2px 8px; 
+    border-radius: 6px; 
+    font-weight: 600; 
+    color: #64748b;
     font-size: 0.75rem;
-}
-
-/* --- 4. Responsive Media Queries --- */
-
-/* สำหรับ Tablet และ มือถือ */
-@media (max-width: 1024px) {
-    .desktop-only {
-        display: none; /* ซ่อนตารางเมื่อจอเล็กกว่า Laptop */
-    }
-
-    /* สร้าง Mobile Card View (เพิ่มส่วนนี้ใน React ด้วย) */
-    .mobile-only {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 15px;
-    }
-
-    /* ตกแต่ง Card สำหรับมือถือ */
-    .history-mobile-card {
-        background: white;
-        padding: 16px;
-        border-radius: 12px;
-        border-left: 5px solid #ec4899;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-}
-
-/* สำหรับมือถือขนาดเล็ก */
-@media (max-width: 640px) {
-    .history-header {
-        padding: 16px;
-    }
-    
-    .history-container.manager-version {
-        padding: 10px;
-    }
-
-    .title-section h2 {
-        font-size: 1.2rem;
-    }
-    
-    .history-filters-wrapper {
-        grid-template-columns: 1fr; /* กรองแถวละ 1 อัน */
-    }
-}
-
-/* Desktop Only Helper */
-@media (min-width: 1025px) {
-    .mobile-only {
-        display: none;
-    }
-}
-
-/* --- 5. Badge Styles --- */
-.type-badge {
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
     display: inline-flex;
     align-items: center;
-    gap: 5px;
 }
 
-.type-withdraw { background: #dcfce7; color: #166534; }
-.type-return { background: #fee2e2; color: #991b1b; }
+/* รหัสอ้างอิง */
+.tx-id-badge-main {
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: 700;
+    background: #f1f5f9;
+    color: #475569;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    border: 1px solid #e2e8f0;
+}
+.ref-link-text {
+    margin-top: 6px;
+    color: #3b82f6;
+    font-weight: 600;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ผู้ใช้งาน */
+.user-avatar-mini {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+.user-avatar-mini img { width: 100%; height: 100%; object-fit: cover; }
+.user-name-text { font-weight: 600; color: #334155; font-size: 0.9rem; }
+
+/* อะไหล่และจำนวน (ไม่มีกรอบ) */
+.item-name-row {
+    font-size: 0.85rem;
+    color: #334155;
+    margin-bottom: 6px;
+    white-space: nowrap;
+}
+.item-qty-row {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #db2777; /* สีชมพูเน้นจำนวน */
+    margin-bottom: 6px;
+    text-align: center;
+}
+
+/* Badge ประเภทรายการ */
+.type-badge {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.type-withdraw { background: #e0f2fe; color: #0369a1; }
+.type-return { background: #dcfce7; color: #166534; }
 .type-pending { background: #fef9c3; color: #854d0e; }
 
-.tx-id-badge {
-    font-family: monospace;
-    background: #f1f5f9;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    color: #475569;
+/* ตึก/แผนก และ ข้อมูลเครื่อง */
+.location-stack, .machine-info-box { line-height: 1.4; }
+.building-name { font-weight: 700; color: #1e293b; }
+.dept-name { font-size: 0.75rem; color: #64748b; }
+
+/* Badge เวลาเปิด-ปิดตู้ */
+.access-logs-badges { display: flex; flex-direction: column; gap: 6px; }
+.log-badge-item { display: flex; align-items: center; gap: 8px; }
+.badge-open { background: #10b981; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; min-width: 32px; text-align: center; }
+.badge-close { background: #f43f5e; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; min-width: 32px; text-align: center; }
+.log-time { font-family: monospace; font-weight: 600; color: #475569; font-size: 0.85rem; }
+
+/* ประเภทงาน Badge */
+.repair-tag {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: inline-block;
+}
+.repair-job { background: #eff6ff; color: #2563eb; border: 1px solid #dbeafe; }
+.pm-job { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+
+/* Scrollbar Styling */
+.table-responsive-wrapper::-webkit-scrollbar { height: 8px; }
+.table-responsive-wrapper::-webkit-scrollbar-track { background: #f1f5f9; }
+.table-responsive-wrapper::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.table-responsive-wrapper::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* --- 5. Media Queries --- */
+@media (max-width: 1024px) {
+    .desktop-only { display: none; }
+    .mobile-only { display: grid; grid-template-columns: 1fr; gap: 15px; }
+}
+
+@media (min-width: 1025px) {
+    .mobile-only { display: none; }
 }

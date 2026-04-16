@@ -246,12 +246,17 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                                         <div className="form-group">
                                             <label>เครื่องที่นำไปใช้</label>
                                             <select 
+                                                className="withdraw-input-modern" 
+                                                // เปลี่ยนมาดึงค่าจาก finalizeData ตาม uniqueKey ของการ์ดนั้นๆ
                                                 value={finalizeData[uniqueKey]?.machineId || ''} 
+                                                // ใช้ handleInputChange เพื่ออัปเดตค่าแยกตาม uniqueKey
                                                 onChange={(e) => handleInputChange(uniqueKey, 'machineId', e.target.value)}
                                             >
-                                                <option value="">-- เลือกเครื่อง --</option>
-                                                {machines.map((mac) => (
-                                                    <option key={mac.machine_id} value={mac.machine_id}>{mac.machine_name}</option>
+                                                <option value="">-- เลือกเครื่องมือ --</option>
+                                                {machines.map((m) => (
+                                                    <option key={m.machine_id} value={m.machine_id}>
+                                                        {`${m.machine_type_name} - ${m.machine_supplier} - ${m.machine_model}`}
+                                                    </option>
                                                 ))}
                                             </select>
                                         </div>

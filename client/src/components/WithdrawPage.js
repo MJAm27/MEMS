@@ -265,10 +265,17 @@ function WithdrawPage({ user }) {
 
                         <div className="input-group-modern">
                             <label className="input-label-modern">เครื่องที่นำไปใช้</label>
-                            <select className="withdraw-input-modern" value={machineId} onChange={(e) => setMachineId(e.target.value)}>
-                                <option value="">-- เลือกประเภทเครื่อง --</option>
+                            <select 
+                                className="withdraw-input-modern" 
+                                value={machineId} 
+                                onChange={(e) => setMachineId(e.target.value)}
+                            >
+                                <option value="">-- เลือกเครื่องมือ --</option>
                                 {machines.map(m => (
-                                    <option key={m.machine_id} value={m.machine_id}>{m.machine_name}</option>
+                                    <option key={m.machine_id} value={m.machine_id}>
+                                        {/* แก้ไขบรรทัดข้างล่างนี้ */}
+                                        {`${m.machine_type_name} - ${m.machine_supplier} - ${m.machine_model}`}
+                                    </option>
                                 ))}
                             </select>
                         </div>
@@ -403,7 +410,17 @@ function WithdrawPage({ user }) {
                         <div className="asset-info-banner">
                             <span className="label">สถานที่และเครื่อง</span>
                             <div className="info-row-summary"><span className="info-label">ประเภทงาน :</span><span className="info-value">{repairTypes.find(rt => rt.repair_type_id === Number(repairTypeId))?.repair_type_name || "-"}</span></div>
-                            <div className="info-row-summary"><span className="info-label">เครื่องที่นำไปใช้ :</span><span className="info-value">{machines.find(m => m.machine_id === Number(machineId))?.machine_name || "-"}</span></div>
+                            <div className="info-row-summary">
+                                <span className="info-label">เครื่องที่นำไปใช้ :</span>
+                                <span className="info-value">
+                                    {(() => {
+                                        const selectedMac = machines.find(m => m.machine_id === machineId); 
+                                        return selectedMac 
+                                            ? `${selectedMac.machine_type_name} - ${selectedMac.machine_supplier} - ${selectedMac.machine_model}`
+                                            : "-";
+                                    })()}
+                                </span>
+                            </div>
                             <div className="info-row-summary"><span className="info-label">เลขครุภัณฑ์ (รพ.) :</span><span className="info-value">{machineNumber || "-"}</span></div>
                             <div className="info-row-summary"><span className="info-label">SN (โรงงาน) :</span><span className="info-value">{machineSN || "-"}</span></div>
                             <div className="info-row-location">
@@ -439,7 +456,17 @@ function WithdrawPage({ user }) {
                             <div className="info-row-summary"><span className="info-label">ประเภทรายการ:</span><span className="info-value">เบิกอะไหล่ ({repairTypes.find(rt => rt.repair_type_id === Number(repairTypeId))?.repair_type_name})</span></div>
                             <div className="summary-data-row border-t pt-2 mt-2"><span className="text-blue-600">ข้อมูลเครื่องที่นำไปใช้ : </span></div>
                             <div className="ml-2 text-sm">
-                                <div className="flex justify-between"><span>เครื่องที่นำไปใช้ : </span><b>{machines.find(m => m.machine_id === Number(machineId))?.machine_name || "-"}</b></div>
+                                <div className="flex justify-between">
+                                    <span>เครื่องที่นำไปใช้ : </span>
+                                    <b>
+                                        {(() => {
+                                            const selectedMac = machines.find(m => m.machine_id === machineId);
+                                            return selectedMac 
+                                                ? `${selectedMac.machine_type_name} - ${selectedMac.machine_supplier} - ${selectedMac.machine_model}`
+                                                : "-";
+                                        })()}
+                                    </b>
+                                </div>
                                 <div className="flex justify-between"><span>เลขครุภัณฑ์ (รพ.) : </span><b>{machineNumber || "-"}</b></div>
                                 <div className="flex justify-between"><span>SN (โรงงาน) : </span><b>{machineSN || "-"}</b></div>
                                 <div className="mt-2 text-sm text-gray-600">ตึก : <b>{selectedBuilding} </b> | แผนก : <b>{departments.find(d => d.department_id === departmentId)?.department_name}</b></div>

@@ -434,6 +434,51 @@
     color: #92400e !important;
 }
 
+.tx-id-main {
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    color: #475569;
+    font-size: 0.85rem;
+    background: #f8fafc;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+}
+
+.ref-link-badge {
+    margin-top: 4px;
+    color: #3b82f6;
+    font-size: 0.7rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.ref-link-badge::before {
+    content: "🔗";
+    font-size: 0.6rem;
+}
+
+.report-table {
+    min-width: 1200px;
+}
+
+.type-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* สีของแต่ละประเภท */
+.type-withdraw { background: #e1f5fe; color: #0288d1; } 
+.type-pending { background: #fff8e1; color: #f57f17; border: 1px solid #ffecb3; } 
+.type-return { background: #e8f5e9; color: #2e7d32; } 
+
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }

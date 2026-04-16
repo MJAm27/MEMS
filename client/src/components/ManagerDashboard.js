@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState,useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
 import { Bar, Doughnut } from "react-chartjs-2";
 import { 
     FaHandHolding, FaReply, FaUsers, FaChartLine, FaTimes, FaBoxOpen,
-    FaCalendarDay, FaUser, FaTools, FaBuilding, FaExclamationCircle, FaBox
+    FaCalendarDay, FaUser, FaTools, FaBuilding, FaExclamationCircle, FaBox, FaClock
 } from "react-icons/fa";
 import { 
     Chart as ChartJS, CategoryScale, LinearScale, BarElement, 
@@ -29,12 +29,14 @@ function ManagerDashboard() {
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
-            const today = new Date().toISOString().split('T')[0];
+
+            const now = new Date();
+            const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
             const [historyRes, pendingRes, detailsRes] = await Promise.all([
                 axios.get(`${API_BASE_URL}/api/history/manager/full`, {
                     headers: { Authorization: `Bearer ${token}` },
-                    params: { startDate: today, endDate: today }
+                    params: { startDate: today, endDate: today } // ส่งวันนี้ทั้งคู่
                 }),
                 axios.get(`${API_BASE_URL}/api/borrow/all-pending`, { 
                     headers: { Authorization: `Bearer ${token}` }
@@ -54,15 +56,16 @@ function ManagerDashboard() {
         }
     }, []);
 
-    useEffect(() => { fetchDashboardData(); }, [fetchDashboardData]);
+    useEffect(() => { 
+        fetchDashboardData(); 
+    }, [fetchDashboardData]);
 
     // ฟังก์ชันตัดสินใจแสดงประเภทรายการ (Logic เดียวกับหน้าประวัติ)
     const renderTypeBadge = (row) => {
-        const isSubActivity = !!row.parent_transaction_id;
-        
+        const isSubActivity = !!row.parent_transaction_id; 
         if (row.transaction_type_id === 'T-RTN') {
             return (
-                <span className={`badge-type T-RTN ${isSubActivity ? 'linked' : ''}`}>
+                <span className="type-badge type-return">
                     <FaReply /> {isSubActivity ? 'คืน (จากล่วงหน้า)' : 'คืนคลังปกติ'}
                 </span>
             );
@@ -70,25 +73,42 @@ function ManagerDashboard() {
         
         if (row.transaction_type_id === 'T-WTH') {
             if (row.is_pending === 1) {
-                return <span className="badge-type PENDING"><FaHandHolding /> เบิกล่วงหน้า</span>;
+                return <span className="type-badge type-pending"><FaHandHolding /> เบิกล่วงหน้า</span>;
             }
+
             return (
-                <span className="badge-type T-WTH">
-                    <FaBoxOpen /> {isSubActivity ? 'บันทึกใช้จริง' : 'เบิกอะไหล่'}
+                <span className="type-badge type-withdraw">
+                    <FaBoxOpen /> {isSubActivity ? 'สรุปใช้จริง' : 'เบิกปกติ'}
                 </span>
             );
         }
-        return <span className="badge-type">{row.type_name}</span>;
+        return <span className="type-badge">{row.type_name}</span>;
     };
-
+    
     // --- Logic ข้อมูลกราฟ ---
-    const usageChartData = useMemo(() => ({
-        labels: ['กิจกรรมวันนี้'],
-        datasets: [
-            { label: 'เบิก (ครั้ง)', data: [todayData.filter(d => d.transaction_type_id === 'T-WTH').length], backgroundColor: '#3b82f6', borderRadius: 8 },
-            { label: 'คืน (ครั้ง)', data: [todayData.filter(d => d.transaction_type_id === 'T-RTN').length], backgroundColor: '#10b981', borderRadius: 8 }
-        ]
-    }), [todayData]);
+    const usageChartData = useMemo(() => {
+        const actualActivities = todayData.filter(d => d.is_pending !== 1);
+        const withdrawCount = actualActivities.filter(d => d.transaction_type_id === 'T-WTH').length;
+        const returnCount = actualActivities.filter(d => d.transaction_type_id === 'T-RTN').length;
+
+        return {
+            labels: ['สรุปกิจกรรมวันนี้'],
+            datasets: [
+                { 
+                    label: 'เบิกไปใช้จริง (ครั้ง)', 
+                    data: [withdrawCount], 
+                    backgroundColor: '#3b82f6', 
+                    borderRadius: 8 
+                },
+                { 
+                    label: 'คืนเข้าคลังทั้งหมด (ครั้ง)', 
+                    data: [returnCount], 
+                    backgroundColor: '#10b981', 
+                    borderRadius: 8 
+                }
+            ]
+        };
+    }, [todayData]);
 
     const topPartsData = useMemo(() => {
         const counts = {};
@@ -105,11 +125,25 @@ function ManagerDashboard() {
 
     const repairStats = useMemo(() => {
         const types = {};
-        todayData.forEach(d => {
-            const name = d.repair_type_name || "ไม่ระบุ";
+        
+        const validData = todayData.filter(d => d.is_pending !== 1);
+
+        validData.forEach(d => {
+            const name = d.repair_type_name || "งานทั่วไป/ไม่ระบุ";
             types[name] = (types[name] || 0) + 1;
         });
-        return { chartData: { labels: Object.keys(types), datasets: [{ data: Object.values(types), backgroundColor: ['#f43f5e', '#3b82f6', '#fbbf24', '#10b981'] }] } };
+
+        return { 
+            chartData: { 
+                labels: Object.keys(types), 
+                datasets: [{ 
+                    data: Object.values(types), 
+
+                    backgroundColor: ['#f43f5e', '#3b82f6', '#fbbf24', '#10b981', '#8b5cf6', '#94a3b8'],
+                    hoverOffset: 4
+                }] 
+            } 
+        };
     }, [todayData]);
 
     const locationChartData = useMemo(() => {
@@ -142,11 +176,17 @@ function ManagerDashboard() {
             <div className="report-summary-grid">
                 <div className="summary-card info">
                     <FaHandHolding className="card-icon" />
-                    <div className="card-text"><span>เบิกวันนี้</span><strong>{todayData.filter(d => d.transaction_type_id === 'T-WTH').length} ครั้ง</strong></div>
+                    <div className="card-text">
+                        <span>เบิกวันนี้</span>
+                        <strong>{todayData.filter(d => d.transaction_type_id === 'T-WTH' && d.is_pending !== 1).length} ครั้ง</strong>
+                    </div>
                 </div>
                 <div className="summary-card success">
                     <FaReply className="card-icon" />
-                    <div className="card-text"><span>คืนวันนี้</span><strong>{todayData.filter(d => d.transaction_type_id === 'T-RTN').length} ครั้ง</strong></div>
+                    <div className="card-text">
+                        <span>คืนวันนี้</span>
+                        <strong>{todayData.filter(d => d.transaction_type_id === 'T-RTN').length} ครั้ง</strong>
+                    </div>
                 </div>
                 <div className={`summary-card warning clickable-card ${showPendingTable ? 'active' : ''}`} onClick={() => setShowPendingTable(!showPendingTable)}>
                     <FaExclamationCircle className="card-icon" />
@@ -216,46 +256,133 @@ function ManagerDashboard() {
 
             {/* Main Activities Table */}
             <div className="report-table-section">
-                <h3>รายละเอียดกิจกรรมเชิงลึก</h3>
+                <h3>รายละเอียดกิจกรรมเชิงลึก (กิจกรรมทั้งหมดวันนี้)</h3>
                 <div className="table-wrapper">
                     <table className="report-table">
                         <thead>
                             <tr>
                                 <th>วันที่/เวลา</th>
+                                <th>รหัสอ้างอิง</th>
                                 <th>ผู้ทำรายการ</th>
                                 <th>ประเภท</th>
                                 <th>ประเภทงาน</th>
-                                <th>ตึก/แผนก</th>
+                                <th>ตึก / แผนก</th>
                                 <th>เครื่องที่นำไปใช้</th>
-                                <th>เลขครุภัณฑ์ (รพ.)</th>
-                                <th>SN (โรงงาน)</th>
                                 <th>รายการอะไหล่</th>
+                                <th>จำนวน</th>
                                 <th>เวลาเปิด-ปิดตู้</th>
                             </tr>
                         </thead>
                         <tbody>
                             {todayData.length > 0 ? todayData.map((row, idx) => {
-                                const items = typeof row.items_json === 'string' ? JSON.parse(row.items_json) : (row.items_json || []);
+                                // แปลง JSON อะไหล่
+                                const items = typeof row.items_json === 'string' 
+                                    ? JSON.parse(row.items_json) 
+                                    : (row.items_json || []);
+
                                 return (
                                     <tr key={idx}>
-                                        <td><div className="date-text">{new Date(row.date).toLocaleDateString('th-TH')}</div><span className="time-tag">{row.time}</span></td>
+                                        {/* 1. วันที่และเวลา */}
                                         <td>
-                                            <div className="td-user">
-                                                {row.profile_img ? <img src={`${API_BASE_URL}/profile-img/${row.profile_img}`} alt="p" className="user-avatar-mini" /> : <FaUser />}
-                                                {row.fullname}
+                                            <div className="date-text">
+                                                {new Date(row.date).toLocaleDateString('th-TH')}
+                                            </div>
+                                            <span className="time-tag">
+                                                <FaClock size={10} style={{marginRight: '4px'}} />
+                                                {row.time}
+                                            </span>
+                                        </td>
+
+                                        {/* 2. รหัสอ้างอิง */}
+                                        <td>
+                                            <div className="tx-id-container">
+                                                <span className="tx-id-main">{row.transaction_id}</span>
+                                                {row.parent_transaction_id && (
+                                                    <div className="ref-link-badge">
+                                                        <small>Ref: {row.parent_transaction_id}</small>
+                                                    </div>
+                                                )}
                                             </div>
                                         </td>
+                                        
+                                        {/* 3. ผู้ทำรายการ */}
+                                        <td>
+                                            <div className="td-user">
+                                                {row.profile_img ? (
+                                                    <img 
+                                                        src={`${API_BASE_URL}/profile-img/${row.profile_img}`} 
+                                                        alt="avatar" 
+                                                        className="user-avatar-mini" 
+                                                    />
+                                                ) : (
+                                                    <div className="avatar-placeholder-mini">
+                                                        {row.fullname?.charAt(0).toUpperCase()}
+                                                    </div>
+                                                )}
+                                                <span className="user-name-text">{row.fullname}</span>
+                                            </div>
+                                        </td>
+
+                                        {/* 4. ประเภทรายการ */}
                                         <td>{renderTypeBadge(row)}</td>
-                                        <td className="font-semibold text-blue-600">{row.repair_type_name || "-"}</td>
-                                        <td><div className="text-xs"><b>{row.buildings || "-"}</b></div><div className="text-xs text-gray-500">{row.department_name || "-"}</div></td>
-                                        <td>{row.machine_name || "-"}</td>
-                                        <td className="font-bold">{row.machine_number || "-"}</td>
-                                        <td>{row.machine_SN || "-"}</td>
-                                        <td><div className="items-column-wrapper">{items.map((it, i) => <div key={i} className="item-pill"><span className="item-name">{it.name}</span> <span className="item-qty">x{it.qty}</span></div>)}</div></td>
-                                        <td><div className="access-log-container"><div><span className="text-green-500">เปิด:</span> {row.open_time || '--:--'}</div><div><span className="text-red-500">ปิด:</span> {row.close_time || '--:--'}</div></div></td>
+
+                                        {/* 5. ประเภทงาน */}
+                                        <td>
+                                            <div className={`repair-tag ${row.repair_type_id === 1 ? 'repair-job' : 'pm-job'}`}>
+                                                {row.repair_type_name || "-"}
+                                            </div>
+                                        </td>
+
+                                        {/* 6. ตึกและแผนก (Stack แบบ 2 บรรทัด) */}
+                                        <td>
+                                            <div className="location-stack">
+                                                <div className="building-name">{row.buildings || "-"}</div>
+                                                <div className="dept-name">{row.department_name || "-"}</div>
+                                            </div>
+                                        </td>
+
+                                        {/* 7. ข้อมูลเครื่องมือ */}
+                                        <td>
+                                            <div className="machine-info-box">
+                                                <div className="text-sm font-bold">{row.machine_name || "-"}</div>
+                                                <div className="text-xs text-gray-500">SN: {row.machine_SN || "-"}</div>
+                                            </div>
+                                        </td>
+
+                                        {/* 8. รายการอะไหล่ */}
+                                        <td>
+                                            {items.map((it, i) => (
+                                                <div key={i} className="item-row-display">{it.name}</div>
+                                            ))}
+                                        </td>
+
+                                        {/* 9. จำนวน */}
+                                        <td className="text-center">
+                                            {items.map((it, i) => (
+                                                <div key={i} className="qty-row-display">x{it.qty}</div>
+                                            ))}
+                                        </td>
+
+                                        {/* 10. เวลาเปิด-ปิดตู้ (Badge สไตล์ HistoryPage) */}
+                                        <td>
+                                            <div className="access-logs-badges">
+                                                <div className="log-badge-item">
+                                                    <span className="badge-open">เปิด</span>
+                                                    <span className="log-time">{row.open_time || '--:--'}</span>
+                                                </div>
+                                                <div className="log-badge-item">
+                                                    <span className="badge-close">ปิด</span>
+                                                    <span className="log-time">{row.close_time || '--:--'}</span>
+                                                </div>
+                                            </div>
+                                        </td>
                                     </tr>
                                 );
-                            }) : <tr><td colSpan="10" className="empty-row">ไม่มีกิจกรรมในช่วงวันนี้</td></tr>}
+                            }) : (
+                                <tr>
+                                    <td colSpan="10" className="empty-row">ไม่มีกิจกรรมในช่วงวันนี้</td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>

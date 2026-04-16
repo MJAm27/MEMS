@@ -96,12 +96,13 @@ function HistoryPage({ user }) {
     };
 
     // --- Logic การกรองข้อมูล ---
+
     const filteredData = history.filter(item => {
         const matchType = filter === 'ALL' || (filter === 'PENDING' ? item.is_pending === 1 : item.transaction_type_id === filter);
-        const matchRepair = repairFilter === 'ALL' || item.repair_type_id === Number(repairFilter);
-        const matchMachine = machineFilter === 'ALL' || item.machine_id === Number(machineFilter);
+        const matchRepair = repairFilter === 'ALL' || String(item.repair_type_id) === repairFilter;
+        const matchMachine = machineFilter === 'ALL' || String(item.machine_id) === machineFilter;
         const matchBuilding = buildingFilter === 'ALL' || item.buildings === buildingFilter;
-        const matchDept = deptFilter === 'ALL' || item.department_id === Number(deptFilter);
+        const matchDept = deptFilter === 'ALL' || String(item.department_id) === deptFilter;
         return matchType && matchRepair && matchMachine && matchBuilding && matchDept;
     });
 
@@ -145,7 +146,11 @@ function HistoryPage({ user }) {
                         <label>เครื่องที่นำไปใช้</label>
                         <select className="modern-select" value={machineFilter} onChange={e => setMachineFilter(e.target.value)}>
                             <option value="ALL">ทุกเครื่องมือ</option>
-                            {machines.map(m => <option key={m.machine_id} value={m.machine_id}>{m.machine_name}</option>)}
+                            {machines.map(m => (
+                                <option key={m.machine_id} value={m.machine_id}>
+                                    {`${m.machine_type_name} - ${m.machine_supplier} - ${m.machine_model}`}
+                                </option>
+                            ))}
                         </select>
                     </div>
                     <div className="filter-item">
