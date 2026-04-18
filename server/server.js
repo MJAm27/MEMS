@@ -272,6 +272,32 @@ app.post('/api/withdraw/partInfo', async (req, res) => {
 app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
     const { machine_id, machine_number, machine_SN, department_id, repair_type_id, cartItems } = req.body;
     const userId = req.user.userId;
+    if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
+        return res.status(400).json({ 
+            success: false, 
+            error: "ไม่พบรายการอะไหล่ที่ต้องการเบิก หรือรูปแบบข้อมูลไม่ถูกต้อง" 
+        });
+    }
+    for (let i = 0; i < cartItems.length; i++) {
+        const item = cartItems[i];
+
+        // 2.1 เช็คว่ามี lotId หรือไม่
+        if (!item.lotId || String(item.lotId).trim() === '') {
+            return res.status(400).json({ 
+                success: false, 
+                error: `ข้อมูลรายการที่ ${i + 1} ไม่ถูกต้อง (ไม่พบรหัส Lot)` 
+            });
+        }
+
+        // 2.2 เช็คว่า quantity มีค่า, เป็นตัวเลข และต้องมากกว่า 0 (ห้ามเบิกติดลบ หรือเบิก 0 ชิ้น)
+        if (item.quantity === undefined || item.quantity === null || isNaN(item.quantity) || item.quantity <= 0) {
+            return res.status(400).json({ 
+                success: false, 
+                error: `จำนวนอะไหล่ของ Lot: ${item.lotId} ไม่ถูกต้อง (ต้องมากกว่า 0)` 
+            });
+        }
+    }
+
     let connection;
 
     try {
@@ -338,7 +364,7 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
     } catch (error) {
         if (connection) await connection.rollback();
         // พิมพ์ Error ลง Terminal ให้เห็นชัดๆ ว่าพังที่ไหน
-        console.error("🚨 Confirm Withdraw Error:", error.message); 
+        console.error("Confirm Withdraw Error:", error.message); 
         res.status(500).json({ error: error.message });
     } finally {
         if (connection) connection.release();
