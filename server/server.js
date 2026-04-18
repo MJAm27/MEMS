@@ -280,31 +280,35 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
 
         const transactionId = `WTH-${Date.now()}`;
 
-        // บันทึกรายการหลัก พร้อมข้อมูลสถานที่และประเภทงาน
+        // บันทึกรายการหลัก 
         const insertTxSql = `
             INSERT INTO transactions 
             (transaction_id, transaction_type_id, date, time, user_id, 
             machine_id, machine_number, machine_SN, department_id, repair_type_id, is_pending) 
             VALUES (?, 'T-WTH', CURDATE(), CURTIME(), ?, ?, ?, ?, ?, ?, 0)
         `;
-
         await connection.query(insertTxSql, [
             transactionId, userId, machine_id, machine_number, machine_SN, department_id, repair_type_id
         ]);
 
-        // ผูกเวลาเปิดประตู
+        // เวลาเปิดประตูที
         await connection.query(
-            `UPDATE accesslogs SET transaction_id = ? 
+            `UPDATE accesslogs 
+             SET transaction_id = ? 
              WHERE user_id = ? AND transaction_id IS NULL AND action_type_id = 'A-001' 
              ORDER BY date DESC, time DESC LIMIT 1`,
             [transactionId, userId]
         );
 
+        //บันทึกรายการอะไหล่ที่เบิก
         for (const item of cartItems) {
+            // ตัดจำนวนในสต๊อก (Lot)
             await connection.query(
                 "UPDATE lot SET current_quantity = current_quantity - ? WHERE lot_id = ? AND current_quantity >= ?",
                 [item.quantity, item.lotId, item.quantity]
             );
+            
+            // บันทึกประวัติว่าเบิกชิ้นไหนไปบ้าง
             const listId = `ER-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
             await connection.query(
                 "INSERT INTO equipment_list (equipment_list_id, transaction_id, quantity, lot_id) VALUES (?, ?, ?, ?)",
@@ -312,38 +316,22 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
             );
         }
 
-        // บันทึกเวลาปิดตู้
-        const closeLogId = `CL-${Date.now()}`;
+        //  บันทึกเวลาปิดตู้ใหม่ 
+        const closeLogId = `LG-CL-${Date.now()}`;
         await connection.query(
             "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-002', ?, ?)",
             [closeLogId, transactionId, userId]
         );
 
         await connection.commit();
-        res.json({ success: true, message: "เบิกอะไหล่เรียบร้อยแล้ว" });
+        
+        res.json({ success: true, message: "เบิกอะไหล่เรียบร้อยแล้ว", transactionId });
+        
     } catch (error) {
         if (connection) await connection.rollback();
         res.status(500).json({ error: error.message });
     } finally {
         if (connection) connection.release();
-    }
-});
-
-// ดึงยอดค้างเบิกทั้งหมดของพนักงานทุกคน (ใช้ใน Dashboard)
-app.get('/api/borrow/all-pending', authenticateToken, async (req, res) => {
-    try {
-        const sql = `
-            SELECT COALESCE(SUM(el.quantity), 0) as total_pending 
-            FROM transactions t
-            JOIN equipment_list el ON t.transaction_id = el.transaction_id
-            WHERE t.is_pending = 1
-        `;
-        const [rows] = await pool.query(sql);
-        
-        res.json(rows[0]); 
-    } catch (error) {
-        console.error("Fetch All Pending Error:", error.message);
-        res.status(500).json({ error: error.message });
     }
 });
 
