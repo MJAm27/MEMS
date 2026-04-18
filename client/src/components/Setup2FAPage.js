@@ -42,7 +42,6 @@ function Setup2FA() {
         };
 
         fetch2FA();
-        // eslint-disable-next-line react-hooks/exhaustive-deps 
     }, [userId]);
 
     const handleChange = (e, index) => {

@@ -73,7 +73,6 @@ const parseItems = (itemsJson) => {
     <div className="report-page fade-in">
       <h1 className="page-title">Dashboard ภาพรวม</h1>
 
-      {/* ส่วนสรุปตัวเลข */}
       <div className="report-summary-grid">
         <div className="summary-card">
           อะไหล่ทั้งหมด
@@ -89,7 +88,6 @@ const parseItems = (itemsJson) => {
         </div>
       </div>
 
-      {/* แก้ไขตรงนี้: นำค่าจาก usage มาแสดงผล */}
       <div className="report-usage-grid">
         <div className="usage-card">
           <span>เบิกรายวัน</span>
@@ -109,11 +107,9 @@ const parseItems = (itemsJson) => {
         </div>
       </div>
 
-      {/* --- ส่วนที่เพิ่มใหม่: Chart Grid 4 ช่อง --- */}
       <h3 className="section-title">สถิติและกราฟ</h3>
       <div className="chart-dashboard-grid">
         
-        {/* กราฟที่ 1: Inventory Balance (Active) */}
         <div 
             className="chart-widget-card clickable" 
             onClick={() => navigate('/report/inventory-balance')} 
@@ -145,7 +141,7 @@ const parseItems = (itemsJson) => {
             onClick={() => navigate('/report/equipment-age')}
         >
             <div className="widget-header">
-                <h4>อายุอะไหล่คงคลังเฉลี่ย</h4> {/* เปลี่ยนชื่อหัวข้อ */}
+                <h4>อายุอะไหล่คงคลังเฉลี่ย</h4>
                 <span className="view-more">ดูทั้งหมด &gt;</span>
             </div>
             <div className="widget-body">
@@ -190,7 +186,7 @@ const parseItems = (itemsJson) => {
                       <div>{row.buildings || "-"}</div>
                       <div style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '4px' }}>{row.department_name || "-"}</div>
                     </td>
-                    <td>{row.machine_name || "-"}</td>
+                    <td>{row.machine_type_name || "-"}</td>
                     <td>{row.machine_number || "-"}</td>
                     <td>{row.machine_SN || "-"}</td>
                     <td>

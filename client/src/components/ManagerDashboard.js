@@ -36,7 +36,7 @@ function ManagerDashboard() {
             const [historyRes, pendingRes, detailsRes] = await Promise.all([
                 axios.get(`${API_BASE_URL}/api/history/manager/full`, {
                     headers: { Authorization: `Bearer ${token}` },
-                    params: { startDate: today, endDate: today } // ส่งวันนี้ทั้งคู่
+                    params: { startDate: today, endDate: today } 
                 }),
                 axios.get(`${API_BASE_URL}/api/borrow/all-pending`, { 
                     headers: { Authorization: `Bearer ${token}` }
@@ -60,7 +60,6 @@ function ManagerDashboard() {
         fetchDashboardData(); 
     }, [fetchDashboardData]);
 
-    // ฟังก์ชันตัดสินใจแสดงประเภทรายการ (Logic เดียวกับหน้าประวัติ)
     const renderTypeBadge = (row) => {
         const isSubActivity = !!row.parent_transaction_id; 
         if (row.transaction_type_id === 'T-RTN') {
@@ -85,7 +84,6 @@ function ManagerDashboard() {
         return <span className="type-badge">{row.type_name}</span>;
     };
     
-    // --- Logic ข้อมูลกราฟ ---
     const usageChartData = useMemo(() => {
         const actualActivities = todayData.filter(d => d.is_pending !== 1);
         const withdrawCount = actualActivities.filter(d => d.transaction_type_id === 'T-WTH').length;
@@ -172,7 +170,6 @@ function ManagerDashboard() {
                 <h2><FaCalendarDay /> ข้อมูลสรุปประจำวันที่: {new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}</h2>
             </div>
 
-            {/* Summary Cards */}
             <div className="report-summary-grid">
                 <div className="summary-card info">
                     <FaHandHolding className="card-icon" />
@@ -202,7 +199,6 @@ function ManagerDashboard() {
                 </div>
             </div>
 
-            {/* Tab Navigation */}
             <div className="chart-navigation-wrapper">
                 <button className={`tab-btn ${activeTab === 'usage' ? 'active' : ''}`} onClick={() => setActiveTab('usage')}><FaChartLine /> การเบิก-คืน</button>
                 <button className={`tab-btn ${activeTab === 'top-parts' ? 'active' : ''}`} onClick={() => setActiveTab('top-parts')}><FaBox /> อะไหล่ยอดนิยม 5 อันดับ</button>
@@ -210,7 +206,6 @@ function ManagerDashboard() {
                 <button className={`tab-btn ${activeTab === 'repair-type' ? 'active' : ''}`} onClick={() => setActiveTab('repair-type')}><FaTools /> ประเภทงาน</button>
             </div>
 
-            {/* Charts Section */}
             <div className="dashboard-main-chart-card">
                 <div className="chart-container-large">
                     {activeTab === 'location' && (
@@ -231,7 +226,6 @@ function ManagerDashboard() {
                 </div>
             </div>
 
-            {/* Pending Details Table */}
             {showPendingTable && (
                 <div className="pending-details-section animate-fadeIn">
                     <div className="section-header"><h3><FaBoxOpen /> รายละเอียดอะไหล่ที่ค้างเบิกในมือพนักงาน</h3><button className="close-btn" onClick={() => setShowPendingTable(false)}><FaTimes /></button></div>
@@ -254,7 +248,6 @@ function ManagerDashboard() {
                 </div>
             )}
 
-            {/* Main Activities Table */}
             <div className="report-table-section">
                 <h3>รายละเอียดกิจกรรมเชิงลึก (กิจกรรมทั้งหมดวันนี้)</h3>
                 <div className="table-wrapper">
@@ -282,7 +275,6 @@ function ManagerDashboard() {
 
                                 return (
                                     <tr key={idx}>
-                                        {/* 1. วันที่และเวลา */}
                                         <td>
                                             <div className="date-text">
                                                 {new Date(row.date).toLocaleDateString('th-TH')}
@@ -293,7 +285,6 @@ function ManagerDashboard() {
                                             </span>
                                         </td>
 
-                                        {/* 2. รหัสอ้างอิง */}
                                         <td>
                                             <div className="tx-id-container">
                                                 <span className="tx-id-main">{row.transaction_id}</span>
@@ -305,7 +296,6 @@ function ManagerDashboard() {
                                             </div>
                                         </td>
                                         
-                                        {/* 3. ผู้ทำรายการ */}
                                         <td>
                                             <div className="td-user">
                                                 {row.profile_img ? (
@@ -323,17 +313,14 @@ function ManagerDashboard() {
                                             </div>
                                         </td>
 
-                                        {/* 4. ประเภทรายการ */}
                                         <td>{renderTypeBadge(row)}</td>
 
-                                        {/* 5. ประเภทงาน */}
                                         <td>
                                             <div className={`repair-tag ${row.repair_type_id === 1 ? 'repair-job' : 'pm-job'}`}>
                                                 {row.repair_type_name || "-"}
                                             </div>
                                         </td>
 
-                                        {/* 6. ตึกและแผนก (Stack แบบ 2 บรรทัด) */}
                                         <td>
                                             <div className="location-stack">
                                                 <div className="building-name">{row.buildings || "-"}</div>
@@ -341,7 +328,6 @@ function ManagerDashboard() {
                                             </div>
                                         </td>
 
-                                        {/* 7. ข้อมูลเครื่องมือ */}
                                         <td>
                                             <div className="machine-info-box">
                                                 <div className="text-sm font-bold">{row.machine_name || "-"}</div>
@@ -349,21 +335,18 @@ function ManagerDashboard() {
                                             </div>
                                         </td>
 
-                                        {/* 8. รายการอะไหล่ */}
                                         <td>
                                             {items.map((it, i) => (
                                                 <div key={i} className="item-row-display">{it.name}</div>
                                             ))}
                                         </td>
 
-                                        {/* 9. จำนวน */}
                                         <td className="text-center">
                                             {items.map((it, i) => (
                                                 <div key={i} className="qty-row-display">x{it.qty}</div>
                                             ))}
                                         </td>
 
-                                        {/* 10. เวลาเปิด-ปิดตู้ (Badge สไตล์ HistoryPage) */}
                                         <td>
                                             <div className="access-logs-badges">
                                                 <div className="log-badge-item">

@@ -5,7 +5,7 @@ import axios from "axios";
 import SubNavbar from "./SubNavbar";
 
 function ManageMachine() {
-  const [machines, setMachines] = useState([]);
+  const [machines, setMachines] = useState([]); 
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -74,7 +74,6 @@ function ManageMachine() {
         await axios.put(`${process.env.REACT_APP_API_URL}/api/machine/${formData.machine_id}`, payload);
         alert("แก้ไขข้อมูลสำเร็จ");
       } else {
-        // Add New (รวม machine_id เข้าไปใน payload ด้วย)
         await axios.post(
             `${process.env.REACT_APP_API_URL}/api/machine`,
             { ...payload, machine_id: formData.machine_id },
@@ -83,7 +82,7 @@ function ManageMachine() {
         alert("เพิ่มข้อมูลสำเร็จ");
       }
       
-      fetchMachines();
+      fetchMachines(); 
       setShowModal(false);
 
     } catch (error) {

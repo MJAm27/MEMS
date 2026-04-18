@@ -8,7 +8,6 @@ import {
 } from "react-icons/fa";
 import "./EngineerMainPage.css";
 
-// Import Pages
 import ProfileENG from './ProfileENG';
 import ProfileEditENG from './ProfileEditENG';
 import ReturnPartPage from './ReturnPartPage';
@@ -210,7 +209,6 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                         
                         return (
                             <div key={uniqueKey} className="pending-card-modern">
-                                {/* ส่วนหัวของการ์ด */}
                                 <div className="card-top-info">
                                     <div className="equipment-main-name">
                                         <FaBoxOpen className="box-icon" />
@@ -228,7 +226,6 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                                     <span className="ref-text">ID: {item.borrow_id}</span>
                                 </div>
 
-                                {/* ฟอร์มกรอกข้อมูล */}
                                 <div className="finalize-form-modern">
                                     <div className="form-row-duo">
                                         <div className="form-group">
@@ -301,7 +298,6 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                                         </div>
                                     </div>
 
-                                    {/* ส่วนบันทึกการใช้ */}
                                     <div className="action-footer-modern">
                                         <div className="usage-input-box">
                                             <label>จำนวนที่ใช้จริง</label>
@@ -350,7 +346,6 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
 
     return (
         <div className={`layout-wrapper ${sidebarOpen ? "sidebar-open" : "sidebar-closed"}`}>
-            {/* Sidebar Overlay สำหรับมือถือ */}
             <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>
 
             <aside className="sidebar-container">

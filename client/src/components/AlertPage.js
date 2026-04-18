@@ -6,7 +6,7 @@ import "./AlertPage.css";
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 function AlertPage() {
-  const [activeTab, setActiveTab] = useState("expire"); // 'expire' หรือ 'stock'
+  const [activeTab, setActiveTab] = useState("expire"); 
   const [expireList, setExpireList] = useState([]);
   const [stockList, setStockList] = useState([]);
   const [loading, setLoading] = useState(true);

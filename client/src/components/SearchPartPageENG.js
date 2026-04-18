@@ -12,8 +12,8 @@ function SearchPartPageENG() {
     const [searchTerm, setSearchTerm] = useState("");
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [selectedPart, setSelectedPart] = useState(null); // เก็บข้อมูลรายละเอียดสต็อกที่ดึงมา
-    const [showModal, setShowModal] = useState(false);     // ควบคุมการแสดง Modal
+    const [selectedPart, setSelectedPart] = useState(null); 
+    const [showModal, setShowModal] = useState(false);   
 
     // ฟังก์ชันสำหรับดึงรายละเอียดสต็อกรายล็อต
     const handleViewDetails = async (equipmentId) => {
@@ -28,16 +28,15 @@ function SearchPartPageENG() {
             const specificLots = res.data.filter(item => item.equipment_id === equipmentId);
             
             if (specificLots.length > 0) {
-                // สร้าง Object ใหม่เพื่อจัดรูปแบบให้เหมือนในรูปภาพ
                 const partInfo = {
                     equipment_name: specificLots[0].equipment_name,
                     equipment_id: specificLots[0].equipment_id,
                     model_size: specificLots[0].model_size,
-                    supplier_name: specificLots[0].supplier_name, // ชื่อบริษัท (A)
+                    supplier_name: specificLots[0].supplier_name, 
                     unit: specificLots[0].unit,
                     img: specificLots[0].img,
                     total_quantity: specificLots.reduce((sum, lot) => sum + lot.current_quantity, 0),
-                    lots: specificLots // รายการล็อตทั้งหมดเพื่อไปแสดงวันหมดอายุ
+                    lots: specificLots // ส่งข้อมูลล็อตทั้งหมดที่เกี่ยวข้องกับอะไหล่ชิ้นนี้ไปยัง Modal
                 };
                 setSelectedPart(partInfo);
                 setShowModal(true);
@@ -98,7 +97,6 @@ function SearchPartPageENG() {
                     <div className="search-grid">
                         {results.map((item) => (
                             <div key={item.equipment_id} className="search-result-card">
-                                {/* เพิ่มส่วนแสดงรูปภาพบน Card */}
                                 <div className="card-image-preview">
                                     {item.img ? (
                                         <img src={`${API_BASE}/uploads/${item.img}`} alt={item.equipment_name} onError={(e) => e.target.src="https://via.placeholder.com/150?text=No+Image"} />
@@ -139,7 +137,6 @@ function SearchPartPageENG() {
                 )}
             </div>
 
-            {/* ส่วนแสดง Modal รายละเอียดสต็อก (เพิ่มรูปภาพขนาดใหญ่) */}
             {showModal && selectedPart && (
                 <div className="modal-overlay">
                     <div className="modal-content fade-in">
@@ -157,7 +154,6 @@ function SearchPartPageENG() {
                                     )}
                                 </div>
 
-                                {/* ฝั่งขวา: ข้อมูลทั่วไป */}
                                 <div className="modal-info-section">
                                     <div className="part-summary">
                                         <p><strong>รหัสอุปกรณ์:</strong> {selectedPart.equipment_id}</p>

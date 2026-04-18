@@ -19,7 +19,6 @@ function ManageSupplier() {
     contact: ""
   });
 
-  // 1. โหลดข้อมูลเมื่อเปิดหน้าเว็บ
   useEffect(() => {
     fetchSuppliers();
   }, []);
@@ -33,57 +32,50 @@ function ManageSupplier() {
     }
   };
 
-  // 2. ฟังก์ชันค้นหา
   const filteredSuppliers = suppliers.filter((item) =>
     (item.supplier_name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
     String(item.supplier_id).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // 3. จัดการ Form Inputs
+  // จัดการ Form Inputs
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // 4. เปิด Modal เพิ่มข้อมูลใหม่
   const handleAddNew = () => {
     setIsEditMode(false);
     setFormData({ supplier_id: "", supplier_name: "", contact: "" });
     setShowModal(true);
   };
 
-  // 5. เปิด Modal แก้ไขข้อมูล
   const handleEdit = (item) => {
     setIsEditMode(true);
     setFormData({
       supplier_id: item.supplier_id,
       supplier_name: item.supplier_name,
-      contact: item.contact || "" // ถ้าไม่มีข้อมูลให้เป็น string ว่าง
+      contact: item.contact || ""
     });
     setShowModal(true);
   };
 
-  // 6. บันทึกข้อมูล (เพิ่ม หรือ แก้ไข)
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       if (isEditMode) {
-        // API Update
         await axios.put(`${API_BASE_URL}/api/supplier/${formData.supplier_id}`, formData);
         alert("แก้ไขข้อมูลสำเร็จ");
       } else {
-        // API Create
         await axios.post(`${API_BASE_URL}/api/supplier`, formData);
         alert("เพิ่มข้อมูลสำเร็จ");
       }
       setShowModal(false);
-      fetchSuppliers(); // โหลดข้อมูลใหม่
+      fetchSuppliers(); 
     } catch (error) {
       console.error("Error saving supplier:", error);
       alert("เกิดข้อผิดพลาด: " + (error.response?.data?.message || error.message));
     }
   };
 
-  // 7. ลบข้อมูล
   const handleDelete = async (id) => {
     if (window.confirm(`คุณต้องการลบ บริษัทนำเข้ารหัส : ${id} ใช่หรือไม่?`)) {
       try {
@@ -98,7 +90,6 @@ function ManageSupplier() {
 
   return (
     <div className="manage-supplier-container fade-in">
-      {/* Header */}
       <div className="page-header">
         <SubNavbar />
         <div>
@@ -109,7 +100,6 @@ function ManageSupplier() {
         </button>
       </div>
 
-      {/* Search Bar */}
       <div className="search-bar-wrapper">
         <FaSearch className="search-icon" />
         <input
@@ -120,7 +110,6 @@ function ManageSupplier() {
         />
       </div>
 
-      {/* Table */}
       <div className="table-container">
         <table className="custom-table">
           <thead>
@@ -159,7 +148,6 @@ function ManageSupplier() {
         </table>
       </div>
 
-      {/* Modal */}
       {showModal && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -172,7 +160,6 @@ function ManageSupplier() {
               </div>
               <div className="modal-body">
                 
-                {/* ID Field (แสดงเฉพาะโหมดแก้ไข) */}
                 {isEditMode && (
                   <div className="form-group">
                     <label>รหัสบริษัท (Supplier ID)</label>
@@ -180,13 +167,12 @@ function ManageSupplier() {
                       type="text"
                       name="supplier_id"
                       value={formData.supplier_id}
-                      disabled // ห้ามแก้ ID
+                      disabled
                       style={{ backgroundColor: "#f0f0f0", cursor: "not-allowed" }}
                     />
                   </div>
                 )}
 
-                {/* Name Field */}
                 <div className="form-group">
                   <label>ชื่อบริษัท (Supplier Name) <span className="text-danger">*</span></label>
                   <input
@@ -199,7 +185,6 @@ function ManageSupplier() {
                   />
                 </div>
 
-                {/* Contact Field */}
                 <div className="form-group">
                   <label>ข้อมูลติดต่อ (Contact Info)</label>
                   <textarea
@@ -207,7 +192,7 @@ function ManageSupplier() {
                     value={formData.contact}
                     onChange={handleChange}
                     rows="3"
-                    className="form-textarea" // เพิ่ม class ให้ css
+                    className="form-textarea" 
                     placeholder="เบอร์โทร, อีเมล หรือ ที่อยู่"
                   />
                 </div>

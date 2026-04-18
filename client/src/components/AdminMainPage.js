@@ -86,7 +86,6 @@ function AdminMainPage({ user, handleLogout }) {
             
             <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>
 
-            {/* ===== Sidebar ===== */}
             <aside className="sidebar-container">
                 <div className="sidebar-header">
                     <h2>MEMS ADMIN</h2>

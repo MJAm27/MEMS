@@ -177,7 +177,7 @@ function ManageDepartment() {
                                         value={formData.department_id} 
                                         onChange={handleInputChange} 
                                         required 
-                                        disabled={isEditMode} // ห้ามแก้รหัสตอนแก้ไข
+                                        disabled={isEditMode} 
                                         placeholder="ระบุรหัสหน่วยงาน"
                                     />
                                 </div>

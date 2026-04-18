@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaLock,  FaEye, FaEyeSlash } from "react-icons/fa";
-import "./ChangePasswordENG.css"; // ใช้สไตล์เดียวกันเพื่อความสวยงาม
+import "./ChangePasswordENG.css"; 
 
 const API_BASE = process.env.REACT_APP_API_URL;
 

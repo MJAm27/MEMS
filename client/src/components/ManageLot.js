@@ -64,7 +64,7 @@ function ManageLot() {
   const handleEdit = (item) => {
     setFormData({
       lot_id: item.lot_id,
-      supplier_id: item.supplier_id || "", // ต้องเช็คด้วยว่าใน DB มี supplier_id ส่งมาด้วย
+      supplier_id: item.supplier_id || "", 
       import_date: item.import_date ? new Date(item.import_date).toISOString().split('T')[0] : "",
       expiry_date: item.expiry_date ? new Date(item.expiry_date).toISOString().split('T')[0] : "",
       current_quantity: item.current_quantity,
@@ -228,7 +228,7 @@ function ManageLot() {
                     value={formData.lot_id} 
                     onChange={handleChange} 
                     required 
-                    readOnly={isEditMode} // ถ้า Edit ไม่ควรให้แก้รหัส Lot
+                    readOnly={isEditMode} 
                     style={{ backgroundColor: isEditMode ? '#e9ecef' : 'white' }}
                   />
                 </div>

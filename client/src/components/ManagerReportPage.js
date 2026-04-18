@@ -19,7 +19,6 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:3001";
 function ManagerReportPage() {
     const navigate = useNavigate();
     
-    // ตั้งค่า Default Tab เป็น 'usage-stats' (การเบิก-คืน) ตามรูปที่คุณต้องการ
     const [activeTab, setActiveTab] = useState("usage-stats"); 
     
     const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]);
@@ -153,7 +152,6 @@ function ManagerReportPage() {
             </div>
 
             <div className="report-main-section">
-                {/* Tab Navigation แบบแนวนอนตามรูปที่ต้องการ */}
                 <div className="tab-navigation-wrapper">
                     <button className={`tab-btn ${activeTab === "usage-stats" ? "active" : ""}`} onClick={() => setActiveTab("usage-stats")}>
                         <FaChartLine /> การเบิก-คืน
@@ -198,7 +196,6 @@ function ManagerReportPage() {
                 </div>
             </div>
 
-            {/* ตารางตรวจสอบปริมาณอะไหล่คงคลังด้านล่างสุด */}
             <div className="report-table-section mb-10">
                 <div className="section-header-with-filter">
                     <div className="title-group">

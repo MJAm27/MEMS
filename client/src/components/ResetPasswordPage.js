@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import './LoginPage.css'; // ใช้ CSS หลัก
+import './LoginPage.css'; 
 import logo from './logo/download.jpg'; 
 
 function ResetPasswordPage() {
@@ -25,7 +25,6 @@ function ResetPasswordPage() {
         setError('');
 
         try {
-            // แก้ไข: ลบ 'const res =' ออกเนื่องจากไม่ได้ใช้งาน เพื่อไม่ให้เกิด Warning
             await axios.post(`${process.env.REACT_APP_API_URL}/api/reset-password`, {
                 token,
                 newPassword: passwords.new

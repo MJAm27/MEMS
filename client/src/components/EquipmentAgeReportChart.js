@@ -32,7 +32,7 @@ function EquipmentAgeReportChart({ isPreview = false }) {
             {
               label: "อายุเฉลี่ย (วัน)",
               data: finalData.map((item) => Number(item.avg_age_days || 0).toFixed(1)),
-              backgroundColor: "#FF9800", // สีส้ม เพื่อความแตกต่าง
+              backgroundColor: "#FF9800", 
               borderRadius: 4,
               barThickness: isPreview ? 20 : 35,
             },
@@ -43,7 +43,7 @@ function EquipmentAgeReportChart({ isPreview = false }) {
   }, [isPreview]);
 
   const options = {
-    indexAxis: "y", // กราฟแนวนอน
+    indexAxis: "y", 
     responsive: true,
     maintainAspectRatio: false,
     layout: {
