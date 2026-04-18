@@ -1902,7 +1902,7 @@ app.get("/api/transactions", async (req, res) => {
             t.machine_SN,
             tt.transaction_type_name, 
             u.fullname, 
-            m.machine_name, 
+            mt.machine_type_name, 
             d.department_name,
             d.buildings,
             (SELECT COUNT(*) FROM equipment_list el WHERE el.transaction_id = t.transaction_id) as item_count 
@@ -1910,6 +1910,7 @@ app.get("/api/transactions", async (req, res) => {
         LEFT JOIN transactions_type tt ON t.transaction_type_id = tt.transaction_type_id 
         LEFT JOIN users u ON t.user_id = u.user_id 
         LEFT JOIN machine m ON t.machine_id = m.machine_id 
+        LEFT JOIN machine_type mt ON m.machine_type_id = mt.machine_type_id
         LEFT JOIN department d ON d.department_id = t.department_id
         ORDER BY t.date DESC, t.transaction_id DESC;
     `;
@@ -2704,7 +2705,7 @@ app.get('/api/report/accesslogs', async (req, res) => {
                 rt.repair_type_name, 
                 d.buildings, 
                 d.department_name, 
-                m.machine_name, 
+                mt.machine_type_name,
                 t.machine_number, 
                 t.machine_SN,
                 (SELECT JSON_ARRAYAGG(
@@ -2722,6 +2723,7 @@ app.get('/api/report/accesslogs', async (req, res) => {
             LEFT JOIN repair_type rt ON t.repair_type_id = rt.repair_type_id
             LEFT JOIN department d ON t.department_id = d.department_id
             LEFT JOIN machine m ON t.machine_id = m.machine_id
+            LEFT JOIN machine_type mt ON m.machine_type_id = mt.machine_type_id
             ORDER BY t.date DESC, t.time DESC
             LIMIT 200
         `;

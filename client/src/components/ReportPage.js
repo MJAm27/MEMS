@@ -31,17 +31,37 @@ function ReportPage() {
 
   const fetchReport = async () => {
     try {
-      const [summaryRes, usageRes , accessLogsRes] = await Promise.all([
+      // ใช้ Promise.allSettled เพื่อให้ตัวที่สำเร็จยังคืนค่ามาได้ แม้จะมีบางตัวพัง
+      const [summaryRes, usageRes, accessLogsRes] = await Promise.allSettled([
         axios.get(`${API_BASE_URL}/api/report/summary`),
         axios.get(`${API_BASE_URL}/api/report/usage`),
         axios.get(`${API_BASE_URL}/api/report/accesslogs`)
       ]);
 
-      setSummary(summaryRes.data);
-      setUsage(usageRes.data);
-      setAccessLogs(accessLogsRes.data);
+      // เซ็ตข้อมูล summary ถ้าสำเร็จ
+      if (summaryRes.status === "fulfilled") {
+        setSummary(summaryRes.value.data);
+      } else {
+        console.error("โหลด summary ไม่สำเร็จ", summaryRes.reason);
+      }
+
+      // เซ็ตข้อมูล usage ถ้าสำเร็จ
+      if (usageRes.status === "fulfilled") {
+        setUsage(usageRes.value.data);
+      } else {
+        console.error("โหลด usage ไม่สำเร็จ", usageRes.reason);
+      }
+
+      // เซ็ตข้อมูล accesslogs ถ้าสำเร็จ
+      if (accessLogsRes.status === "fulfilled") {
+        setAccessLogs(accessLogsRes.value.data);
+      } else {
+        console.error("โหลด accesslogs ไม่สำเร็จ", accessLogsRes.reason);
+        setAccessLogs([]); // ตั้งค่าเป็น array ว่างเพื่อป้องกัน map() error
+      }
+
     } catch (err) {
-      console.error("โหลดรายงานไม่สำเร็จ", err);
+      console.error("เกิดข้อผิดพลาดในการเชื่อมต่อ API", err);
     }
   };
 
@@ -186,7 +206,7 @@ const parseItems = (itemsJson) => {
                       <div>{row.buildings || "-"}</div>
                       <div style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '4px' }}>{row.department_name || "-"}</div>
                     </td>
-                    <td>{row.machine_name || "-"}</td>
+                    <td>{row.machine_type_name || "-"}</td>
                     <td>{row.machine_number || "-"}</td>
                     <td>{row.machine_SN || "-"}</td>
                     <td>
