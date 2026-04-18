@@ -1,4 +1,3 @@
-/* ==================== Variables & Reset ==================== */
 :root {
     --primary-color: #e83e8c; /* สีชมพูหลัก */
     --primary-light: #ffe6f2;
@@ -30,7 +29,6 @@ body {
     overflow-x: hidden;
 }
 
-/* ==================== Sidebar ==================== */
 .sidebar-container {
     width: var(--sidebar-width);
     background: var(--bg-white);
@@ -70,7 +68,6 @@ body {
     overflow-y: auto;
 }
 
-/* ⭐️ แก้ไขปุ่ม Nav Link: ลบ Border และตั้งค่าพื้นหลังเป็น None */
 .nav-link {
     display: flex;
     align-items: center;
@@ -82,7 +79,6 @@ body {
     transition: var(--transition);
     font-weight: 500;
     
-    /* ⭐️ แก้ไขสำหรับลบกรอบ */
     border: none; 
     background: none; 
     width: 100%;

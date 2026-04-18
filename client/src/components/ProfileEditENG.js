@@ -19,7 +19,7 @@ function ProfileEditENG({ user, refreshUser }) {
         email: '',
         phone_number: '',
         position: '',
-        profile_img: '' // สำหรับเก็บชื่อไฟล์รูปภาพจากเซิร์ฟเวอร์
+        profile_img: '' 
     });
 
     useEffect(() => {

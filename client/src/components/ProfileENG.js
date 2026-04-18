@@ -8,7 +8,6 @@ import "./ProfileENG.css";
 function ProfileENG({ user }) { 
     const location = useLocation(); 
     
-    // 1. ตรวจสอบว่ามีข้อมูลผู้ใช้หรือไม่
     if (!user) {
           return <div className="loading-text">กำลังโหลดข้อมูลโปรไฟล์...</div>;
     }
@@ -18,17 +17,13 @@ function ProfileENG({ user }) {
     const displayFullname = user.fullname ;
     const displayRole = user.role_name || user.role;
 
-    // 2. เช็คว่าปัจจุบันอยู่ที่หน้าย่อย (edit หรือ change-password) หรือไม่
     const isSubPage = location.pathname.includes("edit") || location.pathname.includes("change-password");
 
     return (
         <>
-            {/* 3. ใช้เงื่อนไขแยกการแสดงผลเด็ดขาด */}
             {isSubPage ? (
-                /* ถ้าเป็นหน้าย่อย ให้แสดงเฉพาะ Outlet (เพื่อแสดง ProfileEdit หรือ ChangePassword) */
                 <Outlet />
             ) : (
-                /* ถ้าเป็นหน้าหลัก ให้แสดงหน้าโปรไฟล์ปกติ */
                 <div className="profile-center-container fade-in">
                     <div className="profile-card-detailed">
                         <div className="profile-header-bg"></div>
@@ -49,7 +44,6 @@ function ProfileENG({ user }) {
                         </div>
 
                         <div className="profile-actions-list">
-                            {/* ลิงก์ไปหน้าแก้ไขข้อมูล */}
                             <Link to="edit" className="action-item"> 
                                 <div className="action-icon-box pink"><FaEdit /></div>
                                 <div className="action-text">
@@ -59,7 +53,6 @@ function ProfileENG({ user }) {
                                 <FaChevronRight className="arrow-icon" />
                             </Link>
 
-                            {/* ลิงก์ไปหน้าเปลี่ยนรหัสผ่าน */}
                             <Link to="change-passwordENG" className="action-item">
                                 <div className="action-icon-box purple"><FaKey /></div>
                                 <div className="action-text">

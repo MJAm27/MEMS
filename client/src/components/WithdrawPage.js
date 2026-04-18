@@ -12,7 +12,6 @@ const API_BASE = process.env.REACT_APP_API_URL;
 function WithdrawPage({ user }) { 
     const [currentStep, setCurrentStep] = useState(1);
     
-    // --- State สำหรับข้อมูลเครื่องและสถานที่ ---
     const [machineId, setMachineId] = useState(''); 
     const [machineNumber, setMachineNumber] = useState(''); 
     const [machineSN, setMachineSN] = useState(''); 
@@ -20,13 +19,11 @@ function WithdrawPage({ user }) {
     const [departmentId, setDepartmentId] = useState(''); 
     const [repairTypeId, setRepairTypeId] = useState('');
 
-    // --- State สำหรับ Master Data ---
     const [machines, setMachines] = useState([]); 
     const [departments, setDepartments] = useState([]); 
     const [filteredDeps, setFilteredDeps] = useState([]); 
     const [repairTypes, setRepairTypes] = useState([]);
 
-    // --- State สำหรับอะไหล่และตะกร้า ---
     const [currentPartId, setCurrentPartId] = useState('');
     const [cartItems, setCartItems] = useState([]);
     const [partSuggestions, setPartSuggestions] = useState([]);
@@ -35,7 +32,6 @@ function WithdrawPage({ user }) {
     const [showScanner, setShowScanner] = useState(false);
     const [previewImage, setPreviewImage] = useState(null);
 
-    // รีเซ็ตฟอร์มกลับค่าเริ่มต้น
     const handleResetForm = () => {
         setCurrentStep(1);
         setMachineId('');
@@ -50,7 +46,6 @@ function WithdrawPage({ user }) {
         setShowScanner(false);
     };
 
-    // ดึงข้อมูล Master Data เมื่อ Component โหลด
     useEffect(() => {
         const fetchMasterData = async () => {
             try {
@@ -72,7 +67,6 @@ function WithdrawPage({ user }) {
         fetchMasterData();
     }, []);
 
-    // ระบบ Filter แผนกตามตึก
     useEffect(() => {
         if (selectedBuilding) {
             const filtered = departments.filter(d => d.buildings === selectedBuilding);
@@ -273,7 +267,6 @@ function WithdrawPage({ user }) {
                                 <option value="">-- เลือกเครื่องมือ --</option>
                                 {machines.map(m => (
                                     <option key={m.machine_id} value={m.machine_id}>
-                                        {/* แก้ไขบรรทัดข้างล่างนี้ */}
                                         {`${m.machine_type_name} - ${m.machine_supplier} - ${m.machine_model}`}
                                     </option>
                                 ))}
@@ -389,7 +382,7 @@ function WithdrawPage({ user }) {
                                     <button 
                                         onClick={() => setCurrentStep(3)} 
                                         className="btn-review-confirm"
-                                        style={{ maxWidth: '320px' }} // จำกัดความกว้างให้เท่ากับปุ่มอื่นๆ
+                                        style={{ maxWidth: '320px' }} 
                                     >
                                         ตรวจสอบรายการ
                                     </button>

@@ -12,7 +12,6 @@ function HistoryPage({ user }) {
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     
-    // --- Filter States ---
     const [filter, setFilter] = useState('ALL');
     const [repairFilter, setRepairFilter] = useState('ALL');
     const [machineFilter, setMachineFilter] = useState('ALL');
@@ -24,7 +23,6 @@ function HistoryPage({ user }) {
     );
     const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
 
-    // --- Master Data for Filters ---
     const [repairTypes, setRepairTypes] = useState([]);
     const [machines, setMachines] = useState([]);
     const [departments, setDepartments] = useState([]);
@@ -95,7 +93,6 @@ function HistoryPage({ user }) {
         );
     };
 
-    // --- Logic การกรองข้อมูล ---
 
     const filteredData = history.filter(item => {
         const matchType = filter === 'ALL' || (filter === 'PENDING' ? item.is_pending === 1 : item.transaction_type_id === filter);
@@ -116,7 +113,6 @@ function HistoryPage({ user }) {
                     <h2>ประวัติการทำรายการ</h2>
                 </div>
                 
-                {/* --- ส่วนฟิลเตอร์แบบ Grid 7 ช่อง --- */}
                 <div className="history-filters-grid">
                     <div className="filter-item">
                         <label>ตั้งแต่วันที่</label>
@@ -244,7 +240,6 @@ function HistoryPage({ user }) {
                     </table>
                 </div>
 
-                {/* Mobile View */}
                 <div className="mobile-only">
                     {filteredData.map((row, index) => (
                         <div key={index} className="history-mobile-card">

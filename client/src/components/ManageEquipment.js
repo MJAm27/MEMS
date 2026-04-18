@@ -114,11 +114,9 @@ function ManageEquipment() {
 
     try {
         if (isEditMode) {
-            // ส่งข้อมูลไปอัปเดต (ต้องแก้ URL API ให้ตรงกับของจริง)
             await axios.put(`${API_BASE_URL}/api/equipment/update/${formData.equipment_id}`, formData);
             alert("แก้ไขข้อมูลอะไหล่สำเร็จ");
         } else {
-            // ส่งข้อมูลไปเพิ่มใหม่ (ต้องแก้ URL API ให้ตรงกับของจริง)
             await axios.post(`${API_BASE_URL}/api/equipment/add`, formData);
             alert("เพิ่มข้อมูลอะไหล่สำเร็จ");
         }
@@ -300,7 +298,7 @@ function ManageEquipment() {
                                 className="form-control"
                                 name="equipment_type_id"
                                 value={formData.equipment_type_id}
-                                onChange={handleTypeChange} // <--- ใช้ฟังก์ชันใหม่ที่เราสร้างขึ้น
+                                onChange={handleTypeChange} 
                                 required
                             >
                                 <option value="">-- เลือกประเภท --</option>

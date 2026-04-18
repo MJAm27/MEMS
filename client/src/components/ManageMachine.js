@@ -6,7 +6,7 @@ import SubNavbar from "./SubNavbar";
 
 
 function ManageMachine() {
-  const [machines, setMachines] = useState([]); // เริ่มต้นเป็น array ว่าง
+  const [machines, setMachines] = useState([]); 
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -23,7 +23,6 @@ function ManageMachine() {
 
   const fetchMachines = async () => {
     try {
-      // หรือใช้ fetch ก็ได้: const res = await fetch(API_URL);
       const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/machine`);
       setMachines(response.data);
     } catch (error) {
@@ -60,7 +59,6 @@ function ManageMachine() {
         });
         alert("แก้ไขข้อมูลสำเร็จ");
       } else {
-        // Add New
         await axios.post(
             `${process.env.REACT_APP_API_URL}/api/machine`,
             {
@@ -76,7 +74,7 @@ function ManageMachine() {
         alert("เพิ่มข้อมูลสำเร็จ");
       }
       
-      fetchMachines(); // โหลดข้อมูลใหม่หลังจากบันทึก
+      fetchMachines(); 
       setShowModal(false);
 
     } catch (error) {
@@ -90,7 +88,7 @@ function ManageMachine() {
     if (window.confirm(`คุณต้องการลบเครื่องเลขที่ ${sn} ใช่หรือไม่?`)) {
       try {
         await axios.delete(`${process.env.REACT_APP_API_URL}/api/machine/${sn}`);
-        fetchMachines(); // โหลดข้อมูลใหม่หลังจากลบ
+        fetchMachines(); 
       } catch (error) {
         console.error("Error deleting:", error);
         alert("ไม่สามารถลบได้ (อาจมีการใช้งานอยู่ หรือเกิดข้อผิดพลาด)");
@@ -103,7 +101,6 @@ function ManageMachine() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // ... (ส่วน return JSX เหมือนเดิมทุกประการ ไม่ต้องแก้ส่วน UI) ...
   return (
     <div className="manage-machine-container fade-in">
       <div className="page-header">

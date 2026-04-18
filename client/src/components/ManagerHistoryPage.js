@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { 
-    FaBoxOpen, FaReply, FaHandHolding, FaClock, FaUsers
+    FaBoxOpen, FaReply, FaHandHolding, FaClock, FaUserCircle, FaUsers
 } from 'react-icons/fa';
 import './ManagerHistoryPage.css'; 
 
@@ -12,7 +12,6 @@ function ManagerHistoryPage({ viewDate }) {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     
-    // --- Filter States ---
     const [filter, setFilter] = useState('ALL');
     const [selectedUser, setSelectedUser] = useState('ALL');
     const [repairFilter, setRepairFilter] = useState('ALL');
@@ -20,11 +19,9 @@ function ManagerHistoryPage({ viewDate }) {
     const [buildingFilter, setBuildingFilter] = useState('ALL');
     const [deptFilter, setDeptFilter] = useState('ALL');
     
-    // ตั้งวันที่เริ่มต้นตามที่ส่งมาหรือวันที่ปัจจุบัน
     const [startDate, setStartDate] = useState(viewDate || new Date().toISOString().split('T')[0]);
     const [endDate, setEndDate] = useState(viewDate || new Date().toISOString().split('T')[0]);
 
-    // --- Master Data for Filters ---
     const [repairTypes, setRepairTypes] = useState([]);
     const [machines, setMachines] = useState([]);
     const [departments, setDepartments] = useState([]);
@@ -82,6 +79,11 @@ function ManagerHistoryPage({ viewDate }) {
         });
     }, [history, filter, selectedUser, repairFilter, machineFilter, buildingFilter, deptFilter]);
 
+    const parseItems = (jsonStr) => {
+        try { return typeof jsonStr === 'string' ? JSON.parse(jsonStr) : (jsonStr || []); } 
+        catch (e) { return []; }
+    };
+
     const renderTypeBadge = (row) => {
         const isSubActivity = !!row.parent_transaction_id;
         if (row.transaction_type_id === 'T-RTN') {
@@ -93,7 +95,7 @@ function ManagerHistoryPage({ viewDate }) {
         }
         if (row.transaction_type_id === 'T-WTH') {
             if (row.is_pending === 1) return <span className="type-badge type-pending"><FaHandHolding /> เบิกล่วงหน้า</span>;
-            return <span className="type-badge type-withdraw"><FaBoxOpen /> {isSubActivity ? 'บันทึกใช้จริง' : 'เบิกอะไหล่'}</span>;
+            return <span className="type-badge type-withdraw"><FaBoxOpen /> {isSubActivity ? 'บันทึกใช้จริง' : 'เบิกปกติ'}</span>;
         }
         return <span className="type-badge">{row.type_name}</span>;
     };
@@ -108,7 +110,6 @@ function ManagerHistoryPage({ viewDate }) {
                     <h2>รายงานประวัติการใช้งาน (Manager)</h2>
                 </div>
                 
-                {/* Filters Grid */}
                 <div className="history-filters-grid-manager">
                     <div className="filter-item">
                         <label>คัดกรองพนักงาน</label>
@@ -129,7 +130,7 @@ function ManagerHistoryPage({ viewDate }) {
                         <label>ประเภทรายการ</label>
                         <select className="modern-select" value={filter} onChange={e => setFilter(e.target.value)}>
                             <option value="ALL">ทั้งหมด</option>
-                            <option value="T-WTH">เบิกปกติ</option>
+                            <option value="T-WTH">เบิกปกติ/สรุปผล</option>
                             <option value="PENDING">เบิกล่วงหน้า</option>
                             <option value="T-RTN">คืนอะไหล่</option>
                         </select>
@@ -174,7 +175,6 @@ function ManagerHistoryPage({ viewDate }) {
 
             <section className="history-card">
                 <div className="desktop-only">
-                    {/* ส่วนจัดการสไลด์ตาราง */}
                     <div className="table-responsive-wrapper">
                         <table className="report-table manager-table">
                             <thead>
@@ -193,16 +193,14 @@ function ManagerHistoryPage({ viewDate }) {
                             </thead>
                             <tbody>
                                 {filteredData.length > 0 ? filteredData.map((row, idx) => {
-                                    const items = typeof row.items_json === 'string' ? JSON.parse(row.items_json) : (row.items_json || []);
+                                    const items = parseItems(row.items_json);
                                     return (
                                         <tr key={idx} className={row.parent_transaction_id ? "row-sub-activity" : ""}>
-                                            {/* 1. วันที่/เวลา (ตรึง) */}
                                             <td className="sticky-col">
                                                 <div className="date-text">{new Date(row.date).toLocaleDateString('th-TH')}</div>
                                                 <span className="time-tag"><FaClock size={10} style={{marginRight: '4px'}} />{row.time}</span>
                                             </td>
 
-                                            {/* 2. รหัสอ้างอิง */}
                                             <td>
                                                 <div className="tx-id-container">
                                                     <span className="tx-id-badge-main">{row.transaction_id}</span>
@@ -212,7 +210,6 @@ function ManagerHistoryPage({ viewDate }) {
                                                 </div>
                                             </td>
                                             
-                                            {/* 3. ผู้ทำรายการ */}
                                             <td>
                                                 <div className="td-user">
                                                     {row.profile_img ? (
@@ -224,19 +221,21 @@ function ManagerHistoryPage({ viewDate }) {
                                                 </div>
                                             </td>
 
-                                            {/* 4-7. ประเภท รายงาน สถานที่ เครื่องมือ */}
                                             <td>{renderTypeBadge(row)}</td>
+                                            
                                             <td>
                                                 <div className={`repair-tag ${row.repair_type_id === 1 ? 'repair-job' : 'pm-job'}`}>
                                                     {row.repair_type_name || "-"}
                                                 </div>
                                             </td>
+                                            
                                             <td>
                                                 <div className="location-stack">
                                                     <div className="building-name">{row.buildings || "-"}</div>
                                                     <div className="dept-name">{row.department_name || "-"}</div>
                                                 </div>
                                             </td>
+                                            
                                             <td>
                                                 <div className="machine-info-box">
                                                     <div className="text-sm font-bold">{row.machine_name || "-"}</div>
@@ -244,19 +243,20 @@ function ManagerHistoryPage({ viewDate }) {
                                                 </div>
                                             </td>
 
-                                            {/* 8-9. อะไหล่ และ จำนวน (แยกคอลัมน์ + เอากรอบออก) */}
                                             <td className="items-list-cell">
                                                 {items.map((it, i) => (
                                                     <div key={i} className="item-name-row">{it.name}</div>
                                                 ))}
+                                                {items.length === 0 && <span className="text-gray-400">-</span>}
                                             </td>
+
                                             <td className="qty-list-cell">
                                                 {items.map((it, i) => (
                                                     <div key={i} className="item-qty-row">x{it.qty}</div>
                                                 ))}
+                                                {items.length === 0 && <span className="text-gray-400">-</span>}
                                             </td>
 
-                                            {/* 10. เวลาเปิด-ปิด */}
                                             <td>
                                                 <div className="access-logs-badges">
                                                     <div className="log-badge-item"><span className="badge-open">เปิด</span><span className="log-time">{row.open_time || '--:--'}</span></div>
@@ -270,8 +270,34 @@ function ManagerHistoryPage({ viewDate }) {
                         </table>
                     </div>
                 </div>
-                {/* Mobile View */}
-                {/* ... ใส่ Mobile View เดิมของคุณตรงนี้ ... */}
+
+                <div className="mobile-only">
+                    {filteredData.map((row, index) => (
+                        <div key={index} className={`history-mobile-card ${row.parent_transaction_id ? 'sub-card' : ''}`}>
+                            <div className="mobile-card-header">
+                                <div className="user-info-mini">
+                                    <div className="user-avatar-mini">
+                                        {row.profile_img ? <img src={`${API_BASE}/profile-img/${row.profile_img}`} alt="p" /> : <FaUserCircle className="text-gray-300" />}
+                                    </div>
+                                    <span className="m-user-name">{row.fullname}</span>
+                                </div>
+                                {renderTypeBadge(row)}
+                            </div>
+                            <div className="mobile-card-body">
+                                <div className="m-tx-info">
+                                    <span className="m-tx-id">ID: {row.transaction_id}</span>
+                                    <span className="m-date-time">{new Date(row.date).toLocaleDateString('th-TH')} | {row.time}</span>
+                                </div>
+                                <div className="m-items-box">
+                                    {parseItems(row.items_json).map((item, i) => (
+                                        <div key={i} className="m-item-row"><span>{item.name}</span><span className="m-qty">x{item.qty}</span></div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                    {filteredData.length === 0 && <div className="empty-row">ไม่พบข้อมูลประวัติในช่วงเวลาที่เลือก</div>}
+                </div>
             </section>
         </div>
     );

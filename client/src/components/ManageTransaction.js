@@ -27,7 +27,6 @@ function ManageTransaction() {
     department: []
   });
 
-  // อัปเดต Form Data (Header) ให้ตรงกับ Database ล่าสุด
   const [headerData, setHeaderData] = useState({
     type_mode: "withdraw", 
     user_id: "",
@@ -140,11 +139,11 @@ function ManageTransaction() {
         type_mode: "withdraw", 
         user_id: "", 
         machine_id: "",
-        department_id: "",       // +++ เพิ่ม +++
-        repair_type_id: "",      // +++ เพิ่ม +++
-        machine_number: "",      // +++ เพิ่ม +++
-        machine_SN: "",          // +++ เพิ่ม +++
-        parent_transaction_id: "", // +++ เพิ่ม +++
+        department_id: "",       
+        repair_type_id: "",      
+        machine_number: "",      
+        machine_SN: "",          
+        parent_transaction_id: "", 
         date: new Date().toISOString().split('T')[0],
         time: new Date().toLocaleTimeString('th-TH', { hour12: false }).slice(0, 5)
     });
@@ -185,10 +184,10 @@ function ManageTransaction() {
       type_mode: mappedTypeMode,
       user_id: trans.user_id || "", 
       machine_id: trans.machine_id || "",
-      department_id: trans.department_id || "",     // เพิ่ม
-      repair_type_id: trans.repair_type_id || "",   // เพิ่ม
-      machine_number: trans.machine_number || "",   // เพิ่ม
-      machine_SN: trans.machine_SN || "",           // เพิ่ม
+      department_id: trans.department_id || "",     
+      repair_type_id: trans.repair_type_id || "",   
+      machine_number: trans.machine_number || "",   
+      machine_SN: trans.machine_SN || "",           
       parent_transaction_id: trans.parent_transaction_id || "",
       date: trans.date ? new Date(trans.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       time: trans.time || new Date().toLocaleTimeString('th-TH', { hour12: false }).slice(0, 5)

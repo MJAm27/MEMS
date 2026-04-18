@@ -29,7 +29,6 @@ function RegisterPage() {
         setError('');
         setSuccess('');
 
-        // ตรวจสอบข้อมูลที่จำเป็น
         if (!formData.email || !formData.password || !formData.fullname || !formData.role_id) {
             setError('กรุณากรอก Email, Password, Fullname, และเลือก Role');
             return;
@@ -39,7 +38,6 @@ function RegisterPage() {
             const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/register`, formData);
             setSuccess(response.data.message);
 
-            // หน่วงเวลา 2 วินาที ก่อนนำทางไปหน้า Login
             setTimeout(() => {
                 navigate('/login');
             }, 2000);
@@ -50,48 +48,44 @@ function RegisterPage() {
     };
 
     return (
-        <div className="registerBackground"> {/* ใช้ class จาก CSS */}
-            <div className="registerCard"> {/* ใช้ class จาก CSS */}
+        <div className="registerBackground"> 
+            <div className="registerCard"> 
                 <h2 className="registerHeader">ลงทะเบียนบัญชีใหม่</h2>
-                <form onSubmit={handleSubmit} className="registerForm"> {/* ใช้ class จาก CSS */}
+                <form onSubmit={handleSubmit} className="registerForm">
                     
-                    {/* Fullname */}
                     <input 
                         type="text" 
                         name="fullname" 
                         placeholder="ชื่อ-นามสกุล (บังคับ)" 
                         onChange={handleChange} 
                         required 
-                        className="registerInput" // ใช้ class จาก CSS
+                        className="registerInput" 
                     />
                     
-                    {/* Email */}
                     <input 
                         type="email" 
                         name="email" 
                         placeholder="Email (บังคับ)" 
                         onChange={handleChange} 
                         required 
-                        className="registerInput" // ใช้ class จาก CSS
+                        className="registerInput" 
                     />
                     
-                    {/* Password */}
                     <input 
                         type="password" 
                         name="password" 
                         placeholder="Password (บังคับ)" 
                         onChange={handleChange} 
                         required 
-                        className="registerInput" // ใช้ class จาก CSS
+                        className="registerInput" 
                     />
                     
-                    {/* Role Selection */}
                     <select 
                         name="role_id" 
                         value={formData.role_id} 
                         onChange={handleChange}
-                        className="registerSelect" // ใช้ class จาก CSS
-                        required // บังคับเลือก
+                        className="registerSelect" 
+                        required
                     >
                         <option value="">-- กรุณาเลือกตำแหน่ง --</option>
                         <option value="R-ENG">Engineer</option>
@@ -99,26 +93,22 @@ function RegisterPage() {
                         <option value="R-MGR">Manager</option>
                     </select>
                     
-                    {/* Phone Number */}
                     <input 
                         type="text" 
                         name="phone_number" 
                         placeholder="เบอร์โทร (ไม่บังคับ)" 
                         onChange={handleChange} 
-                        className="registerInput" // ใช้ class จาก CSS
+                        className="registerInput" 
                     />
                     
-                    {/* Position (ถูกลบออกตามโค้ดเดิมที่เหลือเพียง phone_number) */}
-                    {/* หากต้องการใช้ Position ให้เพิ่ม <input type="text" name="position" .../> ที่นี่ */}
                     
-                    <button type="submit" className="registerButton">ลงทะเบียน</button> {/* ใช้ class จาก CSS */}
+                    <button type="submit" className="registerButton">ลงทะเบียน</button> 
                 </form>
 
-                {/* Messages */}
                 {error && <p className="registerError">{error}</p>}
                 {success && <p className="registerSuccess">{success}</p>}
                 
-                <div className="loginLinkContainer"> {/* ใช้ class จาก CSS */}
+                <div className="loginLinkContainer"> 
                     <p>
                         มีบัญชีอยู่แล้ว? 
                         <Link to="/login" className="loginLink"> เข้าสู่ระบบที่นี่</Link>

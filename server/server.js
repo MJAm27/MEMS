@@ -189,7 +189,6 @@ app.post('/api/close-box', authenticateToken, async (req, res) => {
     try {
         // เปลี่ยนจาก axios.get เป็นการเรียกใช้ helper MQTT
         await commandServo('CLOSE'); 
-        
         await logActionToDB(userId, 'A-002', transactionId || null);
         res.status(200).send({ message: 'ปิดตู้สำเร็จ (MQTT)' });
     } catch (error) {

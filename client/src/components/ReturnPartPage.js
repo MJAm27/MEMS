@@ -10,7 +10,7 @@ const API_BASE = process.env.REACT_APP_API_URL;
 function ReturnPartPage() {
     const location = useLocation(); 
     const [currentStep, setCurrentStep] = useState(1); 
-    const [returnDate] = useState(() => { // แก้ไข warning: ลบ setReturnDate ออกถ้าไม่ได้ใช้
+    const [returnDate] = useState(() => { 
         const now = new Date();
         const tzOffset = now.getTimezoneOffset() * 60000;
         return (new Date(now - tzOffset)).toISOString().slice(0, 10);
@@ -21,7 +21,6 @@ function ReturnPartPage() {
     const [error, setError] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
 
-    // Helper Function สำหรับจัดการรูปภาพ
     const getImageUrl = (url) => {
         if (!url) return "https://placehold.co/60x60?text=No+Image";
         return `${API_BASE}/uploads/${url}`;
@@ -229,7 +228,6 @@ function ReturnPartPage() {
 
                         <div className="divider-with-text"><span>หรือพิมพ์รหัส</span></div>
 
-                        {/* ส่วนที่ 2: ระบุรหัสอะไหล่ด้วยตนเอง (ปรับ UI ตามรูปภาพ) */}
                         <div className="input-group-modern">
                             <div className="part-input-row">
                                 <div className="flex-grow-input relative">
@@ -252,7 +250,6 @@ function ReturnPartPage() {
 
                         {error && <p className="error-badge mt-4">{error}</p>}
                         
-                        {/* ส่วนที่ 3: ตะกร้าคืนอะไหล่ (คงค่า .isFixed ไว้ตามเงื่อนไข) */}
                         {returnItems.length > 0 && (
                             <div className="cart-section animate-fadeIn w-full">
                                 <h4 className="cart-header">ตะกร้าคืนอะไหล่ ({returnItems.length})</h4>
@@ -312,7 +309,6 @@ function ReturnPartPage() {
                             <p className="text-gray-400 text-sm">กรุณาตรวจสอบรายละเอียดก่อนบันทึก</p>
                         </div>
 
-                        {/* แบนเนอร์แสดงเลขครุภัณฑ์ (ถ้ามี) หรือวันที่คืน */}
                         <div className="asset-info-banner">
                             <div className="label">วันที่ทำรายการคืน</div>
                             <div className="value">
@@ -352,7 +348,6 @@ function ReturnPartPage() {
         
                 {currentStep === 3 && (
                     <div className="step-content-unlock animate-fadeIn">
-                        {/* ไอคอนกุญแจในวงกลมสีชมพูอ่อน */}
                         <div className="unlock-icon-container">
                             <FaLockOpen size={48} />
                         </div>
@@ -360,7 +355,6 @@ function ReturnPartPage() {
                         <h3 className="unlock-title">3. เปิดประตูกล่อง</h3>
                         <p className="unlock-subtitle">กรุณากดปุ่มเพื่อปลดล็อกและเตรียมการคืน</p>
 
-                        {/* แสดงวันที่คืนให้ชัดเจนกึ่งกลาง */}
                         <div className="asset-info-banner mb-8">
                             <div className="label">วันที่ทำรายการคืน</div>
                             <div className="value">
@@ -368,7 +362,6 @@ function ReturnPartPage() {
                             </div>
                         </div>
 
-                        {/* ปุ่มเปิดประตูทรงมนยาวตามรูป */}
                         <button 
                             onClick={handleOpenDoor} 
                             disabled={isProcessing} 
@@ -384,7 +377,6 @@ function ReturnPartPage() {
                             )}
                         </button>
 
-                        {/* ปุ่มยกเลิกด้านล่างสุด */}
                         <div className="footer-actions">
                             <button onClick={handleCancelStep2} className="btn-cancel-step2">
                                 ยกเลิกการทำรายการ

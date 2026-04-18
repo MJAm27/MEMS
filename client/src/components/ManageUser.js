@@ -15,7 +15,6 @@ function ManageUser() {
   const [showModal, setShowModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  // Form Data (ปรับให้ตรงกับ Backend ใหม่)
   const [formData, setFormData] = useState({
     user_id: "",
     fullname: "",      
@@ -184,10 +183,6 @@ function ManageUser() {
                                     src={`${API_BASE_URL}/profile-img/${user.profile_img}`} 
                                     alt="profile"
                                     style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                                    // onError={(e) => {
-                                    //     e.target.style.display = 'none';
-                                    //     e.target.parentElement.innerText = user.fullname ? user.fullname.charAt(0).toUpperCase() : "?";
-                                    // }}
                                 />
                             ) : (
                                 <span>{user.fullname ? user.fullname.charAt(0).toUpperCase() : "?"}</span>

@@ -118,7 +118,6 @@ function ManagerAlertPage() {
         <p className="loading-text">กำลังโหลดข้อมูล...</p>
       ) : (
         <div className="alert-list">
-          {/* 1. ส่วนแสดงผล High Value (รายการเบิกจริง) */}
           {activeTab === "high-value" && (
             highValueList.length > 0 ? (
               highValueList.map((item) => (
@@ -154,7 +153,7 @@ function ManagerAlertPage() {
 
                   <div className="acknowledge-action-zone">
                     <button 
-                      className="btn-modern-check" // เปลี่ยนชื่อคลาส
+                      className="btn-modern-check" 
                       onClick={() => handleAcknowledge(item.transaction_id)}
                       title="รับทราบและลบรายการแจ้งเตือน"
                     >
@@ -169,7 +168,6 @@ function ManagerAlertPage() {
             ) : <p className="no-data">ไม่มีรายการเบิกอะไหล่มูลค่าสูงที่ยังไม่ได้ตรวจสอบ</p>
           )}
 
-          {/* 2. ส่วนแสดงผล Expire List */}
           {activeTab === "expire" && (
              expireList.length > 0 ? (
                 expireList.map((item) => (
@@ -191,7 +189,6 @@ function ManagerAlertPage() {
              ) : <p className="no-data">ไม่มีรายการแจ้งเตือนสินค้าหมดอายุ</p>
           )}
 
-          {/* 3. ส่วนแสดงผล Low Stock List */}
           {activeTab === "stock" && (
              stockList.length > 0 ? (
                 stockList.map((item) => (
