@@ -182,7 +182,7 @@ function WithdrawPage({ user }) {
                     quantity: item.quantity 
                 })) 
             };
-            await axios.post(`${API_BASE}/api/withdraw/confirm`, payload, { 
+            await axios.post(`${API_BASE}/withdraw/confirm`, payload, { 
                 headers: { Authorization: `Bearer ${token}` } 
             });
             setCurrentStep(5);
