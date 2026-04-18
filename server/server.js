@@ -278,9 +278,17 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
         connection = await pool.getConnection();
         await connection.beginTransaction();
 
-        const transactionId = `WTH-${Date.now()}`;
+        // 1. สร้าง ID ให้สั้นลง ป้องกัน Error Data too long (หั่นเหลือ 8 ตัวท้าย)
+        const transactionId = `WTH-${Date.now().toString().slice(-8)}`;
 
-        // บันทึกรายการหลัก 
+        // 2. แปลงค่าว่าง ("") ให้เป็น null เพื่อป้องกัน Foreign Key Error
+        const finalMachineId = machine_id || null;
+        const finalMachineNumber = machine_number || null;
+        const finalMachineSN = machine_SN || null;
+        const finalDeptId = department_id || null;
+        const finalRepairTypeId = repair_type_id || null;
+
+        // 3. บันทึกรายการหลัก
         const insertTxSql = `
             INSERT INTO transactions 
             (transaction_id, transaction_type_id, date, time, user_id, 
@@ -288,10 +296,10 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
             VALUES (?, 'T-WTH', CURDATE(), CURTIME(), ?, ?, ?, ?, ?, ?, 0)
         `;
         await connection.query(insertTxSql, [
-            transactionId, userId, machine_id, machine_number, machine_SN, department_id, repair_type_id
+            transactionId, userId, finalMachineId, finalMachineNumber, finalMachineSN, finalDeptId, finalRepairTypeId
         ]);
 
-        // เวลาเปิดประตูที
+        // 4. ผูกเวลาเปิดประตู
         await connection.query(
             `UPDATE accesslogs 
              SET transaction_id = ? 
@@ -300,7 +308,8 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
             [transactionId, userId]
         );
 
-        //บันทึกรายการอะไหล่ที่เบิก
+        // 5. บันทึกรายการอะไหล่ที่เบิก
+        let counter = 0;
         for (const item of cartItems) {
             // ตัดจำนวนในสต๊อก (Lot)
             await connection.query(
@@ -308,27 +317,28 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
                 [item.quantity, item.lotId, item.quantity]
             );
             
-            // บันทึกประวัติว่าเบิกชิ้นไหนไปบ้าง
-            const listId = `ER-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+            // สร้าง listId ให้สั้นลง (EL-xxxxx)
+            const listId = `EL-${Date.now().toString().slice(-5)}${counter++}`;
             await connection.query(
                 "INSERT INTO equipment_list (equipment_list_id, transaction_id, quantity, lot_id) VALUES (?, ?, ?, ?)",
                 [listId, transactionId, item.quantity, item.lotId]
             );
         }
 
-        //  บันทึกเวลาปิดตู้ใหม่ 
-        const closeLogId = `LG-CL-${Date.now()}`;
+        // 6. บันทึกเวลาปิดตู้ใหม่
+        const closeLogId = `LG-CL-${Date.now().toString().slice(-8)}`;
         await connection.query(
             "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-002', ?, ?)",
             [closeLogId, transactionId, userId]
         );
 
         await connection.commit();
-        
         res.json({ success: true, message: "เบิกอะไหล่เรียบร้อยแล้ว", transactionId });
         
     } catch (error) {
         if (connection) await connection.rollback();
+        // พิมพ์ Error ลง Terminal ให้เห็นชัดๆ ว่าพังที่ไหน
+        console.error("🚨 Confirm Withdraw Error:", error.message); 
         res.status(500).json({ error: error.message });
     } finally {
         if (connection) connection.release();
