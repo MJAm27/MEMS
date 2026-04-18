@@ -31,37 +31,17 @@ function ReportPage() {
 
   const fetchReport = async () => {
     try {
-      // ใช้ Promise.allSettled เพื่อให้ตัวที่สำเร็จยังคืนค่ามาได้ แม้จะมีบางตัวพัง
-      const [summaryRes, usageRes, accessLogsRes] = await Promise.allSettled([
+      const [summaryRes, usageRes , accessLogsRes] = await Promise.all([
         axios.get(`${API_BASE_URL}/api/report/summary`),
         axios.get(`${API_BASE_URL}/api/report/usage`),
         axios.get(`${API_BASE_URL}/api/report/accesslogs`)
       ]);
 
-      // เซ็ตข้อมูล summary ถ้าสำเร็จ
-      if (summaryRes.status === "fulfilled") {
-        setSummary(summaryRes.value.data);
-      } else {
-        console.error("โหลด summary ไม่สำเร็จ", summaryRes.reason);
-      }
-
-      // เซ็ตข้อมูล usage ถ้าสำเร็จ
-      if (usageRes.status === "fulfilled") {
-        setUsage(usageRes.value.data);
-      } else {
-        console.error("โหลด usage ไม่สำเร็จ", usageRes.reason);
-      }
-
-      // เซ็ตข้อมูล accesslogs ถ้าสำเร็จ
-      if (accessLogsRes.status === "fulfilled") {
-        setAccessLogs(accessLogsRes.value.data);
-      } else {
-        console.error("โหลด accesslogs ไม่สำเร็จ", accessLogsRes.reason);
-        setAccessLogs([]); // ตั้งค่าเป็น array ว่างเพื่อป้องกัน map() error
-      }
-
+      setSummary(summaryRes.data);
+      setUsage(usageRes.data);
+      setAccessLogs(accessLogsRes.data);
     } catch (err) {
-      console.error("เกิดข้อผิดพลาดในการเชื่อมต่อ API", err);
+      console.error("โหลดรายงานไม่สำเร็จ", err);
     }
   };
 
