@@ -9,23 +9,20 @@ const axios = require('axios');
 const multer = require('multer'); 
 const path = require('path'); 
 
-// ++++++++++ แก้ไข: นำเข้า http และ socket.io ++++++++++
 const http = require('http'); 
 const { Server } = require("socket.io"); 
-// +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
 const app = express();
-// ++++++++++ แก้ไข: สร้าง HTTP Server และผูก Socket.IO ++++++++++
+// สร้าง HTTP Server และผูก Socket.IO
 const server = http.createServer(app); 
 const io = new Server(server, { 
     cors: {
-        origin: "*", // ควรระบุ origin ที่แน่นอนใน Production
+        origin: "*", 
         methods: ["GET", "POST"]
     }
 }); 
 const PORT = 3001; // Port สำหรับ Backend
-// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
 // 1. ตั้งค่า Middlewares
@@ -50,7 +47,6 @@ const dbConfig = {
 };
 const pool = mysql.createPool(dbConfig);
 const db = pool; 
-// ------------------------------
 
 
 pool.query("SELECT 1")
@@ -60,7 +56,7 @@ pool.query("SELECT 1")
 
 const JWT_SECRET = "MY_SUPER_SECRET_KEY_FOR_JWT_12345";
 
-// +++++++++++++++++++++++ ค่าคงที่สำหรับ ESP8266 +++++++++++++++++++++++
+//ค่าคงที่สำหรับ ESP8266 
 //step1 setup MQTT Broker ใน server kob 
 //step2 แก้ไข ESP8266 ให้เชื่อมต่อกับ MQTT Broker ของ Server แทนการรับคำสั่งผ่าน HTTP โดยตรง
 //step3 ใน server.js ให้ใช้ MQTT Client (เช่น mqtt.js) เพื่อส่งคำสั่งไปยัง ESP8266 ผ่าน MQTT แทนการใช้ HTTP
@@ -103,10 +99,9 @@ app.get('/api/device-check', authenticateToken, (req, res) => {
     }
 });
 
-// -------------------------------------------------------------------
 
 
-// +++++++++++++++++++++++ Middleware ตรวจสอบ Token +++++++++++++++++++++++
+// Middleware ตรวจสอบ Token 
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -119,7 +114,6 @@ function authenticateToken(req, res, next) {
         next(); 
     });
 }
-// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
 // --- Helper Functions สำหรับ ESP และ Log ---
@@ -159,8 +153,6 @@ async function commandServo(action) {
 }
 
 
-// --- API Endpoints สำหรับ ESP8266 ---
-
 // --- API สำหรับสั่งเปิดประตูตู้ ---
 app.get('/api/open', authenticateToken, async (req, res) => {
 
@@ -187,7 +179,6 @@ app.post('/api/close-box', authenticateToken, async (req, res) => {
     const userId = req.user.userId;
     const { transactionId } = req.body;
     try {
-        // เปลี่ยนจาก axios.get เป็นการเรียกใช้ helper MQTT
         await commandServo('CLOSE'); 
         await logActionToDB(userId, 'A-002', transactionId || null);
         res.status(200).send({ message: 'ปิดตู้สำเร็จ (MQTT)' });
@@ -196,7 +187,7 @@ app.post('/api/close-box', authenticateToken, async (req, res) => {
     }
 });
 
-// --- API Endpoints สำหรับ Withdrawal (เชื่อมต่อ DB) ---
+//API สำหรับ Withdrawal (เชื่อมต่อ DB) 
 
 // รวบรวมข้อมูลอะไหล่พร้อมรายละเอียดล็อตล่าสุดและจำนวนรวม
 app.get('/api/manager/equipment-details', authenticateToken, async (req, res) => {
@@ -229,7 +220,6 @@ app.get('/api/manager/equipment-details', authenticateToken, async (req, res) =>
     }
 });
 
-// 1. API: Fetch Part Info (POST /api/withdraw/partInfo)
 app.post('/api/withdraw/partInfo', async (req, res) => { 
     const { partId } = req.body; 
 
@@ -278,7 +268,7 @@ app.post('/api/withdraw/partInfo', async (req, res) => {
 });
 
 
-// 2. API: Confirm and Cut Stock (POST /api/withdraw/confirm)
+// Confirm and Cut Stock ตัดสต็อก
 app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
     const { machine_id, machine_number, machine_SN, department_id, repair_type_id, cartItems } = req.body;
     const userId = req.user.userId;
@@ -339,10 +329,9 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
     }
 });
 
-// ดึงยอดค้างทั้งหมดของพนักงานทุกคน (ใช้ใน Dashboard)
+// ดึงยอดค้างเบิกทั้งหมดของพนักงานทุกคน (ใช้ใน Dashboard)
 app.get('/api/borrow/all-pending', authenticateToken, async (req, res) => {
     try {
-        // ใช้ SUM เพื่อรวมยอด quantity ทั้งหมดจากรายการที่ค้างอยู่ (is_pending = 1)
         const sql = `
             SELECT COALESCE(SUM(el.quantity), 0) as total_pending 
             FROM transactions t
@@ -351,7 +340,6 @@ app.get('/api/borrow/all-pending', authenticateToken, async (req, res) => {
         `;
         const [rows] = await pool.query(sql);
         
-        // ส่งกลับเป็น Object: { "total_pending": 7 }
         res.json(rows[0]); 
     } catch (error) {
         console.error("Fetch All Pending Error:", error.message);
@@ -369,18 +357,16 @@ app.post('/api/return-part', authenticateToken, async (req, res) => {
         connection = await pool.getConnection();
         await connection.beginTransaction();
 
-        // 1. สร้าง Transaction ID ใหม่สำหรับการคืนครั้งนี้ (RTN-xxxx)
         const transactionId = `RTN-${Date.now()}`;
         const parentId = items.find(i => i.borrowId)?.borrowId || null;
 
-        // 2. บันทึกรายการคืนหลักลงตาราง transactions
-        // ตั้งค่า is_pending = 0 เนื่องจากเป็นการคืนคลังโดยตรง
+        // ตั้งค่า is_pending = 0 เนื่องจากเป็นการคืนคลังโดยตรง กรณีเบิกล่วงหน้า
         await connection.query(
             "INSERT INTO transactions (transaction_id, parent_transaction_id, transaction_type_id, date, time, user_id, is_pending) VALUES (?, ?, 'T-RTN', ?, CURTIME(), ?, 0)",
             [transactionId, parentId, returnDate, userId]
         );
 
-        // 3. ผูก Log เวลาเปิดตู้ (Action A-001) ล่าสุดเข้ากับ Transaction นี้
+        // ผูก Log เวลาเปิดตู้ (Action A-001) ล่าสุดเข้ากับ Transaction นี้
         await connection.query(
             `UPDATE accesslogs SET transaction_id = ? 
              WHERE user_id = ? AND transaction_id IS NULL AND action_type_id = 'A-001' 
@@ -388,17 +374,17 @@ app.post('/api/return-part', authenticateToken, async (req, res) => {
             [transactionId, userId]
         );
 
-        // 4. วนลูปจัดการสต็อกและการหักลดยอดตามรอบการเบิก (Borrow ID)
+        // วนลูปจัดการสต็อกและการหักลดยอดตามรอบการเบิก (Borrow ID)
         for (const item of items) {
-            // A. เพิ่มสต็อกกลับเข้าคลังกลาง (ตาราง lot)
+            // เพิ่มสต็อกกลับเข้าคลัง (ตาราง lot)
             await connection.query(
                 "UPDATE lot SET current_quantity = current_quantity + ? WHERE lot_id = ?", 
                 [item.quantity, item.lotId]
             );
 
-            // B. ตรวจสอบว่าเป็นการคืนจาก "รอบการเบิกล่วงหน้า" หรือไม่
+            // ตรวจสอบว่าเป็นการคืนจาก "รอบการเบิกล่วงหน้า" หรือไม่
             if (item.borrowId) {
-                // หักลดยอดในมือออกจากรายการเบิกต้นทาง (transaction_id เดิม)
+                // หักลบยอดในมือออกจากรายการเบิก (transaction_id เดิม)
                 await connection.query(
                     "UPDATE equipment_list SET quantity = quantity - ? WHERE transaction_id = ? AND lot_id = ?",
                     [item.quantity, item.borrowId, item.lotId]
@@ -410,20 +396,18 @@ app.post('/api/return-part', authenticateToken, async (req, res) => {
                     [item.borrowId, item.lotId]
                 );
 
-                // หากยอดเหลือ 0 ให้ลบรายการนั้นออกจากรายการค้างจ่าย
+                // หากยอดเหลือ 0 ให้ลบรายการนั้นออกจากรายการค้างเบิก
                 if (!checkRows[0] || checkRows[0].quantity <= 0) {
                     await connection.query(
                         "DELETE FROM equipment_list WHERE transaction_id = ? AND lot_id = ?", 
                         [item.borrowId, item.lotId]
                     );
                     
-                    // ตรวจสอบความสมบูรณ์ของทั้งใบเบิก (Borrow ID) ว่ายังมีอะไหล่ตัวอื่นเหลือค้างอีกไหม
                     const [remainingInTx] = await connection.query(
                         "SELECT * FROM equipment_list WHERE transaction_id = ?", 
                         [item.borrowId]
                     );
                     
-                    // หากใบเบิกนี้ไม่มีของเหลือค้างแล้ว ให้ปิดสถานะ is_pending ของใบเบิกนั้นเป็น 0
                     if (remainingInTx.length === 0) {
                         await connection.query(
                             "UPDATE transactions SET is_pending = 0 WHERE transaction_id = ?", 
@@ -433,7 +417,7 @@ app.post('/api/return-part', authenticateToken, async (req, res) => {
                 }
             }
 
-            // C. บันทึกรายละเอียดการคืนลงใน equipment_list ของ Transaction RTN ใหม่
+            // บันทึกรายการอะไหล่คืนลงใน equipment_list ของ Transaction RTN 
             const listId = `ELR-${Date.now().toString().slice(-5)}-${Math.floor(Math.random() * 1000)}`;
             await connection.query(
                 "INSERT INTO equipment_list (equipment_list_id, transaction_id, quantity, lot_id) VALUES (?, ?, ?, ?)",
@@ -441,7 +425,7 @@ app.post('/api/return-part', authenticateToken, async (req, res) => {
             );
         }
 
-        // 5. บันทึก Log เวลาปิดตู้ (Action A-002)
+        // บันทึก Log เวลาปิดตู้ (Action A-002)
         const closeLogId = `RTN-CL-${Date.now().toString().slice(-8)}`;
         await connection.query(
             "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-002', ?, ?)",
@@ -478,10 +462,8 @@ app.get('/api/repair-types', async (req, res) => {
     }
 });
 
-// API สำหรับยืนยันการเบิกล่วงหน้า (pending) และเพิ่มสต็อก
-// 1. API สำหรับบันทึกรายการเบิกล่วงหน้า (is_pending = 1)
+// API สำหรับบันทึกรายการเบิกล่วงหน้า
 app.post('/api/borrow/pending', authenticateToken, async (req, res) => {
-    // 1. รับค่าเพิ่มจาก req.body
     const { 
         userId, borrowDate, items, 
         machine_id, machine_number, machine_SN, 
@@ -495,7 +477,6 @@ app.post('/api/borrow/pending', authenticateToken, async (req, res) => {
 
         const transactionId = `PEND-${Date.now().toString().slice(-8)}`;
 
-        // 2. แก้ไข SQL INSERT ให้รองรับคอลัมน์ใหม่ๆ
         await connection.query(
             `INSERT INTO transactions 
             (transaction_id, transaction_type_id, date, time, user_id, 
@@ -509,7 +490,7 @@ app.post('/api/borrow/pending', authenticateToken, async (req, res) => {
         );
         let counter = 0;
         for (const item of items) {
-            // 1. ตัดสต็อกออกจากตาราง lot
+            // ตัดสต็อกออกจากตาราง lot
             const [updateLot] = await connection.query(
                 "UPDATE lot SET current_quantity = current_quantity - ? WHERE lot_id = ? AND current_quantity >= ?",
                 [item.quantity, item.lotId, item.quantity]
@@ -519,10 +500,9 @@ app.post('/api/borrow/pending', authenticateToken, async (req, res) => {
                 throw new Error(`อะไหล่ใน Lot ${item.lotId} มีจำนวนไม่พอสำหรับเบิก`);
             }
 
-            // 2. สร้าง ID สำหรับ equipment_list
             const listId = `ELP-${Date.now().toString().slice(-5)}${counter++}`;
 
-            // 3. บันทึกรายการอะไหล่ (ลบ equipment_id ออกเพื่อให้ตรงกับโครงสร้างตารางของคุณ)
+            // บันทึกรายการอะไหล่ 
             await connection.query(
                 "INSERT INTO equipment_list (equipment_list_id, transaction_id, quantity, lot_id) VALUES (?, ?, ?, ?)",
                 [listId, transactionId, item.quantity, item.lotId]
@@ -550,10 +530,9 @@ app.post('/api/borrow/pending', authenticateToken, async (req, res) => {
     }
 });
 
-// 2. API สำหรับดึงรายการค้างสรุป
+// 2. API สำหรับดึงรายการค้างเบิก
 app.get('/api/borrow/pending/:userId', authenticateToken, async (req, res) => {
     try {
-        // ปรับ SQL ให้ JOIN กับตารางเครื่องมือที่เปลี่ยนใหม่
         const sql = `
             SELECT 
                 t.transaction_id AS borrow_id,
@@ -608,7 +587,7 @@ app.get('/api/borrow/pending-details-all', authenticateToken, async (req, res) =
 });
 
 
-// API สำหรับสรุปการใช้จริง (หักยอดในมือ + ปิด job เมื่อหมด)
+// API สำหรับสรุปการใช้จริง
 app.post('/api/borrow/finalize-partial', authenticateToken, async (req, res) => {
     const { 
         transactionId, 
@@ -625,7 +604,7 @@ app.post('/api/borrow/finalize-partial', authenticateToken, async (req, res) => 
         connection = await pool.getConnection();
         await connection.beginTransaction();
 
-        // 1. ตรวจสอบจำนวน
+        // ตรวจสอบจำนวน
         const [rows] = await connection.query(
             "SELECT quantity FROM equipment_list WHERE transaction_id = ? AND lot_id = ?",
             [transactionId, lotId]
@@ -635,7 +614,7 @@ app.post('/api/borrow/finalize-partial', authenticateToken, async (req, res) => 
         const currentInHand = rows[0].quantity;
         if (usedQty > currentInHand) throw new Error(`ยอดไม่พอ (มี ${currentInHand} ต้องการใช้ ${usedQty})`);
 
-        // 2. สร้าง Transaction (ตรวจสอบให้ชัวร์ว่าจำนวน ? ครบ 7 ตัว)
+        // สร้าง Transaction 
         const realTxId = `W-REAL-${Date.now().toString().slice(-6)}`;
         await connection.query(
             `INSERT INTO transactions 
@@ -654,20 +633,20 @@ app.post('/api/borrow/finalize-partial', authenticateToken, async (req, res) => 
             ]
         );
 
-        // 3. บันทึกรายละเอียดอะไหล่ (ใส่รหัสสุ่มที่ไม่ซ้ำ)
+        // บันทึกรายละเอียดอะไหล่ 
         const elId = `ELR-${Math.floor(Math.random() * 100000)}`;
         await connection.query(
             "INSERT INTO equipment_list (equipment_list_id, transaction_id, quantity, lot_id) VALUES (?, ?, ?, ?)",
             [elId, realTxId, usedQty, lotId]
         );
 
-        // 4. บันทึก Logs
+        // บันทึก Logs
         await connection.query(
             "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-001', ?, ?)",
             [`LG-OP-${Date.now()}`, realTxId, req.user.userId]
         );
 
-        // 5. อัปเดตยอดคงเหลือในมือ (Parent)
+        // อัปเดตยอดคงเหลือในมือ (Parent)
         const newRemainingQty = currentInHand - usedQty;
         if (newRemainingQty > 0) {
             await connection.query(
@@ -678,7 +657,6 @@ app.post('/api/borrow/finalize-partial', authenticateToken, async (req, res) => 
             await connection.query("DELETE FROM equipment_list WHERE transaction_id = ? AND lot_id = ?", [transactionId, lotId]);
         }
 
-        // 6. ปิด is_pending ถ้าหมดทุกรายการในใบเบิกนั้น
         const [check] = await connection.query("SELECT COUNT(*) as itemCount FROM equipment_list WHERE transaction_id = ?", [transactionId]);
         if (check[0].itemCount === 0) {
             await connection.query("UPDATE transactions SET is_pending = 0 WHERE transaction_id = ?", [transactionId]);
@@ -689,7 +667,7 @@ app.post('/api/borrow/finalize-partial', authenticateToken, async (req, res) => 
 
     } catch (error) {
         if (connection) await connection.rollback();
-        console.error("DEBUG ERROR:", error); // ดู Error เต็มๆ ใน Terminal ของ Node.js
+        console.error("DEBUG ERROR:", error); 
         res.status(500).json({ error: error.sqlMessage || error.message });
     } finally {
         if (connection) connection.release();
@@ -2327,12 +2305,7 @@ app.put('/api/change-passwordENG', authenticateToken, async (req, res) => {
     }
 });
 
-
-// -----------------------------------------------------------------------------------
-
-// ==========================================
-// 1. API สำหรับดึงข้อมูลอะไหล่ (ใช้ตอนสแกนบาร์โค้ด)
-// ==========================================
+// API สำหรับดึงข้อมูลอะไหล่ (ใช้ตอนสแกนบาร์โค้ด)
 app.post('/api/withdraw/partInfo', async (req, res) => {
     const { partId } = req.body; 
     try {
@@ -2347,7 +2320,7 @@ app.post('/api/withdraw/partInfo', async (req, res) => {
         const [rows] = await pool.query(sql, [partId, partId]);
         if (rows.length === 0) return res.status(404).json({ error: 'ไม่พบข้อมูลอะไหล่' });
 
-        const item = rows[0]; // ใช้ชื่อตัวแปร item
+        const item = rows[0]; 
         res.json({
             lotId: item.lot_id,
             partId: item.equipment_id,
@@ -2359,54 +2332,6 @@ app.post('/api/withdraw/partInfo', async (req, res) => {
         res.status(500).json({ error: 'Database error' });
     }
 });
-
-
-// 2. API: Confirm and Cut Stock (POST /api/withdraw/confirm)
-app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
-    const { machine_id, cartItems } = req.body;
-    const userId = req.user.userId;
-    let connection;
-
-    try {
-        connection = await pool.getConnection();
-        await connection.beginTransaction();
-
-        const transactionId = `WTH-${Date.now()}`;
-
-        // 🟢 ขั้นตอนที่ 1: บันทึกรายการหลักก่อน
-        await connection.query(
-            "INSERT INTO transactions (transaction_id, transaction_type_id, date, time, user_id, machine_id, is_pending) VALUES (?, 'T-WTH', CURDATE(), CURTIME(), ?, ?, 0)",
-            [transactionId, userId, machine_id]
-        );
-
-        // 🟢 ขั้นตอนที่ 2: ผูกเวลาเปิดที่มีอยู่แล้ว (จากตอนเริ่ม Step 1)
-        await connection.query(
-            `UPDATE accesslogs 
-             SET transaction_id = ? 
-             WHERE user_id = ? AND transaction_id IS NULL AND action_type_id = 'A-001' 
-             ORDER BY date DESC, time DESC LIMIT 1`,
-            [transactionId, userId]
-        );
-
-        // ... (ส่วน Loop equipment_list คงเดิมตามโค้ดของคุณ) ...
-
-        // 🟢 ขั้นตอนที่ 3: บันทึกเวลาปิดใหม่
-        const closeLogId = `LG-CL-${Date.now()}`;
-        await connection.query(
-            "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-002', ?, ?)",
-            [closeLogId, transactionId, userId]
-        );
-
-        await connection.commit();
-        res.json({ success: true, transactionId });
-    } catch (error) {
-        if (connection) await connection.rollback();
-        res.status(500).json({ error: error.message });
-    } finally {
-        if (connection) connection.release();
-    }
-});
-
 
 app.get('/api/reports/equipment-usage', async (req, res) => {
     try {
@@ -2448,11 +2373,7 @@ app.get('/api/reports/equipment-age', async (req, res) => {
     }
 });
 
-// ==========================================
-// 📌 API สำหรับจัดการ Master Data (อะไหล่หลัก)
-// ==========================================
-
-// 1. API สำหรับเพิ่มข้อมูลอะไหล่ใหม่ (Add)
+// API สำหรับเพิ่มข้อมูลอะไหล่ใหม่
 app.post('/api/equipment/add', async (req, res) => {
     const { equipment_id, equipment_type_id, equipment_name, model_size, alert_quantity, unit, img } = req.body;
     let connection;
@@ -2461,7 +2382,7 @@ app.post('/api/equipment/add', async (req, res) => {
         connection = await pool.getConnection();
         await connection.beginTransaction();
 
-        // 1.1 เช็คว่ามีรหัสประเภทอะไหล่ (equipment_type_id) นี้ในระบบหรือยัง
+        // เช็คว่ามีรหัสประเภทอะไหล่ (equipment_type_id) นี้ในระบบหรือยัง
         const [existingType] = await connection.query("SELECT * FROM equipment_type WHERE equipment_type_id = ?", [equipment_type_id]);
         
         if (existingType.length === 0) {
@@ -2478,13 +2399,12 @@ app.post('/api/equipment/add', async (req, res) => {
             );
         }
 
-        // 1.2 เช็คว่ามีรหัสอะไหล่ (equipment_id) นี้หรือยัง เพื่อป้องกันการเพิ่มซ้ำ
+        // เช็คว่ามีรหัสอะไหล่ (equipment_id) นี้หรือยัง เพื่อป้องกันการเพิ่มซ้ำ
         const [existingEq] = await connection.query("SELECT * FROM equipment WHERE equipment_id = ?", [equipment_id]);
         if (existingEq.length > 0) {
             throw new Error(`รหัสอะไหล่ ${equipment_id} มีอยู่ในระบบแล้ว กรุณาใช้รหัสอื่น`);
         }
 
-        // 1.3 เพิ่มข้อมูลลงตาราง equipment
         await connection.query(
             "INSERT INTO equipment (equipment_id, equipment_type_id, model_size, alert_quantity) VALUES (?, ?, ?, ?)",
             [equipment_id, equipment_type_id, model_size, alert_quantity]
@@ -2511,13 +2431,11 @@ app.put('/api/equipment/update/:id', async (req, res) => {
         connection = await pool.getConnection();
         await connection.beginTransaction();
 
-        // 2.1 อัปเดตตาราง equipment
         await connection.query(
             "UPDATE equipment SET equipment_type_id = ?, model_size = ?, alert_quantity = ? WHERE equipment_id = ?",
             [equipment_type_id, model_size, alert_quantity, equipment_id_param]
         );
 
-        // 2.2 อัปเดตตาราง equipment_type (ชื่อ, หน่วย, รูป)
         await connection.query(
             "UPDATE equipment_type SET equipment_name = ?, unit = ?, img = COALESCE(?, img) WHERE equipment_type_id = ?",
             [equipment_name, unit, img || null, equipment_type_id]
@@ -2534,7 +2452,6 @@ app.put('/api/equipment/update/:id', async (req, res) => {
     }
 });
 
-// 3. API สำหรับลบข้อมูลอะไหล่ (Delete)
 app.delete('/api/equipment/:id', async (req, res) => {
     const equipment_id = req.params.id;
     let connection;
@@ -2594,11 +2511,7 @@ app.get('/api/equipment-types', async (req, res) => {
     }
 });
 
-// ==========================================
-// 📌 API สำหรับจัดการ Lot (สต็อกสินค้าเข้า)
-// ==========================================
-
-// 1. API สำหรับเพิ่ม Lot ใหม่
+// API สำหรับเพิ่ม Lot ใหม่
 app.post('/api/inventory/add-lot', async (req, res) => {
     const { lot_id, equipment_id, supplier_id, import_date, expiry_date, current_quantity, price } = req.body;
     let connection;
@@ -2606,13 +2519,11 @@ app.post('/api/inventory/add-lot', async (req, res) => {
     try {
         connection = await pool.getConnection();
 
-        // 1. เช็คว่ามี lot_id นี้อยู่ในระบบหรือยัง
         const [existingLot] = await connection.query("SELECT * FROM lot WHERE lot_id = ?", [lot_id]);
         if (existingLot.length > 0) {
             return res.status(400).json({ error: `รหัส Lot ${lot_id} มีอยู่ในระบบแล้ว กรุณาใช้รหัสอื่น` });
         }
 
-        // 2. เช็คว่า supplier_id ที่ส่งมามีจริงในตาราง supplier หรือไม่ (ถ้าไม่มีต้องเตือน)
         if (supplier_id) {
             const [existingSupplier] = await connection.query("SELECT * FROM supplier WHERE supplier_id = ?", [supplier_id]);
             if (existingSupplier.length === 0) {
@@ -2620,13 +2531,11 @@ app.post('/api/inventory/add-lot', async (req, res) => {
             }
         }
 
-        // 3. เพิ่มข้อมูลลงตาราง lot
         const sql = `
             INSERT INTO lot (lot_id, equipment_id, supplier_id, import_date, expiry_date, current_quantity, price) 
             VALUES (?, ?, ?, ?, ?, ?, ?)
         `;
         
-        // ถ้า expiry_date เป็น string ว่าง ("") ให้เปลี่ยนเป็น null ลง DB
         const finalExpiryDate = expiry_date ? expiry_date : null;
 
         await connection.query(sql, [
@@ -2648,7 +2557,6 @@ app.post('/api/inventory/add-lot', async (req, res) => {
     }
 });
 
-// 2. API สำหรับแก้ไขข้อมูล Lot
 app.put('/api/inventory/update-lot/:id', async (req, res) => {
     const lot_id_param = req.params.id;
     const { supplier_id, import_date, expiry_date, current_quantity, price } = req.body;
@@ -2691,7 +2599,6 @@ app.put('/api/inventory/update-lot/:id', async (req, res) => {
     }
 });
 
-// ดึงข้อมูลประวัติการทำรายการ (แทนที่ของเดิม)
 app.get('/api/report/accesslogs', async (req, res) => {
     let connection;
     try {
@@ -2737,7 +2644,6 @@ app.get('/api/report/accesslogs', async (req, res) => {
     }
 });
 
-// 1. ดึงข้อมูลหน่วยงานทั้งหมด
 app.get('/api/departments', async (req, res) => {
     let connection;
     try {
@@ -2752,9 +2658,7 @@ app.get('/api/departments', async (req, res) => {
     }
 });
 
-// 2. เพิ่มหน่วยงานใหม่
 app.post('/api/departments', async (req, res) => {
-    // รับค่า department_id มาด้วย (เพราะไม่ใช่ Auto Increment)
     const { department_id, department_name, buildings } = req.body;
     let connection;
     try {
@@ -2770,7 +2674,6 @@ app.post('/api/departments', async (req, res) => {
     }
 });
 
-// 3. แก้ไขข้อมูลหน่วยงาน
 app.put('/api/departments/:id', async (req, res) => {
     const { id } = req.params;
     const { department_name, buildings } = req.body;
@@ -2788,7 +2691,6 @@ app.put('/api/departments/:id', async (req, res) => {
     }
 });
 
-// 4. ลบหน่วยงาน
 app.delete('/api/departments/:id', async (req, res) => {
     const { id } = req.params;
     let connection;
@@ -2810,8 +2712,6 @@ app.use(express.static(path.join(__dirname, 'build')));
 app.get(/.*/, (req, res) => {
     res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
-
-// -------------------
 
 server.listen(PORT, () => {
     console.log(`🚀 Backend server is running on http://localhost:${PORT}`);
