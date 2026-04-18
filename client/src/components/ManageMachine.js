@@ -4,19 +4,20 @@ import { FaPlus, FaSearch, FaEdit, FaTrash, FaTimes } from "react-icons/fa";
 import axios from "axios"; 
 import SubNavbar from "./SubNavbar";
 
-
 function ManageMachine() {
   const [machines, setMachines] = useState([]); 
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   
+  // 1. อัปเดต formData ให้รองรับฟิลด์ใหม่ๆ
   const [formData, setFormData] = useState({
     machine_id: "",
-    machine_name: ""
+    machine_type_name: "", 
+    machine_supplier: "", 
+    machine_model: ""      
   });
   
-  // 1. โหลดข้อมูลเมื่อเปิดหน้าเว็บ (READ)
   useEffect(() => {
     fetchMachines();
   }, []);
@@ -30,47 +31,54 @@ function ManageMachine() {
     }
   };
 
-  // 2. ฟังก์ชัน Filter สำหรับค้นหา
-  const filteredMachines = machines.filter((item) =>
-    item.machine_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.machine_id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // อัปเดต Filter ให้ค้นหาจาก machine_type_name แทน
+  const filteredMachines = machines.filter((item) => {
+    const name = item?.machine_type_name || ""; 
+    const id = item?.machine_id || "";
+    
+    return name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           id.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   const handleAddNew = () => {
     setIsEditMode(false);
-    setFormData({ machine_id: "", machine_name: "" });
+    // 2. เคลียร์ค่าฟิลด์ใหม่ทั้งหมดเมื่อกดเพิ่ม
+    setFormData({ machine_id: "", machine_type_name: "", machine_supplier: "", machine_model: "" });
     setShowModal(true);
   };
 
   const handleEdit = (machine) => {
     setIsEditMode(true);
-    setFormData(machine);
+    setFormData({
+      machine_id: machine.machine_id || "",
+      machine_type_name: machine.machine_type_name || "",
+      machine_supplier: machine.machine_supplier || "",
+      machine_model: machine.machine_model || ""
+    });
     setShowModal(true);
   };
 
-  // 3. บันทึกข้อมูล (CREATE & UPDATE)
+  // 3. อัปเดตการส่งข้อมูลใน handleSubmit ให้ส่งฟิลด์ใหม่ไปด้วย
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // ข้อมูลที่จะส่งไปให้ Backend (ต้องตรงกับที่ Database รอรับ)
+    const payload = {
+      machine_type_name: formData.machine_type_name,
+      machine_supplier: formData.machine_supplier,
+      machine_model: formData.machine_model
+    };
+
     try {
       if (isEditMode) {
-        await axios.put(`${process.env.REACT_APP_API_URL}/api/machine/${formData.machine_id}`, {
-          machine_name: formData.machine_name
-        });
+        await axios.put(`${process.env.REACT_APP_API_URL}/api/machine/${formData.machine_id}`, payload);
         alert("แก้ไขข้อมูลสำเร็จ");
       } else {
         await axios.post(
             `${process.env.REACT_APP_API_URL}/api/machine`,
-            {
-                machine_id: formData.machine_id,
-                machine_name: formData.machine_name
-            },
-            {
-                headers: {
-                "Content-Type": "application/json"
-                }
-            }
-            );
+            { ...payload, machine_id: formData.machine_id },
+            { headers: { "Content-Type": "application/json" } }
+        );
         alert("เพิ่มข้อมูลสำเร็จ");
       }
       
@@ -83,7 +91,6 @@ function ManageMachine() {
     }
   };
 
-  // 4. ลบข้อมูล (DELETE)
   const handleDelete = async (sn) => {
     if (window.confirm(`คุณต้องการลบเครื่องเลขที่ ${sn} ใช่หรือไม่?`)) {
       try {
@@ -106,7 +113,7 @@ function ManageMachine() {
       <div className="page-header">
         <SubNavbar />
         <div>
-          <h2 className="page-title-text">จัดการข้อมูลครุภัณฑ์ </h2>
+          <h2 className="page-title-text">จัดการข้อมูลครุภัณฑ์</h2>
         </div>
         <button className="btn-primary" onClick={handleAddNew}>
           <FaPlus /> เพิ่มครุภัณฑ์ใหม่
@@ -127,8 +134,9 @@ function ManageMachine() {
         <table className="custom-table">
           <thead>
             <tr>
-              <th style={{ width: "20%" }}>รหัสครุภัณฑ์ (Serial Number)</th>
-              <th style={{ width: "60%" }}>ชื่อครุภัณฑ์</th>
+              <th style={{ width: "20%" }}>รหัสครุภัณฑ์ </th>
+              <th style={{ width: "30%" }}>ชื่อครุภัณฑ์</th>
+              <th style={{ width: "30%" }}>ยี่ห้อ - รุ่น</th>
               <th style={{ width: "20%" }} className="text-center">จัดการ</th>
             </tr>
           </thead>
@@ -137,7 +145,8 @@ function ManageMachine() {
               filteredMachines.map((machine) => (
                 <tr key={machine.machine_id}>
                   <td className="fw-bold text-primary">{machine.machine_id}</td>
-                  <td>{machine.machine_name}</td>
+                  <td>{machine.machine_type_name}</td>
+                  <td>{machine.machine_supplier} - {machine.machine_model}</td>
                   <td className="text-center">
                     <button 
                       className="action-btn edit-btn" 
@@ -156,7 +165,7 @@ function ManageMachine() {
               ))
             ) : (
               <tr>
-                <td colSpan="3" className="empty-state">
+                <td colSpan="4" className="empty-state">
                   ไม่พบข้อมูล
                 </td>
               </tr>
@@ -178,7 +187,7 @@ function ManageMachine() {
             <form onSubmit={handleSubmit}>
               <div className="modal-body">
                 <div className="form-group">
-                  <label>รหัสครุภัณฑ์ (SN) <span className="text-danger">*</span></label>
+                  <label>รหัสครุภัณฑ์ <span className="text-danger">*</span></label>
                   <input
                     type="text"
                     name="machine_id"
@@ -186,22 +195,46 @@ function ManageMachine() {
                     onChange={handleChange}
                     disabled={isEditMode}
                     required
-                    placeholder="ระบุ เลขSN หรือ รหัสครุภัณฑ์"
+                    placeholder="ระบุรหัสครุภัณฑ์"
                   />
                   {isEditMode && <small className="text-muted">รหัสครุภัณฑ์ไม่สามารถแก้ไขได้</small>}
                 </div>
 
+                {/* 4. เพิ่ม Input สำหรับฟิลด์ต่างๆ ให้ครบใน Modal */}
                 <div className="form-group">
-                  <label>ชื่อครุภัณฑ์ (Machine Name) <span className="text-danger">*</span></label>
+                  <label>ชื่อครุภัณฑ์ <span className="text-danger">*</span></label>
                   <input
                     type="text"
-                    name="machine_name"
-                    value={formData.machine_name}
+                    name="machine_type_name"
+                    value={formData.machine_type_name}
                     onChange={handleChange}
                     required
                     placeholder="ระบุชื่อครุภัณฑ์"
                   />
                 </div>
+
+                <div className="form-group">
+                  <label>ยี่ห้อ (Supplier)</label>
+                  <input
+                    type="text"
+                    name="machine_supplier"
+                    value={formData.machine_supplier}
+                    onChange={handleChange}
+                    placeholder="ระบุยี่ห้อ (ถ้ามี)"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>รุ่น (Model)</label>
+                  <input
+                    type="text"
+                    name="machine_model"
+                    value={formData.machine_model}
+                    onChange={handleChange}
+                    placeholder="ระบุรุ่น (ถ้ามี)"
+                  />
+                </div>
+
               </div>
 
               <div className="modal-footer">
