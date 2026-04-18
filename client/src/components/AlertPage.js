@@ -41,7 +41,6 @@ function AlertPage() {
     <div className="alert-page-container">
       <h2 className="page-title">การแจ้งเตือน</h2>
 
-      {/* ปุ่มเลือก Tab ด้านบน */}
       <div className="alert-tabs">
         <button 
           className={`alert-tab-card ${activeTab === "expire" ? "active" : ""}`}
@@ -74,7 +73,6 @@ function AlertPage() {
         <h3>แจ้งเตือนล่าสุด: {activeTab === "expire" ? "ใกล้หมดอายุ" : "คงคลังน้อย"}</h3>
       </div>
 
-      {/* แสดงรายการ */}
       {loading ? (
         <p className="loading-text">กำลังโหลดข้อมูล...</p>
       ) : (

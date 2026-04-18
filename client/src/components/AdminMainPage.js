@@ -126,7 +126,6 @@ function AdminMainPage({ user, handleLogout }) {
                 
             </aside>
 
-            {/* ===== Main Content ===== */}
             <main className="main-content-wrapper">
                 <header className="top-navbar">
                     <div className="nav-left">

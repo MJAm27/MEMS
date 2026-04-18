@@ -109,7 +109,6 @@ function ReturnPartPage() {
             const partInfo = response.data; 
 
             setReturnItems(prev => {
-                // แก้ไข Error: หา index ของ item ที่มีอยู่แล้ว
                 const existingIndex = prev.findIndex(item => item.lotId === partInfo.lotId);
                 
                 if (existingIndex !== -1) {
