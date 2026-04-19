@@ -500,6 +500,19 @@ app.post('/api/borrow/pending', authenticateToken, async (req, res) => {
         department_id, repair_type_id 
     } = req.body;
 
+    if (!items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ success: false, error: "ไม่พบรายการอะไหล่ที่ต้องการเบิก หรือรูปแบบข้อมูลไม่ถูกต้อง" });
+    }
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (!item.lotId || String(item.lotId).trim() === '') {
+            return res.status(400).json({ success: false, error: `ข้อมูลรายการที่ ${i + 1} ไม่ถูกต้อง (ไม่พบรหัส Lot)` });
+        }
+        if (item.quantity === undefined || item.quantity === null || isNaN(item.quantity) || item.quantity <= 0) {
+            return res.status(400).json({ success: false, error: `จำนวนอะไหล่ของ Lot: ${item.lotId} ไม่ถูกต้อง (ต้องมากกว่า 0)` });
+        }
+    }
+
     let connection;
     try {
         connection = await pool.getConnection();
@@ -546,9 +559,9 @@ app.post('/api/borrow/pending', authenticateToken, async (req, res) => {
         );
 
         await connection.query(
-    "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-002', ?, ?)",
-    [logIdClose, transactionId, userId]
-);
+            "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-002', ?, ?)",
+            [logIdClose, transactionId, userId]
+        );
         await connection.commit();
         res.json({ success: true, message: "บันทึกรายการเบิกล่วงหน้าและตัดสต็อกเรียบร้อย" });
     } catch (error) {

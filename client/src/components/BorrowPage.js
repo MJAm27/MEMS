@@ -104,6 +104,13 @@ function BorrowPage({ user }) {
 
             setBorrowItems(prev => {
                 const existing = prev.find(item => item.lotId === partInfo.lotId);
+                const currentQtyInCart = existing ? existing.quantity : 0;
+
+                if (currentQtyInCart + quantity > partInfo.currentStock) {
+                    setTimeout(() => setError(`ไม่สามารถเพิ่มได้! สต๊อกคงเหลือเพียง ${partInfo.currentStock} ${partInfo.unit || 'ชิ้น'}`), 0);
+                    return prev; 
+                }
+
                 if (existing) {
                     return prev.map(item => item.lotId === partInfo.lotId 
                         ? { ...item, quantity: item.quantity + quantity } : item);
@@ -121,9 +128,20 @@ function BorrowPage({ user }) {
     }, [manualPartId, isProcessing]);
 
     const updateQty = (index, delta) => {
-        setBorrowItems(prev => prev.map((item, i) => 
-            i === index ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
-        ));
+        setBorrowItems(prev => {
+            const newItems = [...prev];
+            const item = newItems[index];
+            const newQty = item.quantity + delta;
+            if (delta > 0 && newQty > item.currentStock) {
+                setTimeout(() => setError(`สต๊อกไม่พอ! อะไหล่นี้มีคงเหลือเพียง ${item.currentStock} ${item.unit || 'ชิ้น'}`), 0);
+                return prev; 
+            }
+
+            setTimeout(() => setError(''), 0); 
+
+            if (newQty > 0) newItems[index] = { ...item, quantity: newQty };
+            return newItems;
+        });
     };
 
     useEffect(() => {
