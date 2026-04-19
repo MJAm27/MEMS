@@ -240,7 +240,8 @@ app.post('/api/withdraw/partInfo', async (req, res) => {
             FROM lot l
             JOIN equipment e ON l.equipment_id = e.equipment_id
             JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
-            WHERE (l.lot_id = ? OR e.equipment_id = ?) AND l.current_quantity > 0
+            WHERE l.lot_id = ? OR e.equipment_id = ?
+            ORDER BY l.current_quantity DESC
             LIMIT 1
         `;
         

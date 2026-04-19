@@ -170,74 +170,76 @@ function HistoryPage({ user }) {
             </header>
 
             <section className="history-card">
-                <div className="desktop-only table-responsive">
-                    <table className="history-table">
-                        <thead>
-                            <tr>
-                                <th>วัน/เวลา</th>
-                                <th>รหัสอ้างอิง</th>
-                                <th>ประเภทรายการ</th>
-                                <th>ประเภทงาน</th>
-                                <th>ตึก/แผนก</th>
-                                <th>เครื่องที่นำไปใช้</th>
-                                <th>เลขครุภัณฑ์ (รพ.)</th>
-                                <th>SN (โรงงาน)</th>
-                                <th>รายการอะไหล่</th>
-                                <th>จำนวน</th>
-                                <th>เวลาเปิด-ปิด</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredData.map((row, index) => (
-                                <tr key={index} className={row.parent_transaction_id ? "row-sub-activity" : ""}>
-                                    <td className="sticky-col">
-                                        <div className="date-text">{new Date(row.date).toLocaleDateString('th-TH')}</div>
-                                        <div className="time-sub-text"><FaClock size={10} /> {row.time}</div>
-                                    </td>
-                                    <td>
-                                        <div className="tx-id-badge">{row.transaction_id}</div>
-                                        {row.parent_transaction_id && <div className="ref-link-badge">Ref: {row.parent_transaction_id}</div>}
-                                    </td>
-                                    <td>{renderTypeBadge(row)}</td>
-                                    <td className="font-semibold text-blue-600">
-                                        {row.repair_type_name || (row.is_pending === 1 ? "-" : "-")}
-                                    </td>
-                                    <td>
-                                        <div className="location-info">
-                                            <b>{row.buildings || (row.is_pending === 1 ? "-" : "-")}</b>
-                                        </div>
-                                        <div className="dept-info">{row.department_name || (row.is_pending === 1 ? "รอระบุแผนก" : "-")}</div>
-                                    </td>
-                                    <td>{row.machine_name || (row.is_pending === 1 ? "รอระบุเครื่อง" : "-")}</td>
-                                    <td className="font-bold">{row.machine_number || "-"}</td>
-                                    <td>{row.machine_SN || "-"}</td>
-                                    <td>
-                                        {parseItems(row.items_json).map((item, i) => (
-                                            <div key={i} className="item-name-text">{item.name}</div>
-                                        ))}
-                                    </td>
-                                    <td>
-                                        {parseItems(row.items_json).map((item, i) => (
-                                            <div key={i} className="font-bold text-pink-600">x{item.qty}</div>
-                                        ))}
-                                    </td>
-                                    <td>
-                                        <div className="access-log-summary">
-                                            <div className="time-line">
-                                                <span className="badge-open">เปิด</span>
-                                                <span className="time-value">{row.open_time || '--:--'}</span>
-                                            </div>
-                                            <div className="time-line">
-                                                <span className="badge-close">ปิด</span>
-                                                <span className="time-value">{row.close_time || '--:--'}</span>
-                                            </div>
-                                            
-                                        </div>
-                                    </td>
+                <div className="desktop-only ">
+                    <div className="table-responsive-wrapper">
+                        <table className="history-table">
+                            <thead>
+                                <tr>
+                                    <th className="sticky-col">วัน/เวลา</th>
+                                    <th>รหัสอ้างอิง</th>
+                                    <th>ประเภทรายการ</th>
+                                    <th>ประเภทงาน</th>
+                                    <th>ตึก/แผนก</th>
+                                    <th>เครื่องที่นำไปใช้</th>
+                                    <th>เลขครุภัณฑ์ (รพ.)</th>
+                                    <th>SN (โรงงาน)</th>
+                                    <th>รายการอะไหล่</th>
+                                    <th>จำนวน</th>
+                                    <th>เวลาเปิด-ปิด</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {filteredData.map((row, index) => (
+                                    <tr key={index} className={row.parent_transaction_id ? "row-sub-activity" : ""}>
+                                        <td className="sticky-col">
+                                            <div className="date-text">{new Date(row.date).toLocaleDateString('th-TH')}</div>
+                                            <div className="time-sub-text"><FaClock size={10} /> {row.time}</div>
+                                        </td>
+                                        <td>
+                                            <div className="tx-id-badge">{row.transaction_id}</div>
+                                            {row.parent_transaction_id && <div className="ref-link-badge">Ref: {row.parent_transaction_id}</div>}
+                                        </td>
+                                        <td>{renderTypeBadge(row)}</td>
+                                        <td className="font-semibold text-blue-600">
+                                            {row.repair_type_name || (row.is_pending === 1 ? "-" : "-")}
+                                        </td>
+                                        <td>
+                                            <div className="location-info">
+                                                <b>{row.buildings || (row.is_pending === 1 ? "-" : "-")}</b>
+                                            </div>
+                                            <div className="dept-info">{row.department_name || (row.is_pending === 1 ? "รอระบุแผนก" : "-")}</div>
+                                        </td>
+                                        <td>{row.machine_name || (row.is_pending === 1 ? "รอระบุเครื่อง" : "-")}</td>
+                                        <td className="font-bold">{row.machine_number || "-"}</td>
+                                        <td>{row.machine_SN || "-"}</td>
+                                        <td>
+                                            {parseItems(row.items_json).map((item, i) => (
+                                                <div key={i} className="item-name-text">{item.name}</div>
+                                            ))}
+                                        </td>
+                                        <td>
+                                            {parseItems(row.items_json).map((item, i) => (
+                                                <div key={i} className="font-bold text-pink-600">x{item.qty}</div>
+                                            ))}
+                                        </td>
+                                        <td>
+                                            <div className="access-log-summary">
+                                                <div className="time-line">
+                                                    <span className="badge-open">เปิด</span>
+                                                    <span className="time-value">{row.open_time || '--:--'}</span>
+                                                </div>
+                                                <div className="time-line">
+                                                    <span className="badge-close">ปิด</span>
+                                                    <span className="time-value">{row.close_time || '--:--'}</span>
+                                                </div>
+                                                
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <div className="mobile-only">

@@ -89,14 +89,35 @@
     overflow: hidden;
 }
 
-.table-responsive {
+.table-responsive-wrapper {
+    width: 100%;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .history-table {
     width: 100%;
-    border-collapse: collapse;
-    min-width: 1000px; /* บังคับให้ Scroll แนวนอนถ้าจอเล็กเกินไป */
+    border-collapse: separate; 
+    border-spacing: 0;
+    min-width: 1550px
+}
+
+.sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background-color: #f1f5f9 !important; 
+    border-right: 2px solid #e2e8f0 !important;
+}
+
+td.sticky-col {
+    background-color: #ffffff !important; 
 }
 
 .history-table th {
@@ -107,6 +128,7 @@
     font-weight: 700;
     font-size: 0.85rem;
     border-bottom: 2px solid var(--border-soft);
+    white-space: nowrap;
 }
 
 .history-table td {
@@ -114,7 +136,13 @@
     border-bottom: 1px solid #f1f5f9;
     font-size: 0.9rem;
     color: var(--text-dark);
+    vertical-align: top;
 }
+
+.table-responsive::-webkit-scrollbar { height: 8px; }
+.table-responsive::-webkit-scrollbar-track { background: #f1f5f9; }
+.table-responsive::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.table-responsive::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
 /* คอลัมน์วันเวลา */
 .date-text { font-weight: 700; }
