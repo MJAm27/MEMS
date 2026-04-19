@@ -281,7 +281,7 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
     for (let i = 0; i < cartItems.length; i++) {
         const item = cartItems[i];
 
-        // 2.1 เช็คว่ามี lotId หรือไม่
+        // เช็คว่ามี lotId หรือไม่
         if (!item.lotId || String(item.lotId).trim() === '') {
             return res.status(400).json({ 
                 success: false, 
@@ -289,7 +289,7 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
             });
         }
 
-        // 2.2 เช็คว่า quantity มีค่า, เป็นตัวเลข และต้องมากกว่า 0 (ห้ามเบิกติดลบ หรือเบิก 0 ชิ้น)
+        // ห้ามเบิกติดลบ หรือเบิก 0 ชิ้น
         if (item.quantity === undefined || item.quantity === null || isNaN(item.quantity) || item.quantity <= 0) {
             return res.status(400).json({ 
                 success: false, 
@@ -337,13 +337,16 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
         // 5. บันทึกรายการอะไหล่ที่เบิก
         let counter = 0;
         for (const item of cartItems) {
-            // ตัดจำนวนในสต๊อก (Lot)
-            await connection.query(
+            
+            const [updateLotResult] = await connection.query(
                 "UPDATE lot SET current_quantity = current_quantity - ? WHERE lot_id = ? AND current_quantity >= ?",
                 [item.quantity, item.lotId, item.quantity]
             );
             
-            // สร้าง listId ให้สั้นลง (EL-xxxxx)
+            if (updateLotResult.affectedRows === 0) {
+                throw new Error(`อะไหล่ใน Lot: ${item.lotId} มีจำนวนไม่เพียงพอ (ต้องการ ${item.quantity} ชิ้น)`);
+            }
+            
             const listId = `EL-${Date.now().toString().slice(-5)}${counter++}`;
             await connection.query(
                 "INSERT INTO equipment_list (equipment_list_id, transaction_id, quantity, lot_id) VALUES (?, ?, ?, ?)",
@@ -363,10 +366,13 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
         
     } catch (error) {
         if (connection) await connection.rollback();
-        // พิมพ์ Error ลง Terminal ให้เห็นชัดๆ ว่าพังที่ไหน
         console.error("Confirm Withdraw Error:", error.message); 
+        
+        if (error.message.includes('ไม่เพียงพอ')) {
+            return res.status(400).json({ error: error.message });
+        }
         res.status(500).json({ error: error.message });
-    } finally {
+    } finally { 
         if (connection) connection.release();
     }
 });

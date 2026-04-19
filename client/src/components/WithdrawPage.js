@@ -151,6 +151,13 @@ function WithdrawPage({ user }) {
             
             setCartItems(prev => {
                 const existing = prev.find(item => item.lotId === partInfo.lotId);
+                const currentQtyInCart = existing ? existing.quantity : 0;
+
+                if (currentQtyInCart + quantity > partInfo.currentStock) {
+                    setTimeout(() => setError(`ไม่สามารถเพิ่มได้! สต๊อกคงเหลือเพียง ${partInfo.currentStock} ${partInfo.unit}`), 0);
+                    return prev; 
+                }
+
                 if (existing) {
                     return prev.map(item => item.lotId === partInfo.lotId ? { ...item, quantity: item.quantity + quantity } : item);
                 }
@@ -194,7 +201,8 @@ function WithdrawPage({ user }) {
             });
             setCurrentStep(5);
         } catch (err) {
-            setError('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+            const errorMessage = err.response?.data?.error || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล';
+            setError(errorMessage);
         } finally {
             setIsProcessing(false);
         }
@@ -203,8 +211,17 @@ function WithdrawPage({ user }) {
     const updateItemQuantity = (index, delta) => {
         setCartItems(prev => {
             const newItems = [...prev];
-            const newQty = newItems[index].quantity + delta;
-            if (newQty > 0) newItems[index] = { ...newItems[index], quantity: newQty };
+            const item = newItems[index];
+            const newQty = item.quantity + delta;
+
+            if (delta > 0 && newQty > item.currentStock) {
+                setTimeout(() => setError(`สต๊อกไม่พอ! อะไหล่นี้มีคงเหลือเพียง ${item.currentStock} ${item.unit}`), 0);
+                return prev; 
+            }
+
+            setTimeout(() => setError(''), 0); 
+
+            if (newQty > 0) newItems[index] = { ...item, quantity: newQty };
             return newItems;
         });
     };
