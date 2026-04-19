@@ -22,6 +22,15 @@ function ProfileEditENG({ user, refreshUser }) {
         profile_img: '' 
     });
 
+    const formatRoleName = (roleCode) => {
+        if (!roleCode) return "N/A";
+        const code = roleCode.toUpperCase();
+        if (code === "R-ENG" || code === "ENGINEER") return "Engineer";
+        if (code === "R-ADM" || code === "ADMIN") return "Admin";
+        if (code === "R-MGR" || code === "MANAGER") return "Manager";
+        return roleCode; 
+    };
+
     useEffect(() => {
         if (user) {
             setFormData({
@@ -173,12 +182,13 @@ function ProfileEditENG({ user, refreshUser }) {
                     </div>
 
                     <div className="form-group">
-                        <label>ตำแหน่ง</label>
+                        <label>ตำแหน่ง (แก้ไขไม่ได้)</label>
                         <input 
                             type="text" 
-                            name="position" 
-                            value={formData.position} 
-                            onChange={handleChange} 
+                            value={formatRoleName(user?.role_name || user?.role_id || user?.role)} 
+                            readOnly 
+                            className="input-readonly" 
+                            style={{ backgroundColor: '#f5f5f5', color: '#888', cursor: 'not-allowed' }}
                         />
                     </div>
 
