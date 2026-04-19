@@ -5,6 +5,7 @@ import {
 } from "react-icons/fa"; 
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import axios from "axios";
+import io from 'socket.io-client';
 import './BorrowPage.css'; 
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001';
@@ -24,6 +25,26 @@ function BorrowPage({ user }) {
     const [isProcessing, setIsProcessing] = useState(false);
     const [previewImage, setPreviewImage] = useState(null);
     const [partSuggestions, setPartSuggestions] = useState([]);
+
+    const [cabinetBusy, setCabinetBusy] = useState(false);
+    const [busyBy, setBusyBy] = useState('');
+
+    useEffect(() => {
+        const socket = io(API_BASE);
+
+        socket.on('cabinet_status', (state) => {
+            const currentUserId = user?.user_id || user?.userId; 
+            if (state.isBusy && state.userId !== currentUserId) {
+                setCabinetBusy(true);
+                setBusyBy(state.userName);
+            } else {
+                setCabinetBusy(false);
+                setBusyBy('');
+            }
+        });
+
+        return () => socket.disconnect();
+    }, [user]);
 
     const handleResetForm = () => {
         setCurrentStep(1);
@@ -426,6 +447,25 @@ function BorrowPage({ user }) {
                     <div className="image-viewer-content">
                         <img src={previewImage} alt="Preview" />
                         <button className="close-image-btn" onClick={() => setPreviewImage(null)}><FaTimes /></button>
+                    </div>
+                </div>
+            )}
+
+            {cabinetBusy && (
+                <div className="fixed inset-0 bg-black bg-opacity-60 z-[9999] flex items-center justify-center backdrop-blur-sm">
+                    <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-md w-full mx-4">
+                        <div className="text-yellow-500 mb-4 flex justify-center">
+                            <FaLock size={60} />
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-800 mb-2">ตู้กำลังถูกใช้งาน</h2>
+                        <p className="text-gray-600 mb-6">
+                            ขณะนี้ <b>{busyBy || 'พนักงานท่านอื่น'}</b> กำลังทำรายการอยู่ที่หน้าตู้<br/>
+                            โปรดรอสักครู่ เมื่อทำรายการเสร็จสิ้นหน้าต่างนี้จะหายไปเอง
+                        </p>
+                        <div className="flex justify-center">
+                            {/* วงกลมหมุนโหลด */}
+                            <span className="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
+                        </div>
                     </div>
                 </div>
             )}

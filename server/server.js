@@ -15,6 +15,7 @@ const { Server } = require("socket.io");
 
 const app = express();
 // สร้าง HTTP Server และผูก Socket.IO
+
 const server = http.createServer(app); 
 const io = new Server(server, { 
     cors: {
@@ -22,6 +23,16 @@ const io = new Server(server, {
         methods: ["GET", "POST"]
     }
 }); 
+
+let cabinetState = {
+    isBusy: false,
+    userId: null,
+    userName: null
+};
+
+io.on('connection', (socket) => {
+    socket.emit('cabinet_status', cabinetState);
+});
 const PORT = 3001; // Port สำหรับ Backend
 
 
@@ -164,10 +175,20 @@ app.get('/api/open', authenticateToken, async (req, res) => {
     }
 
     const userId = req.user.userId;
+    if (cabinetState.isBusy && cabinetState.userId !== userId) {
+        return res.status(409).json({ 
+            message: `ตู้กำลังถูกใช้งานโดย ${cabinetState.userName || 'ผู้ใช้อื่น'} โปรดรอจนกว่าจะปิดประตู` 
+        });
+    }
+
     const transactionId = req.query.transactionId || null;
     try {
         await commandServo('OPEN'); 
         await logActionToDB(userId, 'A-001', transactionId);
+
+        cabinetState = { isBusy: true, userId: userId, userName: req.user.fullname };
+        io.emit('cabinet_status', cabinetState);
+
         res.status(200).send({ message: 'เปิดตู้สำเร็จ' });
     } catch (error) {
         res.status(500).send({ error: 'ไม่สามารถส่งคำสั่งได้' });
@@ -181,6 +202,10 @@ app.post('/api/close-box', authenticateToken, async (req, res) => {
     try {
         await commandServo('CLOSE'); 
         await logActionToDB(userId, 'A-002', transactionId || null);
+
+        cabinetState = { isBusy: false, userId: null, userName: null };
+        io.emit('cabinet_status', cabinetState);
+        
         res.status(200).send({ message: 'ปิดตู้สำเร็จ (MQTT)' });
     } catch (error) {
         res.status(500).send({ error: 'ไม่สามารถส่งคำสั่ง MQTT ได้' });

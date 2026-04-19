@@ -42,7 +42,7 @@ function Setup2FA() {
         };
 
         fetch2FA();
-    }, [userId]);
+    }, [userId, setSecret]);
 
     const handleChange = (e, index) => {
         const value = e.target.value;
