@@ -474,11 +474,16 @@ app.post('/api/return-part', authenticateToken, async (req, res) => {
 
 // API ตึกและแผนก 
 app.get('/api/departments', async (req, res) => {
+    let connection;
     try {
-        const [rows] = await pool.query("SELECT * FROM department ORDER BY buildings ASC, department_name ASC");
+        connection = await pool.getConnection();
+        const [rows] = await connection.query("SELECT * FROM department ORDER BY buildings ASC, department_name ASC");
         res.json(rows);
     } catch (error) {
+        console.error("Fetch Departments Error:", error);
         res.status(500).json({ error: error.message });
+    } finally {
+        if (connection) connection.release();
     }
 });
 
@@ -2231,33 +2236,6 @@ app.put('/api/change-passwordENG', authenticateToken, async (req, res) => {
     }
 });
 
-app.post('/api/withdraw/partInfo', async (req, res) => {
-    const { partId } = req.body; 
-    try {
-        const sql = `
-            SELECT l.lot_id, e.equipment_id, et.equipment_name, et.unit, et.img, l.current_quantity
-            FROM lot l
-            JOIN equipment e ON l.equipment_id = e.equipment_id
-            JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
-            WHERE l.lot_id = ? OR e.equipment_id = ?
-            LIMIT 1
-        `;
-        const [rows] = await pool.query(sql, [partId, partId]);
-        if (rows.length === 0) return res.status(404).json({ error: 'ไม่พบข้อมูลอะไหล่' });
-
-        const item = rows[0]; 
-        res.json({
-            lotId: item.lot_id,
-            partId: item.equipment_id,
-            partName: item.equipment_name,
-            unit: item.unit,
-            imageUrl: item.img ? item.img : null 
-        });
-    } catch (error) {
-        res.status(500).json({ error: 'Database error' });
-    }
-});
-
 app.get('/api/reports/equipment-usage', async (req, res) => {
     try {
         const sql = `
@@ -2555,20 +2533,6 @@ app.get('/api/report/accesslogs', async (req, res) => {
         res.json(rows);
     } catch (error) {
         console.error("Report Access Logs Error:", error);
-        res.status(500).json({ error: error.message });
-    } finally {
-        if (connection) connection.release();
-    }
-});
-
-app.get('/api/departments', async (req, res) => {
-    let connection;
-    try {
-        connection = await pool.getConnection();
-        const [rows] = await connection.query("SELECT * FROM department ORDER BY department_id ASC");
-        res.json(rows);
-    } catch (error) {
-        console.error("Fetch Departments Error:", error);
         res.status(500).json({ error: error.message });
     } finally {
         if (connection) connection.release();
