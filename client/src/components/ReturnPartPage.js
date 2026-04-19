@@ -76,21 +76,17 @@ function ReturnPartPage({ user }) {
         setError('');
         try {
             const token = localStorage.getItem('token');
-            
-            // 1. เช็คสถานะบอร์ดก่อน (เรียก API ที่เราทำไว้)
             const checkRes = await axios.get(`${API_BASE}/api/device-check`, { 
                 headers: { Authorization: `Bearer ${token}` } 
             });
 
             if (checkRes.data.status === "online") {
-                // 2. ถ้า Online ค่อยสั่งเปิด
                 await axios.get(`${API_BASE}/api/open`, { 
                     headers: { Authorization: `Bearer ${token}` } 
                 });
                 setCurrentStep(4); 
             }
         } catch (err) {
-            // หากบอร์ด Offline จะมาตกที่ catch นี้ (เพราะเราส่ง Status 503 กลับมา)
             const msg = err.response?.data?.message || 'ตู้ไม่มีไฟเลี้ยง กรุณาตรวจสอบการเชื่อมต่อ';
             setError(msg);
         } finally {
