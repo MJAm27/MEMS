@@ -208,7 +208,7 @@ app.get('/api/manager/equipment-details', authenticateToken, async (req, res) =>
                 MAX(l.price) AS max_price
             FROM equipment_type et
             JOIN equipment e ON et.equipment_type_id = e.equipment_type_id
-            LEFT JOIN lot l ON e.equipment_id = l.equipment_id
+            LEFT JOIN lot l ON e.equipment_id = l.equipment_id  WHERE l.current_quantity > 0
             GROUP BY et.equipment_type_id, e.equipment_id
             ORDER BY et.equipment_type_id ASC
         `;
@@ -240,7 +240,7 @@ app.post('/api/withdraw/partInfo', async (req, res) => {
             FROM lot l
             JOIN equipment e ON l.equipment_id = e.equipment_id
             JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
-            WHERE l.lot_id = ? OR e.equipment_id = ?
+            WHERE (l.lot_id = ? OR e.equipment_id = ?) AND l.current_quantity > 0
             LIMIT 1
         `;
         
@@ -1584,6 +1584,7 @@ app.get("/api/alerts/low-stock", async (req, res) => {
         FROM equipment e
         LEFT JOIN lot l ON e.equipment_id = l.equipment_id
         JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
+        WHERE l.current_quantity > 0
         GROUP BY e.equipment_id
         HAVING total_stock <= e.alert_quantity
     `;
@@ -1633,6 +1634,7 @@ app.get("/api/inventory", async (req, res) => {
             JOIN supplier s ON l.supplier_id = s.supplier_id
             RIGHT JOIN equipment e ON e.equipment_id = l.equipment_id 
             JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
+            WHERE l.current_quantity > 0
             ORDER BY l.lot_id DESC
         `;
         const [results] = await db.query(sql);
