@@ -24,6 +24,7 @@ const io = new Server(server, {
     }
 }); 
 
+//กันเบิกชนกัน
 let cabinetState = {
     isBusy: false,
     userId: null,
@@ -205,7 +206,7 @@ app.post('/api/close-box', authenticateToken, async (req, res) => {
 
         cabinetState = { isBusy: false, userId: null, userName: null };
         io.emit('cabinet_status', cabinetState);
-        
+
         res.status(200).send({ message: 'ปิดตู้สำเร็จ (MQTT)' });
     } catch (error) {
         res.status(500).send({ error: 'ไม่สามารถส่งคำสั่ง MQTT ได้' });
