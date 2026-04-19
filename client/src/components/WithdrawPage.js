@@ -167,6 +167,13 @@ function WithdrawPage({ user }) {
 
     const handleFinalConfirm = async () => {
         if (cartItems.length === 0) return;
+
+        if (!machineId || !departmentId || !repairTypeId) {
+            setError("กรุณาระบุ ประเภทงาน, เครื่องที่นำไปใช้ และสถานที่ ให้ครบถ้วนก่อนยืนยัน");
+            setCurrentStep(2); 
+            return;
+        }
+
         setIsProcessing(true);
         setError("");
         try {
