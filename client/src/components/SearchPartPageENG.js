@@ -36,7 +36,7 @@ function SearchPartPageENG() {
                     unit: specificLots[0].unit,
                     img: specificLots[0].img,
                     total_quantity: specificLots.reduce((sum, lot) => sum + lot.current_quantity, 0),
-                    lots: specificLots // ส่งข้อมูลล็อตทั้งหมดที่เกี่ยวข้องกับอะไหล่ชิ้นนี้ไปยัง Modal
+                    lots: specificLots 
                 };
                 setSelectedPart(partInfo);
                 setShowModal(true);

@@ -14,7 +14,6 @@ const { Server } = require("socket.io");
 
 
 const app = express();
-// สร้าง HTTP Server และผูก Socket.IO
 
 const server = http.createServer(app); 
 const io = new Server(server, { 
@@ -34,6 +33,7 @@ let cabinetState = {
 io.on('connection', (socket) => {
     socket.emit('cabinet_status', cabinetState);
 });
+
 const PORT = 3001; // Port สำหรับ Backend
 
 
