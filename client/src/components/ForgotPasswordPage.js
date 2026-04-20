@@ -14,31 +14,26 @@ function ForgotPasswordPage() {
     const navigate = useNavigate();
     const inputRefs = useRef([]);
 
-    // จัดการการเปลี่ยนค่าในช่อง OTP
     const handleOtpChange = (e, index) => {
         const value = e.target.value;
         const newOtp = [...otpCode];
 
-        // ถ้ามีการกรอกตัวเลข
         if (/^\d?$/.test(value)) {
             newOtp[index] = value;
             setOtpCode(newOtp);
             
-            // เลื่อนไปข้างหน้าถ้ากรอกค่า
             if (value && index < 5) {
                 inputRefs.current[index + 1].focus();
             }
         }
     };
 
-    // เพิ่มฟังก์ชันตรวจจับการกด Backspace (แยกอีกฟังก์ชัน)
     const handleKeyDown = (e, index) => {
         if (e.key === 'Backspace' && !otpCode[index] && index > 0) {
             inputRefs.current[index - 1].focus();
         }
     };
 
-    // ขั้นตอนที่ 1: ตรวจสอบอีเมล
     const handleCheckEmail = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -53,7 +48,6 @@ function ForgotPasswordPage() {
         }
     };
 
-    // ขั้นตอนที่ 2: ยืนยัน OTP เพื่อไปหน้าตั้งรหัสใหม่
     const handleVerifyOtp = async (e) => {
         e.preventDefault();
         const code = otpCode.join('');
@@ -65,7 +59,6 @@ function ForgotPasswordPage() {
                 email, 
                 token: code 
             });
-            // นำ Token ที่ได้ไปใช้ในหน้า ResetPasswordPage
             navigate(`/reset-password?token=${response.data.resetToken}`);
         } catch (err) {
             setError(err.response?.data?.message || 'รหัส OTP ไม่ถูกต้อง');
