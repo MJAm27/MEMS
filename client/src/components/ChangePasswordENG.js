@@ -59,7 +59,6 @@ function ChangePassword() {
             }
 
             alert("เปลี่ยนรหัสผ่านสำเร็จ! กรุณาเข้าสู่ระบบใหม่อีกครั้ง");
-            // หลังจากเปลี่ยนรหัสผ่าน แนะนำให้ Logout เพื่อความปลอดภัย
             localStorage.removeItem('token');
             navigate('/login');
 
@@ -84,7 +83,6 @@ function ChangePassword() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="edit-form-grid">
-                    {/* รหัสผ่านเดิม */}
                     <div className="form-group full-width">
                         <label>รหัสผ่านปัจจุบัน</label>
                         <div className="password-input-wrapper">
@@ -102,7 +100,6 @@ function ChangePassword() {
                         </div>
                     </div>
 
-                    {/* รหัสผ่านใหม่ */}
                     <div className="form-group">
                         <label>รหัสผ่านใหม่</label>
                         <div className="password-input-wrapper">
@@ -120,7 +117,6 @@ function ChangePassword() {
                         </div>
                     </div>
 
-                    {/* ยืนยันรหัสผ่านใหม่ */}
                     <div className="form-group">
                         <label>ยืนยันรหัสผ่านใหม่</label>
                         <div className="password-input-wrapper">

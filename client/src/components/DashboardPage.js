@@ -27,18 +27,13 @@ function DashboardPage() {
     const navigate = useNavigate();
     const API_URL = process.env.REACT_APP_API_URL ;
 
-    /**
-     * ฟังก์ชันออกจากระบบ
-     */
     const handleLogout = useCallback(() => {
         localStorage.removeItem('token');
         setUserPayload(null); 
         navigate('/login', { replace: true }); 
     }, [navigate]); 
 
-    /**
-     * ฟังก์ชันดึงข้อมูลผู้ใช้ปัจจุบันจาก Server
-     */
+
     const fetchAndSetUser = useCallback(async (token) => {
         if (!token) {
             handleLogout();
@@ -53,7 +48,6 @@ function DashboardPage() {
             const freshData = response.data;
             const tokenPayload = getPayloadFromToken(token);
             
-            // ผสมข้อมูลจาก API และ Role จาก Token
             const newUserPayload = { 
                 ...freshData, 
                 role: tokenPayload?.role || freshData.role 
@@ -76,10 +70,7 @@ function DashboardPage() {
         }
     }, [handleLogout, fetchAndSetUser]);
 
-    /**
-     * Logic การตัดสินใจเลือกหน้า Dashboard ตามบทบาท (Role)
-     * แก้ไข: เพิ่มการดักจับค่า "MANAGER" และ "R-MGR" ให้แม่นยำขึ้น
-     */
+
     const renderDashboardByRole = () => {
         if (!userPayload) {
             return (
@@ -91,22 +82,19 @@ function DashboardPage() {
 
         const rawRole = userPayload.role ? userPayload.role.toUpperCase() : "";
 
-        // ตรวจสอบเงื่อนไขเพื่อส่งไปยังหน้า ManagerMainPage
         if (rawRole === 'MANAGER' || rawRole === 'R-MGR' || rawRole === 'MGR') {
             return <ManagerMainPage user={userPayload} handleLogout={handleLogout} />;
         } 
         
-        // ตรวจสอบเงื่อนไขสำหรับ Admin
+
         if (rawRole === 'ADMIN' || rawRole === 'R-ADM' || rawRole === 'ADM') {
             return <AdminMainPage user={userPayload} handleLogout={handleLogout} />;
         }
 
-        // ตรวจสอบเงื่อนไขสำหรับ Engineer
         if (rawRole === 'ENGINEER' || rawRole === 'R-ENG' || rawRole === 'ENG') {
             return <EngineerMainPage user={userPayload} handleLogout={handleLogout} />;
         }
 
-        // กรณีไม่พบ Role ที่กำหนด
         return (
             <div className="p-8 text-center">
                 <h2 className="text-red-600 font-bold">ไม่พบสิทธิ์การใช้งานที่ถูกต้อง</h2>

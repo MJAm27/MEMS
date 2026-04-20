@@ -245,9 +245,8 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                                             <label>เครื่องที่นำไปใช้</label>
                                             <select 
                                                 className="withdraw-input-modern" 
-                                                // เปลี่ยนมาดึงค่าจาก finalizeData ตาม uniqueKey ของการ์ดนั้นๆ
                                                 value={finalizeData[uniqueKey]?.machineId || ''} 
-                                                // ใช้ handleInputChange เพื่ออัปเดตค่าแยกตาม uniqueKey
+
                                                 onChange={(e) => handleInputChange(uniqueKey, 'machineId', e.target.value)}
                                             >
                                                 <option value="">-- เลือกเครื่องมือ --</option>
