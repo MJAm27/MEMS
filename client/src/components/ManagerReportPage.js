@@ -274,6 +274,72 @@ function ManagerReportPage() {
                         </tbody>
                     </table>
                 </div>
+                <div className="table-wrapper">
+                    <table className="report-table">
+                        <thead>
+                            <tr>
+                                <th>ชื่ออะไหล่ / อุปกรณ์</th>
+                                <th className="text-center">ระดับแจ้งเตือน</th>
+                                <th>คงเหลือ / ทั้งหมด (ชิ้น)</th>
+                                <th className="text-center">สถานะ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredInventory.length > 0 ? (
+                                filteredInventory.map((item, i) => {
+                                    const current = Number(item.quantity) || 0; 
+                                    const total = Number(item.total_quantity) || current;
+                                    const alertQty = Number(item.alert_quantity) || 0;
+                                    
+                                    const percent = total > 0 ? Math.min((current / total) * 100, 100) : 0;
+                                    const isLow = current <= alertQty;
+
+                                    return (
+                                        <tr key={i} className={isLow ? "row-warning" : ""}>
+                                            <td>
+                                                <div className="font-semibold text-slate-700">{item.equipment_name}</div>
+                                                <small className="text-gray-400">ID: {item.equipment_id}</small>
+                                            </td>
+                                            <td className="text-center">
+                                                <span className="alert-threshold-badge">ต่ำกว่า {alertQty} {item.unit}</span>
+                                            </td>
+                                            <td>
+                                                <div className="qty-progress-cell">
+                                                    <div className="flex justify-between mb-1">
+                                                        <strong className={isLow ? "text-red-600" : "text-green-600"}>
+                                                            {current.toLocaleString()} / {total.toLocaleString()}
+                                                        </strong>
+                                                        
+                                                    </div>
+                                                    <div className="mini-bar">
+                                                        <div 
+                                                            className="fill" 
+                                                            style={{ 
+                                                                width: `${percent}%`, 
+                                                                backgroundColor: isLow ? '#ef4444' : '#22c55e' 
+                                                            }}
+                                                        ></div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="text-center">
+                                                <span className={`status-badge ${isLow ? 'low' : 'ok'}`}>
+                                                    {isLow ? 'ต้องสั่งซื้อด่วน' : 'ปกติ'}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            ) : (
+                                <tr>
+                                    <td colSpan="4" className="text-center py-10 text-gray-400">
+                                        ไม่พบข้อมูลตามเงื่อนไขที่เลือก
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );
