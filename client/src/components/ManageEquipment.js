@@ -55,7 +55,7 @@ function ManageEquipment() {
     setFormData({ 
       ...formData, 
       equipment_type_id: selectedId, 
-      equipment_name: selectedType 
+      equipment_name: selectedType ? selectedType.equipment_name : "" 
     });
   };
 
@@ -71,7 +71,6 @@ function ManageEquipment() {
           const res = await axios.post(`${API_BASE_URL}/api/upload`, uploadData, {
               headers: { 'Content-Type': 'multipart/form-data' }
           });
-          // เก็บชื่อไฟล์ที่ได้จาก Backend ไว้ใน State
           setFormData({ ...formData, img: res.data.filename });
       } catch (error) {
           alert("อัปโหลดรูปไม่สำเร็จ");
@@ -113,12 +112,27 @@ function ManageEquipment() {
     e.preventDefault();
 
     try {
-        if (isEditMode) {
-            await axios.put(`${API_BASE_URL}/api/equipment/update/${formData.equipment_id}`, formData);
-            alert("แก้ไขข้อมูลอะไหล่สำเร็จ");
-        } else {
+        if (!isEditMode) {
+            const checkRes = await axios.post(`${API_BASE_URL}/api/equipment/check-duplicate`, {
+                equipment_name: formData.equipment_name,
+                model_size: formData.model_size
+            });
+
+            if (checkRes.data.isDuplicate) {
+                const confirmAddLot = window.confirm(checkRes.data.message);
+                
+                if (confirmAddLot) {
+                    navigate(`/dashboard/admin/lot/${checkRes.data.equipment_id}`);
+                    setShowModal(false);
+                }
+                return; 
+            }
+
             await axios.post(`${API_BASE_URL}/api/equipment/add`, formData);
             alert("เพิ่มข้อมูลอะไหล่สำเร็จ");
+        } else {
+            await axios.put(`${API_BASE_URL}/api/equipment/update/${formData.equipment_id}`, formData);
+            alert("แก้ไขข้อมูลอะไหล่สำเร็จ");
         }
         setShowModal(false);
         fetchData();
@@ -250,7 +264,7 @@ function ManageEquipment() {
                         backgroundColor: isNewType ? '#f8fbff' : 'transparent', 
                         padding: isNewType ? '15px' : '0', 
                         borderRadius: '8px', 
-                        border: isNewType ? '1px solid #cce5ff' : 'none', 
+                        border: isNewType ? '1px solid #acbfd3' : 'none', 
                         marginBottom: '15px', 
                         transition: 'all 0.3s ease' 
                     }}>
@@ -261,7 +275,6 @@ function ManageEquipment() {
                                 className="btn-link-toggle" 
                                 onClick={() => {
                                     setIsNewType(!isNewType);
-                                    // เคลียร์ค่า ID และ Name เมื่อกดสลับโหมด
                                     setFormData({ ...formData, equipment_type_id: "", equipment_name: "" });
                                 }}
                                 style={{ color: '#007bff', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontSize: '0.85rem' }}

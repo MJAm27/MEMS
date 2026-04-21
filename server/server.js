@@ -1662,18 +1662,48 @@ app.get("/api/inventory", async (req, res) => {
                 s.supplier_id, s.supplier_name, s.contact,
                 e.equipment_id, e.model_size, e.alert_quantity,
                 et.equipment_type_id, et.equipment_name, et.img, et.unit
-            FROM lot l
-            JOIN supplier s ON l.supplier_id = s.supplier_id
-            RIGHT JOIN equipment e ON e.equipment_id = l.equipment_id 
+            FROM equipment e
             JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
-            WHERE l.current_quantity > 0
-            ORDER BY l.lot_id DESC
+            LEFT JOIN lot l ON e.equipment_id = l.equipment_id AND l.current_quantity > 0
+            LEFT JOIN supplier s ON l.supplier_id = s.supplier_id
+            ORDER BY e.equipment_id DESC, l.lot_id DESC
         `;
         const [results] = await db.query(sql);
         res.json(results);
     } catch (err) {
         console.error("Error fetching inventory:", err);
         res.status(500).send(err);
+    }
+});
+
+// API สำหรับเช็คอะไหล่ซ้ำ
+app.post("/api/equipment/check-duplicate", async (req, res) => {
+    const { equipment_name, model_size } = req.body;
+
+    try {
+        const sql = `
+            SELECT e.equipment_id, et.equipment_name, e.model_size
+            FROM equipment e
+            JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
+            WHERE et.equipment_name = ? AND e.model_size = ?
+        `;
+        const [results] = await db.query(sql, [equipment_name, model_size]);
+
+        if (results.length > 0) {
+            // เจอข้อมูลซ้ำ
+            return res.json({ 
+                isDuplicate: true, 
+                equipment_id: results[0].equipment_id,
+                message: `มีอะไหล่ชื่อ "${equipment_name}" ขนาด/รุ่น "${model_size}" อยู่ในระบบแล้ว (รหัสอะไหล่: ${results[0].equipment_id}) คุณต้องการเปลี่ยนไปเพิ่มล็อตในรหัสอะไหล่นี้แทนใช่ไหม?`
+            });
+        }
+
+        // ไม่ซ้ำ ให้บันทึกต่อได้
+        res.json({ isDuplicate: false });
+
+    } catch (error) {
+        console.error("Error checking duplicate:", error);
+        res.status(500).json({ error: error.message });
     }
 });
 
