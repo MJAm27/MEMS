@@ -5,12 +5,13 @@ import {
 } from "react-icons/fa"; 
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import axios from "axios";
-import io from 'socket.io-client';
+import io from 'socket.io-client'; // นำมาใช้ใน useEffect ด้านล่าง
 import './BorrowPage.css'; 
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+const STORAGE_KEY = 'mems_borrow_session';
 
-function BorrowPage({ user }) {
+function BorrowPage({ user, setIsLocked }) {
     const activeUser = user || { fullname: 'ผู้ใช้งาน', user_id: null };
     const [currentStep, setCurrentStep] = useState(1); 
     const [borrowDate] = useState(() => {
@@ -23,12 +24,12 @@ function BorrowPage({ user }) {
     const [manualPartId, setManualPartId] = useState('');
     const [error, setError] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
-    const [previewImage, setPreviewImage] = useState(null);
     const [partSuggestions, setPartSuggestions] = useState([]);
-
     const [cabinetBusy, setCabinetBusy] = useState(false);
     const [busyBy, setBusyBy] = useState('');
+    const [previewImage, setPreviewImage] = useState(null); // แก้ไข Error: previewImage is not defined
 
+    // เพิ่มการเชื่อมต่อ Socket เพื่อเช็คสถานะตู้ (แก้ Warning: io, setCabinetBusy, setBusyBy not used)
     useEffect(() => {
         const socket = io(API_BASE);
 
@@ -44,15 +45,48 @@ function BorrowPage({ user }) {
         });
 
         return () => socket.disconnect();
-    }, [user]);
+    }, [user?.user_id, user?.userId]);
 
-    const handleResetForm = () => {
+    // Persistence Logic
+    useEffect(() => {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            const data = JSON.parse(saved);
+            if (window.confirm("คุณมีรายการเบิกล่วงหน้าที่ค้างอยู่ ต้องการทำต่อหรือไม่?")) {
+                setCurrentStep(data.currentStep);
+                setBorrowItems(data.borrowItems);
+                if (setIsLocked) setIsLocked(true);
+            } else {
+                localStorage.removeItem(STORAGE_KEY);
+            }
+        }
+    }, [setIsLocked]);
+
+    useEffect(() => {
+        if (currentStep > 1 && currentStep < 5) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ currentStep, borrowItems }));
+        }
+    }, [currentStep, borrowItems]);
+
+    useEffect(() => {
+        const handleBeforeUnload = (e) => {
+            if (currentStep > 1 && currentStep < 5) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [currentStep]);
+
+    const handleResetForm = useCallback(() => {
+        localStorage.removeItem(STORAGE_KEY);
         setCurrentStep(1);
         setBorrowItems([]);
         setManualPartId('');
         setError('');
         setIsScanning(false);
-    };
+    }, []);
 
     const handleOpenDoor = async () => {
         setIsProcessing(true);
@@ -67,7 +101,8 @@ function BorrowPage({ user }) {
                 await axios.get(`${API_BASE}/api/open`, { 
                     headers: { Authorization: `Bearer ${token}` } 
                 });
-                setCurrentStep(2); 
+                setCurrentStep(2);
+                if (setIsLocked) setIsLocked(true);
             }
         } catch (err) {
             const msg = err.response?.data?.message || 'ตู้ไม่มีไฟเลี้ยง กรุณาตรวจสอบการเชื่อมต่อ';
@@ -86,6 +121,7 @@ function BorrowPage({ user }) {
                 headers: { Authorization: `Bearer ${token}` } 
             });
             handleResetForm();
+            if (setIsLocked) setIsLocked(false);
         } catch (err) {
             setError('คำสั่งปิดประตูขัดข้อง');
         } finally {
@@ -216,7 +252,6 @@ function BorrowPage({ user }) {
             </div>
 
             <div className="withdraw-card">
-                {/* ขั้นตอนที่ 1: เปิดประตู */}
                 {currentStep === 1 && (
                     <div className="step-content-unlock">
                         <div className="unlock-icon-container"><FaLockOpen size={48} /></div>
@@ -228,7 +263,6 @@ function BorrowPage({ user }) {
                     </div>
                 )}
 
-                {/* ขั้นตอนที่ 2: ระบุอะไหล่ */}
                 {currentStep === 2 && (
                     <div className="step-content-identify">
                         <div className="identify-header">
@@ -315,33 +349,25 @@ function BorrowPage({ user }) {
                     </div>
                 )}
 
-                {/* ขั้นตอนที่ 3: ตรวจสอบข้อมูล */}
                 {currentStep === 3 && (
                     <div className="step-content-review animate-fadeIn">
                         <div className="review-header-group">
                             <h3 className="text-2xl font-bold mb-4">3. ตรวจสอบข้อมูล</h3>
-                            <p className="text-gray-400 text-sm mb-4">กรุณาตรวจสอบรายละเอียดก่อนบันทึก</p>
                         </div>
 
                         <div className="asset-info-banner">
                             <span className="label">รายละเอียดการเบิกยืมล่วงหน้า</span>
-                            
                             <div className="info-row-summary">
                                 <span className="info-label">ประเภทรายการ :</span>
                                 <span className="info-value">เบิกอะไหล่ล่วงหน้า </span>
                             </div>
-
                             <div className="info-row-summary">
                                 <span className="info-label">วันที่ทำรายการ :</span>
                                 <span className="info-value">{new Date(borrowDate).toLocaleDateString('th-TH')}</span>
                             </div>
-
                         </div>
 
                         <div className="review-list-container">
-                            <h4 className="text-sm font-bold mb-3 text-gray-400 uppercase text-center">
-                                รายการอะไหล่ที่เบิก
-                            </h4>
                             {borrowItems.map((item, idx) => (
                                 <div key={idx} className="review-item-card">
                                     <div className="item-img-box">
@@ -364,49 +390,22 @@ function BorrowPage({ user }) {
                         </div>
 
                         <div className="flex gap-3 mt-8 w-full">
-                            <button onClick={() => setCurrentStep(2)} className="btn-review-edit flex-1">
-                                แก้ไขรายการ
-                            </button>
-                            <button onClick={() => setCurrentStep(4)} className="btn-review-confirm flex-2">
-                                ตรวจสอบเรียบร้อย
-                            </button>
+                            <button onClick={() => setCurrentStep(2)} className="btn-review-edit flex-1">แก้ไขรายการ</button>
+                            <button onClick={() => setCurrentStep(4)} className="btn-review-confirm flex-2">ตรวจสอบเรียบร้อย</button>
                         </div>
                     </div>
                 )}
 
-                {/* ขั้นตอนที่ 4: ยืนยันการบันทึก */}
                 {currentStep === 4 && (
                     <div className="step-content-confirmation">
                         <FaClipboardCheck size={64} className="text-blue-500 mb-4" />
                         <h3 className="text-2xl font-bold text-gray-800">4. ยืนยันการบันทึก</h3>
-                        
                         <div className="confirmation-summary-card">
                             <span className="summary-header-label" style={{ color: '#3b82f6' }}>สรุปการเบิกล่วงหน้า</span>
                             <div className="info-row-summary">
                                 <span className="info-label">วันที่เบิก:</span>
                                 <span className="info-value">{new Date(borrowDate).toLocaleDateString('th-TH')}</span>
                             </div>
-                            <div className="info-row-summary">
-                                <span className="info-label">ประเภทรายการ:</span>
-                                <span className="info-value">เบิกล่วงหน้าอะไหล่</span>
-                            </div>
-                            
-                            <div className="summary-data-row border-t pt-2 mt-2">
-                                <span className="text-blue-600">รายการอะไหล่ที่เบิก:</span>
-                            </div>
-                            
-                            <div className="summary-items-list">
-                                {borrowItems.map((item, idx) => (
-                                    <div key={idx} className="summary-item-line">
-                                        <div className="flex flex-col">
-                                            <span className="font-bold text-gray-800">{item.partName}</span>
-                                            <span className="text-xs text-gray-500">Lot: {item.lotId}</span>
-                                        </div>
-                                        <span className="font-bold">x {item.quantity} {item.unit || 'ชิ้น'}</span>
-                                    </div>
-                                ))}
-                            </div>
-
                             <div className="summary-total-footer mt-4">
                                 <span>รวมอะไหล่ทั้งสิ้น</span>
                                 <div className="total-count-badge">
@@ -414,27 +413,20 @@ function BorrowPage({ user }) {
                                 </div>
                             </div>
                         </div>
-
                         <div className="flex flex-col items-center gap-4 w-full mt-2">
                             <button onClick={handleFinalConfirm} disabled={isProcessing} className="btn-action-primary" style={{ width: '100%', maxWidth: '320px' }}>
                                 {isProcessing ? "กำลังบันทึก..." : "ยืนยันการเบิกยืม"}
-                            </button>
-                            <button onClick={() => setCurrentStep(3)} className="btn-review-edit" style={{ width: '100%', maxWidth: '320px' }}>
-                                กลับไปแก้ไข
                             </button>
                         </div>
                     </div>
                 )}
 
-                {/* ขั้นตอนที่ 5: สำเร็จและปิดประตู */}
                 {currentStep === 5 && (
                     <div className="step-content-success">
                         <div className="success-banner-modern">
                             <div className="success-icon-circle"><FaCheckCircle /></div>
                             <span className="success-text-main">บันทึกข้อมูลสำเร็จ!</span>
                         </div>
-                        <h3 className="text-2xl font-bold text-gray-800 mb-2">5. สั่งปิดประตู</h3>
-                        <p className="instruction-text">ตรวจสอบสิ่งกีดขวางหน้ากล่อง แล้วกดปุ่มเพื่อล็อกตู้</p>
                         <button onClick={handleCloseDoor} disabled={isProcessing} className="btn-close-gate-final">
                             {isProcessing ? <span className="loader"></span> : <><FaLock /> ปิดประตูกล่อง</>}
                         </button>
@@ -442,6 +434,7 @@ function BorrowPage({ user }) {
                 )} 
             </div>
 
+            {/* ส่วนแสดงรูปภาพขนาดใหญ่ */}
             {previewImage && (
                 <div className="image-viewer-overlay" onClick={() => setPreviewImage(null)}>
                     <div className="image-viewer-content">
@@ -451,6 +444,7 @@ function BorrowPage({ user }) {
                 </div>
             )}
 
+            {/* ส่วนแสดงสถานะตู้ไม่ว่าง */}
             {cabinetBusy && (
                 <div className="fixed inset-0 bg-black bg-opacity-60 z-[9999] flex items-center justify-center backdrop-blur-sm">
                     <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-md w-full mx-4">
@@ -463,7 +457,6 @@ function BorrowPage({ user }) {
                             โปรดรอสักครู่ เมื่อทำรายการเสร็จสิ้นหน้าต่างนี้จะหายไปเอง
                         </p>
                         <div className="flex justify-center">
-                            {/* วงกลมหมุนโหลด */}
                             <span className="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
                         </div>
                     </div>

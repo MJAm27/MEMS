@@ -295,6 +295,74 @@ app.post('/api/withdraw/partInfo', async (req, res) => {
 });
 
 
+// API สำหรับดึงข้อมูลอะไหล่เพื่อ "คืน" (เช็คประวัติว่าเคยเบิกไหมก่อนให้เพิ่มลงตะกร้า)
+app.post('/api/return/partInfo', authenticateToken, async (req, res) => {
+    const { partId } = req.body;
+    const userId = req.user.userId; // ดึง User ID ของคนที่กำลังใช้งาน
+
+    if (!partId) return res.status(400).json({ error: 'กรุณาระบุรหัสอะไหล่' });
+
+    try {
+        // 1. หาข้อมูลอะไหล่พื้นฐานก่อน
+        const sql = `
+            SELECT 
+                l.lot_id, e.equipment_id, et.equipment_name, 
+                e.model_size, et.unit, et.img, l.current_quantity
+            FROM lot l
+            JOIN equipment e ON l.equipment_id = e.equipment_id
+            JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
+            WHERE l.lot_id = ? OR e.equipment_id = ?
+            ORDER BY l.current_quantity DESC LIMIT 1
+        `;
+        const [rows] = await pool.query(sql, [partId, partId]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'ไม่พบข้อมูลอะไหล่ในระบบ' });
+        }
+
+        const data = rows[0];
+
+        // 2. ตรวจสอบประวัติการเบิก-คืน ว่า User คนนี้มีของชิ้นนี้ค้างอยู่กี่ชิ้น
+        const [withdrawResult] = await pool.query(`
+            SELECT COALESCE(SUM(el.quantity), 0) AS total_withdrawn
+            FROM equipment_list el
+            JOIN transactions t ON el.transaction_id = t.transaction_id
+            WHERE el.lot_id = ? AND t.user_id = ? 
+            AND t.transaction_type_id = 'T-WTH' AND t.parent_transaction_id IS NULL
+        `, [data.lot_id, userId]);
+
+        const [returnResult] = await pool.query(`
+            SELECT COALESCE(SUM(el.quantity), 0) AS total_returned
+            FROM equipment_list el
+            JOIN transactions t ON el.transaction_id = t.transaction_id
+            WHERE el.lot_id = ? AND t.user_id = ? AND t.transaction_type_id = 'T-RTN'
+        `, [data.lot_id, userId]);
+
+        const maxReturnable = Number(withdrawResult[0].total_withdrawn) - Number(returnResult[0].total_returned);
+
+        // 3. ถ้าคำนวณแล้ว ยอดที่คืนได้ <= 0 แปลว่าไม่เคยเบิก หรือ คืนครบไปแล้ว
+        if (maxReturnable <= 0) {
+            return res.status(400).json({ 
+                error: `ไม่อนุญาต: คุณไม่มีประวัติการเบิกอะไหล่นี้ (หรือคืนครบแล้ว)` 
+            });
+        }
+
+        // 4. ถ้าผ่าน ให้ส่งข้อมูลอะไหล่ พร้อมยอดสูงสุดที่คืนได้กลับไป
+        return res.json({
+            partId: data.equipment_id,
+            lotId: data.lot_id,
+            partName: data.equipment_name,
+            unit: data.unit,
+            imageUrl: data.img || null,
+            maxReturnable: maxReturnable 
+        });
+
+    } catch (error) {
+        console.error("Return PartInfo Error:", error);
+        return res.status(500).json({ error: 'เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์' });
+    }
+});
+
 // Confirm and Cut Stock ตัดสต็อก
 app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
     const { machine_id, machine_number, machine_SN, department_id, repair_type_id, cartItems } = req.body;
@@ -414,16 +482,48 @@ app.post('/api/return-part', authenticateToken, async (req, res) => {
         connection = await pool.getConnection();
         await connection.beginTransaction();
 
-        const transactionId = `RTN-${Date.now()}`;
+        // 1. Validation: ป้องกันการคืนเกินจำนวนที่เคยเบิก (หรือของที่ไม่เคยเบิก)
+        for (const item of items) {
+            const [withdrawResult] = await connection.query(`
+                SELECT COALESCE(SUM(el.quantity), 0) AS total_withdrawn
+                FROM equipment_list el
+                JOIN transactions t ON el.transaction_id = t.transaction_id
+                WHERE el.lot_id = ? AND t.user_id = ? AND t.transaction_type_id = 'T-WTH'
+            `, [item.lotId, userId]);
+
+            const [returnResult] = await connection.query(`
+                SELECT COALESCE(SUM(el.quantity), 0) AS total_returned
+                FROM equipment_list el
+                JOIN transactions t ON el.transaction_id = t.transaction_id
+                WHERE el.lot_id = ? AND t.user_id = ? AND t.transaction_type_id = 'T-RTN'
+            `, [item.lotId, userId]);
+
+            const totalWithdrawn = Number(withdrawResult[0].total_withdrawn);
+            const totalReturned = Number(returnResult[0].total_returned);
+            const maxReturnable = totalWithdrawn - totalReturned;
+            const reqQty = Number(item.quantity);
+
+            // ถ้าพยายามคืนมากกว่ายอดที่เหลือในมือ (หรือพยายามคืนทั้งที่ไม่เคยเบิก)
+            if (reqQty > maxReturnable) {
+                await connection.rollback(); // ยกเลิกการบันทึกทันที
+                connection.release();
+                // ส่ง Status 400 ให้ Frontend จับ Error ได้ชัวร์ๆ
+                return res.status(400).json({ 
+                    error: `ไม่อนุญาตให้ทำรายการ: คุณไม่สามารถคืนอะไหล่ Lot: ${item.lotId} ได้ (ยอดที่คืนได้สูงสุดคือ ${maxReturnable} ชิ้น)` 
+                });
+            }
+        }
+
+        const transactionId = `RTN-${Date.now().toString().slice(-8)}`;
         const parentId = items.find(i => i.borrowId)?.borrowId || null;
 
-        // ตั้งค่า is_pending = 0 เนื่องจากเป็นการคืนคลังโดยตรง กรณีเบิกล่วงหน้า
+        // 2. บันทึก Transaction หลัก (แก้ไขบัค Insert ซ้ำซ้อนแล้ว)
         await connection.query(
             "INSERT INTO transactions (transaction_id, parent_transaction_id, transaction_type_id, date, time, user_id, is_pending) VALUES (?, ?, 'T-RTN', ?, CURTIME(), ?, 0)",
             [transactionId, parentId, returnDate, userId]
         );
 
-        // ผูก Log เวลาเปิดตู้ (Action A-001) ล่าสุดเข้ากับ Transaction นี้
+        // 3. ผูก Log เวลาเปิดตู้
         await connection.query(
             `UPDATE accesslogs SET transaction_id = ? 
              WHERE user_id = ? AND transaction_id IS NULL AND action_type_id = 'A-001' 
@@ -431,29 +531,24 @@ app.post('/api/return-part', authenticateToken, async (req, res) => {
             [transactionId, userId]
         );
 
-        // วนลูปจัดการสต็อกและการหักลดยอดตามรอบการเบิก (Borrow ID)
+        // 4. วนลูปจัดการสต็อกและการหักลดยอด
         for (const item of items) {
-            // เพิ่มสต็อกกลับเข้าคลัง (ตาราง lot)
             await connection.query(
                 "UPDATE lot SET current_quantity = current_quantity + ? WHERE lot_id = ?", 
                 [item.quantity, item.lotId]
             );
 
-            // ตรวจสอบว่าเป็นการคืนจาก "รอบการเบิกล่วงหน้า" หรือไม่
             if (item.borrowId) {
-                // หักลบยอดในมือออกจากรายการเบิก (transaction_id เดิม)
                 await connection.query(
                     "UPDATE equipment_list SET quantity = quantity - ? WHERE transaction_id = ? AND lot_id = ?",
                     [item.quantity, item.borrowId, item.lotId]
                 );
 
-                // ตรวจสอบยอดคงเหลือในรายการนั้นหลังการหักลบ
                 const [checkRows] = await connection.query(
                     "SELECT quantity FROM equipment_list WHERE transaction_id = ? AND lot_id = ?",
                     [item.borrowId, item.lotId]
                 );
 
-                // หากยอดเหลือ 0 ให้ลบรายการนั้นออกจากรายการค้างเบิก
                 if (!checkRows[0] || checkRows[0].quantity <= 0) {
                     await connection.query(
                         "DELETE FROM equipment_list WHERE transaction_id = ? AND lot_id = ?", 
@@ -474,7 +569,6 @@ app.post('/api/return-part', authenticateToken, async (req, res) => {
                 }
             }
 
-            // บันทึกรายการอะไหล่คืนลงใน equipment_list ของ Transaction RTN 
             const listId = `ELR-${Date.now().toString().slice(-5)}-${Math.floor(Math.random() * 1000)}`;
             await connection.query(
                 "INSERT INTO equipment_list (equipment_list_id, transaction_id, quantity, lot_id) VALUES (?, ?, ?, ?)",
@@ -482,7 +576,7 @@ app.post('/api/return-part', authenticateToken, async (req, res) => {
             );
         }
 
-        // บันทึก Log เวลาปิดตู้ (Action A-002)
+        // 5. บันทึก Log เวลาปิดตู้
         const closeLogId = `RTN-CL-${Date.now().toString().slice(-8)}`;
         await connection.query(
             "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-002', ?, ?)",
@@ -493,7 +587,7 @@ app.post('/api/return-part', authenticateToken, async (req, res) => {
         res.json({ success: true, message: "คืนอะไหล่และเชื่อมโยงประวัติเรียบร้อย" });
     } catch (error) {
         if (connection) await connection.rollback();
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: "เกิดข้อผิดพลาดในการคืนอะไหล่: " + error.message });
     } finally {
         if (connection) connection.release();
     }
@@ -756,6 +850,15 @@ app.post('/api/borrow/return-all', authenticateToken, async (req, res) => {
     let connection;
     try {
         connection = await pool.getConnection();
+
+        const [txCheck] = await connection.query(
+            "SELECT user_id FROM transactions WHERE transaction_id = ?", 
+            [transactionId]
+        );
+        if (txCheck.length === 0 || txCheck[0].user_id !== req.user.userId) {
+             throw new Error("ไม่อนุญาตให้ทำรายการ: คุณไม่ได้เป็นผู้ทำการเบิกรายการนี้");
+        }
+
         await connection.beginTransaction();
 
         // 1. เพิ่มสต็อกกลับเข้าคลังกลาง (ตาราง lot)
@@ -2615,11 +2718,11 @@ app.delete('/api/departments/:id', async (req, res) => {
     }
 });
 
-app.use(express.static(path.join(__dirname, 'build')));
+//app.use(express.static(path.join(__dirname, 'dist')));
 
-app.get(/.*/, (req, res) => {
-    res.sendFile(path.join(__dirname, 'build', 'index.html'));
-});
+//app.get(/.*/, (req, res) => {
+//    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+//});
 
 server.listen(PORT, () => {
     console.log(`🚀 Backend server is running on http://localhost:${PORT}`);

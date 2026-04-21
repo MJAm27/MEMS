@@ -7,8 +7,10 @@ import io from 'socket.io-client';
 import './ReturnPartPage.css'; 
 
 const API_BASE = process.env.REACT_APP_API_URL;
+const STORAGE_KEY = 'mems_return_session';
 
-function ReturnPartPage({ user }) {
+
+function ReturnPartPage({ user, setIsLocked }) {
     const location = useLocation(); 
     const [currentStep, setCurrentStep] = useState(1); 
     const [returnDate] = useState(() => { 
@@ -24,6 +26,26 @@ function ReturnPartPage({ user }) {
 
     const [cabinetBusy, setCabinetBusy] = useState(false);
     const [busyBy, setBusyBy] = useState('');
+
+    useEffect(() => {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            const data = JSON.parse(saved);
+            if (window.confirm("คุณมีรายการคืนที่ค้างอยู่ ต้องการกู้คืนข้อมูลหรือไม่?")) {
+                setCurrentStep(data.currentStep);
+                setReturnItems(data.returnItems);
+                if (setIsLocked) setIsLocked(true);
+            } else {
+                localStorage.removeItem(STORAGE_KEY);
+            }
+        }
+    }, [setIsLocked]);
+
+    useEffect(() => {
+        if (currentStep > 1 && currentStep < 5) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ currentStep, returnItems }));
+        }
+    }, [currentStep, returnItems]);
 
     useEffect(() => {
         const socket = io(API_BASE);
@@ -63,13 +85,28 @@ function ReturnPartPage({ user }) {
         }
     }, [location]);
 
-    const handleReset = () => {
+    useEffect(() => {
+        const handleBeforeUnload = (e) => {
+            // ให้แจ้งเตือนเฉพาะเมื่ออยู่ในขั้นตอนที่เริ่มทำรายการไปแล้ว (เช่น Step 2-5)
+            if (currentStep > 1 && currentStep < 5) {
+                const message = "คุณกำลังทำรายการค้างอยู่ หากออกตอนนี้รายการจะไม่ถูกบันทึก!";
+                e.returnValue = message; 
+                return message;
+            }
+        };
+
+        window.addEventListener("beforeunload", handleBeforeUnload);
+        return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    }, [currentStep]);
+
+    const handleReset = useCallback(() => {
+        localStorage.removeItem(STORAGE_KEY);
         setCurrentStep(1);
         setReturnItems([]);
         setManualPartId('');
         setError('');
         setIsScanning(false);
-    };
+    }, []);
 
     const handleOpenDoor = async () => {
         setIsProcessing(true);
@@ -85,6 +122,7 @@ function ReturnPartPage({ user }) {
                     headers: { Authorization: `Bearer ${token}` } 
                 });
                 setCurrentStep(4); 
+                if (setIsLocked) setIsLocked(true);
             }
         } catch (err) {
             const msg = err.response?.data?.message || 'ตู้ไม่มีไฟเลี้ยง กรุณาตรวจสอบการเชื่อมต่อ';
@@ -102,6 +140,7 @@ function ReturnPartPage({ user }) {
                 headers: { Authorization: `Bearer ${token}` } 
             });
             handleReset();
+            if (setIsLocked) setIsLocked(false);
         } catch (err) {
             setError('คำสั่งปิดประตูขัดข้อง');
         } finally {
@@ -117,7 +156,7 @@ function ReturnPartPage({ user }) {
         setIsProcessing(true);
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.post(`${API_BASE}/api/withdraw/partInfo`, 
+            const response = await axios.post(`${API_BASE}/api/return/partInfo`, 
                 { partId: idToSearch },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -143,17 +182,12 @@ function ReturnPartPage({ user }) {
             setManualPartId(''); 
             setIsScanning(false);
         } catch (err) {
-            setError('ไม่พบข้อมูลอะไหล่รหัสนี้ในระบบ');
+            setError(err.response?.data?.error || 'ไม่พบข้อมูลอะไหล่รหัสนี้ในระบบ');
         } finally {
             setIsProcessing(false);
         }
     }, [manualPartId]);
 
-    const handleCancelStep2 = () => {
-        if (window.confirm("คุณต้องการยกเลิกการทำรายการและปิดตู้ใช่หรือไม่?")) {
-            setCurrentStep(1);
-        }
-    };
 
     useEffect(() => {
         let scanner = null;
@@ -200,9 +234,23 @@ function ReturnPartPage({ user }) {
     };
 
     const updateQty = (index, delta) => {
-        setReturnItems(prev => prev.map((item, i) => 
-            i === index ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
-        ));
+        setReturnItems(prev => {
+            const newItems = [...prev];
+            const item = newItems[index];
+            const newQty = item.quantity + delta;
+
+            if (delta > 0 && newQty > item.maxReturnable) {
+                setTimeout(() => setError(`คืนไม่ได้เกิน! คุณมียอดค้างคืนแค่ ${item.maxReturnable} ${item.unit || 'ชิ้น'}`), 0);
+                return prev;
+            }
+
+            setTimeout(() => setError(''), 0);
+            
+            if (newQty > 0) {
+                newItems[index] = { ...item, quantity: newQty };
+            }
+            return newItems;
+        });
     };
 
     return (
@@ -394,7 +442,7 @@ function ReturnPartPage({ user }) {
                         </button>
 
                         <div className="footer-actions">
-                            <button onClick={handleCancelStep2} className="btn-cancel-step2">
+                            <button onClick={() => setCurrentStep(5)} className="btn-cancel-step2">
                                 ยกเลิกการทำรายการ
                             </button>
                         </div>
@@ -437,6 +485,8 @@ function ReturnPartPage({ user }) {
                                 </div>
                             </div>
                         </div>
+
+                        {error && <p className="error-badge mt-4 text-center w-full">{error}</p>}  
 
                         <div className="flex gap-4 w-full mt-2">
                             <button onClick={() => setCurrentStep(3)} className="btn-review-edit flex-1">กลับไปแก้ไข</button>

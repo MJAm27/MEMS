@@ -8,7 +8,6 @@ import {
 } from "react-icons/fa";
 import "./EngineerMainPage.css";
 
-
 import ProfileENG from './ProfileENG';
 import ProfileEditENG from './ProfileEditENG';
 import ReturnPartPage from './ReturnPartPage';
@@ -29,6 +28,9 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
     const [repairTypes, setRepairTypes] = useState([]); 
     const [departments, setDepartments] = useState([]); 
     const [filteredDepsMap, setFilteredDepsMap] = useState({});
+    
+    // สถานะล็อคเมนู (true = กำลังทำรายการค้างอยู่)
+    const [isLocked, setIsLocked] = useState(false);
 
     const fetchMasterData = useCallback(async () => {
         try {
@@ -45,7 +47,6 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
         }
     }, []);
 
-    // จัดการการเปิด-ปิด Sidebar ตามขนาดหน้าจอ
     useLayoutEffect(() => {
         const handleResize = () => {
             if (window.innerWidth > 768) {
@@ -58,8 +59,12 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // ฟังก์ชันสำหรับเปลี่ยนหน้าและปิด Sidebar อัตโนมัติ (สำหรับมือถือ)
+    // แก้ไขฟังก์ชัน goTo ให้ดักจับสถานะ isLocked
     const goTo = (path) => {
+        if (isLocked) {
+            alert("กรุณาทำรายการให้สำเร็จและปิดประตูตู้ก่อนเปลี่ยนหน้า");
+            return;
+        }
         navigate(path);
         if (window.innerWidth <= 768) {
             setSidebarOpen(false);
@@ -116,6 +121,10 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
     };
 
     const localHandleLogout = () => {
+        if (isLocked) {
+            alert("ไม่สามารถออกจากระบบได้ในขณะที่กำลังทำรายการค้างอยู่");
+            return;
+        }
         if (window.confirm("ต้องการออกจากระบบใช่หรือไม่?")) {
             localStorage.removeItem("token");
             handleLogout();
@@ -125,6 +134,8 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
     const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
     const handlespecificReturn = (item, uniqueKey) => {
+        if (isLocked) return alert("กรุณาทำรายการที่ค้างอยู่ให้สำเร็จก่อน");
+        
         const input = finalizeData[uniqueKey] || {};
         const qtyToReturn = parseInt(input.usedQty) > 0 ? parseInt(input.usedQty) : item.borrow_qty;
 
@@ -346,30 +357,31 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
 
     return (
         <div className={`layout-wrapper ${sidebarOpen ? "sidebar-open" : "sidebar-closed"}`}>
-            <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>
+            {/* ซ่อน Overlay เมื่อล็อคหน้าจอเพื่อไม่ให้กดปิด Sidebar ได้แบบไม่ตั้งใจ */}
+            {!isLocked && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>}
 
-            <aside className="sidebar-container">
+            <aside className={`sidebar-container ${isLocked ? 'locked' : ''}`}>
                 <div className="sidebar-header"><div className="brand"><h2>MEMS ENGINEER</h2></div></div>
                 <nav className="sidebar-nav">
-                    <button className="nav-link" onClick={() => goTo("/dashboard/engineer/home")}><FaHome /> <span>หน้าหลัก</span></button>
-                    <button className="nav-link" onClick={() => goTo("/dashboard/engineer/search")}><FaSearch /> <span>ค้นหาอะไหล่</span></button>
-                    <button className="nav-link" onClick={() => goTo("/dashboard/engineer/history")}><FaHistory /> <span>ประวัติการทำรายการ</span></button>
-                    <button className="nav-link" onClick={() => goTo("/dashboard/engineer/profile")}><FaUserEdit /> <span>แก้ไขโปรไฟล์</span></button>
+                    <button className={`nav-link ${isLocked ? 'disabled-link' : ''}`} disabled={isLocked} onClick={() => goTo("/dashboard/engineer/home")}><FaHome /> <span>หน้าหลัก</span></button>
+                    <button className={`nav-link ${isLocked ? 'disabled-link' : ''}`} disabled={isLocked} onClick={() => goTo("/dashboard/engineer/search")}><FaSearch /> <span>ค้นหาอะไหล่</span></button>
+                    <button className={`nav-link ${isLocked ? 'disabled-link' : ''}`} disabled={isLocked} onClick={() => goTo("/dashboard/engineer/history")}><FaHistory /> <span>ประวัติการทำรายการ</span></button>
+                    <button className={`nav-link ${isLocked ? 'disabled-link' : ''}`} disabled={isLocked} onClick={() => goTo("/dashboard/engineer/profile")}><FaUserEdit /> <span>แก้ไขโปรไฟล์</span></button>
                     <div className="nav-divider"></div>
-                    <button className="nav-link" onClick={() => goTo("/dashboard/engineer/withdraw")}><FaBoxOpen /> <span>เบิกอะไหล่</span></button>
-                    <button className="nav-link" onClick={() => goTo("/dashboard/engineer/return")}><FaReply /> <span>คืนอะไหล่</span></button>
-                    <button className="nav-link" onClick={() => goTo("/dashboard/engineer/borrow")}><FaHandHolding /> <span>เบิกอะไหล่ล่วงหน้า</span></button>
+                    <button className={`nav-link ${isLocked ? 'disabled-link' : ''}`} disabled={isLocked} onClick={() => goTo("/dashboard/engineer/withdraw")}><FaBoxOpen /> <span>เบิกอะไหล่</span></button>
+                    <button className={`nav-link ${isLocked ? 'disabled-link' : ''}`} disabled={isLocked} onClick={() => goTo("/dashboard/engineer/return")}><FaReply /> <span>คืนอะไหล่</span></button>
+                    <button className={`nav-link ${isLocked ? 'disabled-link' : ''}`} disabled={isLocked} onClick={() => goTo("/dashboard/engineer/borrow")}><FaHandHolding /> <span>เบิกอะไหล่ล่วงหน้า</span></button>
                     <div className="nav-divider"></div> 
-                    <button className="logout-btn-sidebar" onClick={localHandleLogout}>
+                    <button className={`logout-btn-sidebar ${isLocked ? 'disabled-link' : ''}`} disabled={isLocked} onClick={localHandleLogout}>
                         <FaSignOutAlt /> <span>ออกจากระบบ</span>
                     </button>
                 </nav>
-                
             </aside>
 
             <main className="main-content-wrapper">
                 <header className="top-navbar">
-                    <button className="sidebar-toggle-btn" onClick={toggleSidebar}><FaBars /></button>
+                    {/* ปิดปุ่ม Toggle เมื่อล็อคเพื่อป้องกันการปิดเมนูทิ้ง */}
+                    <button className="sidebar-toggle-btn" disabled={isLocked} onClick={toggleSidebar}><FaBars /></button>
                     <div className="user-profile-nav">
                         <span className="user-name">{user?.fullname}</span>
                         <div className="avatar-circle">
@@ -381,10 +393,11 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
                     <Routes>
                         <Route index element={HomeContent} />
                         <Route path="engineer/home" element={HomeContent} />
-                        <Route path="engineer/withdraw" element={<WithdrawPage user={user} />} />
-                        <Route path="engineer/return" element={<ReturnPartPage user={user} />} />
+                        {/* ส่ง setIsLocked ไปยังหน้าลูก */}
+                        <Route path="engineer/withdraw" element={<WithdrawPage user={user} setIsLocked={setIsLocked} />} />
+                        <Route path="engineer/return" element={<ReturnPartPage user={user} setIsLocked={setIsLocked} />} />
                         <Route path="engineer/history" element={<HistoryPage user={user} />} />
-                        <Route path="engineer/borrow" element={<BorrowPage user={user} />} />
+                        <Route path="engineer/borrow" element={<BorrowPage user={user} setIsLocked={setIsLocked} />} />
                         <Route path="engineer/profile" element={<ProfileENG user={user} handleLogout={handleLogout} refreshUser={refreshUser} />}>
                             <Route path="edit" element={<ProfileEditENG user={user} refreshUser={refreshUser} />} />
                             <Route path="change-passwordENG" element={<ChangePasswordENG />} />

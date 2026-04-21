@@ -111,10 +111,6 @@ function ManagerAlertPage() {
           <div className="icon-circle value-icon">
             <FaMoneyBillWave />
           </div>
-          <div className="tab-text">
-            <h3>ฉุกเฉิน</h3>
-            <span className="badge-count">{highValueList.length} รายการ</span>
-          </div>
         </button>
       </div>
 

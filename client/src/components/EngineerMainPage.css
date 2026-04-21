@@ -493,6 +493,18 @@ body {
     background: #fef2f2;
 }
 
+/* ปุ่มเมนูที่ถูกล็อค */
+.nav-link.disabled-link {
+    opacity: 0.5;
+    cursor: not-allowed !important;
+    pointer-events: none; /* ป้องกันการคลิกซ้ำซ้อน */
+}
+
+/* Sidebar เมื่อถูกล็อค */
+.sidebar-container.locked {
+    background-color: #f0f0f0; /* เปลี่ยนสีพื้นหลังเล็กน้อยเพื่อให้รู้ว่าใช้งานไม่ได้ */
+}
+
 @media (max-width: 480px) {
     .pending-grid-modern { grid-template-columns: 1fr; }
     .form-row-duo { flex-direction: column; gap: 10px; }

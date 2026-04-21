@@ -9,10 +9,10 @@ import io from 'socket.io-client';
 import './WithdrawPage.css';
 
 const API_BASE = process.env.REACT_APP_API_URL;
+const STORAGE_KEY = 'mems_withdraw_session';
 
-function WithdrawPage({ user }) { 
+function WithdrawPage({ user, setIsLocked }) { 
     const [currentStep, setCurrentStep] = useState(1);
-    
     const [machineId, setMachineId] = useState(''); 
     const [machineNumber, setMachineNumber] = useState(''); 
     const [machineSN, setMachineSN] = useState(''); 
@@ -34,10 +34,53 @@ function WithdrawPage({ user }) {
     const [previewImage, setPreviewImage] = useState(null);
     const [cabinetBusy, setCabinetBusy] = useState(false);
     const [busyBy, setBusyBy] = useState('');
-    
+
+    // 1. ดึงข้อมูลที่บันทึกไว้กลับมาเมื่อโหลดหน้า
+    useEffect(() => {
+        const savedData = localStorage.getItem(STORAGE_KEY);
+        if (savedData) {
+            const data = JSON.parse(savedData);
+            if (window.confirm("คุณมีรายการเบิกที่ทำค้างไว้ ต้องการทำต่อหรือไม่?")) {
+                setCurrentStep(data.currentStep);
+                setMachineId(data.machineId);
+                setMachineNumber(data.machineNumber);
+                setMachineSN(data.machineSN);
+                setSelectedBuilding(data.selectedBuilding);
+                setDepartmentId(data.departmentId);
+                setRepairTypeId(data.repairTypeId);
+                setCartItems(data.cartItems);
+                if (setIsLocked) setIsLocked(true);
+            } else {
+                localStorage.removeItem(STORAGE_KEY);
+            }
+        }
+    }, [setIsLocked]);
+
+    // 2. บันทึกสถานะปัจจุบันลง LocalStorage อัตโนมัติ
+    useEffect(() => {
+        if (currentStep > 1 && currentStep < 5) {
+            const sessionData = {
+                currentStep, machineId, machineNumber, machineSN,
+                selectedBuilding, departmentId, repairTypeId, cartItems
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionData));
+        }
+    }, [currentStep, machineId, machineNumber, machineSN, selectedBuilding, departmentId, repairTypeId, cartItems]);
+
+    // 3. ดักจับการ Refresh หน้าจอ
+    useEffect(() => {
+        const handleBeforeUnload = (e) => {
+            if (currentStep > 1 && currentStep < 5) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [currentStep]);
+
     useEffect(() => {
         const socket = io(API_BASE);
-
         socket.on('cabinet_status', (state) => {
             const currentUserId = user?.user_id || user?.userId; 
             if (state.isBusy && state.userId !== currentUserId) {
@@ -48,11 +91,11 @@ function WithdrawPage({ user }) {
                 setBusyBy('');
             }
         });
-
         return () => socket.disconnect();
     }, [user?.user_id, user?.userId]);
 
-    const handleResetForm = () => {
+    const handleResetForm = useCallback(() => {
+        localStorage.removeItem(STORAGE_KEY);
         setCurrentStep(1);
         setMachineId('');
         setMachineNumber('');
@@ -64,14 +107,13 @@ function WithdrawPage({ user }) {
         setCurrentPartId('');
         setError('');
         setShowScanner(false);
-    };
+    }, []);
 
     useEffect(() => {
         const fetchMasterData = async () => {
             try {
                 const token = localStorage.getItem('token');
                 const headers = { Authorization: `Bearer ${token}` };
-                
                 const [macRes, depRes, repairRes] = await Promise.all([
                     axios.get(`${API_BASE}/api/machine`, { headers }),
                     axios.get(`${API_BASE}/api/departments`, { headers }),
@@ -110,6 +152,7 @@ function WithdrawPage({ user }) {
                     headers: { Authorization: `Bearer ${token}` } 
                 });
                 setCurrentStep(2); 
+                if (setIsLocked) setIsLocked(true);
             }
         } catch (err) {
             const msg = err.response?.data?.message || 'ตู้ไม่มีไฟเลี้ยง กรุณาตรวจสอบการเชื่อมต่อ';
@@ -127,6 +170,7 @@ function WithdrawPage({ user }) {
                 headers: { Authorization: `Bearer ${token}` } 
             });
             handleResetForm();
+            if (setIsLocked) setIsLocked(false);
         } catch (err) {
             setError('คำสั่งปิดประตูขัดข้อง');
         } finally {
@@ -194,35 +238,20 @@ function WithdrawPage({ user }) {
 
     const handleFinalConfirm = async () => {
         if (cartItems.length === 0) return;
-
-        if (!machineId || !departmentId || !repairTypeId) {
-            setError("กรุณาระบุ ประเภทงาน, เครื่องที่นำไปใช้ และสถานที่ ให้ครบถ้วนก่อนยืนยัน");
-            setCurrentStep(2); 
-            return;
-        }
-
         setIsProcessing(true);
         setError("");
         try {
             const token = localStorage.getItem('token');
             const payload = { 
-                machine_id: machineId,
-                machine_number: machineNumber,
-                machine_SN: machineSN,
-                department_id: departmentId,
-                repair_type_id: repairTypeId,
-                cartItems: cartItems.map(item => ({ 
-                    lotId: item.lotId, 
-                    quantity: item.quantity 
-                })) 
+                machine_id: machineId, machine_number: machineNumber, machine_SN: machineSN,
+                department_id: departmentId, repair_type_id: repairTypeId,
+                cartItems: cartItems.map(item => ({ lotId: item.lotId, quantity: item.quantity })) 
             };
-            await axios.post(`${API_BASE}/api/withdraw/confirm`, payload, { 
-                headers: { Authorization: `Bearer ${token}` } 
-            });
+            await axios.post(`${API_BASE}/api/withdraw/confirm`, payload, { headers: { Authorization: `Bearer ${token}` } });
+            localStorage.removeItem(STORAGE_KEY);
             setCurrentStep(5);
         } catch (err) {
-            const errorMessage = err.response?.data?.error || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล';
-            setError(errorMessage);
+            setError(err.response?.data?.error || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล');
         } finally {
             setIsProcessing(false);
         }
@@ -233,14 +262,11 @@ function WithdrawPage({ user }) {
             const newItems = [...prev];
             const item = newItems[index];
             const newQty = item.quantity + delta;
-
             if (delta > 0 && newQty > item.currentStock) {
                 setTimeout(() => setError(`สต๊อกไม่พอ! อะไหล่นี้มีคงเหลือเพียง ${item.currentStock} ${item.unit}`), 0);
                 return prev; 
             }
-
             setTimeout(() => setError(''), 0); 
-
             if (newQty > 0) newItems[index] = { ...item, quantity: newQty };
             return newItems;
         });
@@ -303,11 +329,7 @@ function WithdrawPage({ user }) {
 
                         <div className="input-group-modern">
                             <label className="input-label-modern">เครื่องที่นำไปใช้</label>
-                            <select 
-                                className="withdraw-input-modern" 
-                                value={machineId} 
-                                onChange={(e) => setMachineId(e.target.value)}
-                            >
+                            <select className="withdraw-input-modern" value={machineId} onChange={(e) => setMachineId(e.target.value)}>
                                 <option value="">-- เลือกเครื่องมือ --</option>
                                 {machines.map(m => (
                                     <option key={m.machine_id} value={m.machine_id}>
@@ -320,52 +342,27 @@ function WithdrawPage({ user }) {
                         <div className="flex gap-2 mb-4">
                             <div className="flex-1">
                                 <label className="text-xs text-gray-500">เลขครุภัณฑ์ (รพ.)</label>
-                                <input 
-                                    type="text" 
-                                    className="withdraw-input-modern" 
-                                    placeholder="เช่น 1234/67" 
-                                    value={machineNumber} 
-                                    onChange={(e) => setMachineNumber(e.target.value)} 
-                                />
+                                <input type="text" className="withdraw-input-modern" placeholder="เช่น 1234/67" value={machineNumber} onChange={(e) => setMachineNumber(e.target.value)} />
                             </div>
                             <div className="flex-1">
                                 <label className="text-xs text-gray-500">SN (โรงงาน)</label>
-                                <input 
-                                    type="text" 
-                                    className="withdraw-input-modern" 
-                                    placeholder="Serial Number" 
-                                    value={machineSN} 
-                                    onChange={(e) => setMachineSN(e.target.value)} 
-                                />
+                                <input type="text" className="withdraw-input-modern" placeholder="Serial Number" value={machineSN} onChange={(e) => setMachineSN(e.target.value)} />
                             </div>
                         </div>
 
                         <div className="flex gap-2 mb-6">
                             <div className="flex-1">
                                 <label className="text-xs text-gray-500">ตึก </label>
-                                <select 
-                                    className="withdraw-input-modern" 
-                                    value={selectedBuilding} 
-                                    onChange={(e) => { setSelectedBuilding(e.target.value); setDepartmentId(''); }}
-                                >
+                                <select className="withdraw-input-modern" value={selectedBuilding} onChange={(e) => { setSelectedBuilding(e.target.value); setDepartmentId(''); }}>
                                     <option value="">-- เลือกตึก --</option>
-                                    {[...new Set(departments.map(d => d.buildings))].map(b => (
-                                        <option key={b} value={b}>{b}</option>
-                                    ))}
+                                    {[...new Set(departments.map(d => d.buildings))].map(b => (<option key={b} value={b}>{b}</option>))}
                                 </select>
                             </div>
                             <div className="flex-1">
                                 <label className="text-xs text-gray-500">แผนก </label>
-                                <select 
-                                    className="withdraw-input-modern" 
-                                    value={departmentId} 
-                                    onChange={(e) => setDepartmentId(e.target.value)} 
-                                    disabled={!selectedBuilding}
-                                >
+                                <select className="withdraw-input-modern" value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} disabled={!selectedBuilding}>
                                     <option value="">-- เลือกแผนก --</option>
-                                    {filteredDeps.map(d => (
-                                        <option key={d.department_id} value={d.department_id}>{d.department_name}</option>
-                                    ))}
+                                    {filteredDeps.map(d => (<option key={d.department_id} value={d.department_id}>{d.department_name}</option>))}
                                 </select>
                             </div>
                         </div>
@@ -423,19 +420,13 @@ function WithdrawPage({ user }) {
                                     ))}
                                 </div>
                                 <div className="flex justify-center w-full mt-4">
-                                    <button 
-                                        onClick={() => setCurrentStep(3)} 
-                                        className="btn-review-confirm"
-                                        style={{ maxWidth: '320px' }} 
-                                    >
-                                        ตรวจสอบรายการ
-                                    </button>
+                                    <button onClick={() => setCurrentStep(3)} className="btn-review-confirm" style={{ maxWidth: '320px' }}>ตรวจสอบรายการ</button>
                                 </div>
                             </div>
                         )}
 
                         <div className="footer-actions mt-4">
-                            <button onClick={() => { if(window.confirm("ยกเลิกรายการ?")) setCurrentStep(5); }} className="btn-cancel-step2">ยกเลิกการทำรายการ</button>
+                            <button onClick={() => { if(window.confirm("ยกเลิกรายการ?")) handleCloseDoor(); }} className="btn-cancel-step2">ยกเลิกการทำรายการ</button>
                         </div>
                         {error && <p className="error-badge mt-4">{error}</p>}
                     </div>
