@@ -337,7 +337,7 @@ function ManageEquipment() {
                     <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
                         <div style={{ flex: 1 }}>
                             <label>จำนวนแจ้งเตือน</label>
-                            <input type="number" className="form-control" name="alert_quantity" value={formData.alert_quantity} onChange={handleChange} required min="0" />
+                            <input type="number" className="form-control" name="alert_quantity" value={formData.alert_quantity} onChange={handleChange} required min="1" />
                         </div>
                         <div style={{ flex: 1 }}>
                             <label>หน่วยนับ *</label>

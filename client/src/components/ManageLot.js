@@ -121,7 +121,15 @@ function ManageLot() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
+    if (formData.expiry_date && formData.import_date) {
+        const importDate = new Date(formData.import_date);
+        const expiryDate = new Date(formData.expiry_date);
+        if (expiryDate <= importDate) {
+            alert("วันที่หมดอายุต้องอยู่หลังวันที่นำเข้า");
+            return; 
+        }
+    }
     const payload = {
         equipment_id: equipmentId, 
         ...formData
@@ -271,6 +279,8 @@ function ManageLot() {
                       name="expiry_date"
                       value={formData.expiry_date} 
                       onChange={handleChange} 
+                      required 
+                      min={formData.import_date}
                     />
                   </div>
                 </div>
@@ -285,7 +295,7 @@ function ManageLot() {
                       value={formData.current_quantity} 
                       onChange={handleChange} 
                       required 
-                      min="0"
+                      min="1"
                     />
                   </div>
                   <div className="form-group" style={{ flex: 1 }}>
@@ -297,7 +307,7 @@ function ManageLot() {
                       value={formData.price} 
                       onChange={handleChange} 
                       required 
-                      min="0"
+                      min="1"
                       step="0.01"
                     />
                   </div>
