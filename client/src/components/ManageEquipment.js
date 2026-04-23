@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom"; 
 import "./ManageEquipment.css";
-import { FaPlus, FaSearch, FaTimes, FaBoxOpen, FaEdit, FaTrash } from "react-icons/fa";
+import { FaPlus, FaSearch, FaTimes, FaBoxOpen, FaEdit, FaTrash,FaFileImport,FaFileExport } from "react-icons/fa";
 import axios from "axios";
 import SubNavbar from "./SubNavbar";
+import * as XLSX from 'xlsx';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
@@ -153,7 +154,6 @@ function ManageEquipment() {
     }
   };
 
-  // จัดกลุ่มข้อมูลให้ไม่ซ้ำรหัสอะไหล่
   const uniqueEquipments = [];
   const equipmentMap = new Map();
   inventory.forEach(item => {
@@ -168,6 +168,55 @@ function ManageEquipment() {
     item.equipment_id?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleImportCSV = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.csv')) {
+        alert("กรุณาอัปโหลดไฟล์ที่บันทึกเป็นนามสกุล .csv (Comma delimited)เท่านั้นครับ!");
+        event.target.value = null; 
+        return;
+    }
+
+    const uploadData = new FormData();
+    uploadData.append('csvFile', file);
+
+    try {
+        const res = await axios.post(`${API_BASE_URL}/api/equipment/import-csv`, uploadData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        
+        alert("นำเข้าข้อมูลจากไฟล์ CSV สำเร็จ!");
+        fetchData(); 
+    } catch (error) {
+        alert("เกิดข้อผิดพลาดในการนำเข้าไฟล์: " + (error.response?.data?.error || error.message));
+        console.error("Import Error:", error);
+    } finally {
+        event.target.value = null; 
+    }
+};
+
+const downloadExcelTemplate = () => {
+    const headers = [
+        "equipment_type_id", "equipment_name", "equipment_id", 
+        "model_size", "alert_quantity", "unit", 
+        "lot_id", "supplier_id", "import_date (MM/DD/YYYY)", 
+        "expiry_date (MM/DD/YYYY)", "current_quantity", "price"
+    ];
+    
+    const exampleData = [
+        ["CUFF-I", "Cuff Single", "CUFF-I-XXS", "Infant (10 - 19 cm)", "5", "ชิ้น", "123456789", "3", "5/24/2025", "5/24/2028", "20", "350"]
+    ];
+
+    const worksheetData = [headers, ...exampleData];
+
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Import_Template");
+
+    XLSX.writeFile(workbook, "template_import_equipment.xlsx");
+};
+
   return (
     <div className="manage-equipment-container fade-in">
       <div className="page-header">
@@ -176,6 +225,19 @@ function ManageEquipment() {
               <h2 className="page-title-text">จัดการข้อมูลอะไหล่</h2>
           </div>
           <div className="header-actions" style={{ display: 'flex', gap: '10px' }}>
+            <button onClick={downloadExcelTemplate} className="btn-primary" style={{ marginRight: '10px' }}>
+                <FaFileExport /> ดาวน์โหลด Template (.xlsx)
+            </button>   
+                <input 
+                    type="file" 
+                    accept=".csv" 
+                    id="csv-upload" 
+                    style={{ display: 'none' }} 
+                    onChange={handleImportCSV} 
+                />
+                <label htmlFor="csv-upload" className="btn-primary" >
+                    <FaFileImport /> นำเข้าจาก CSV (Comma delimited)
+                </label>
               <button className="btn-primary" onClick={handleAddNew}>
                   <FaPlus /> เพิ่มอะไหล่ใหม่
               </button>

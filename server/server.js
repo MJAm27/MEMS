@@ -2558,6 +2558,82 @@ app.delete('/api/equipment/:id', async (req, res) => {
     }
 });
 
+const uploadMemory = multer({ storage: multer.memoryStorage() });
+
+app.post('/api/equipment/import-csv', uploadMemory.single('csvFile'), async (req, res) => {
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const csvData = req.file.buffer.toString('utf8');
+        const rows = csvData.split('\n');
+
+        const formatForMySQL = (dateStr) => {
+            if (!dateStr) return null;
+            const cleanDate = dateStr.trim();
+            
+            if (/^\d{4}-\d{2}-\d{2}$/.test(cleanDate)) return cleanDate;
+
+            if (cleanDate.includes('/')) {
+                const parts = cleanDate.split('/');
+                if (parts.length === 3) {
+                    const month = parts[0].padStart(2, '0'); 
+                    const day = parts[1].padStart(2, '0');
+                    const year = parts[2];
+                    return `${year}-${month}-${day}`;
+                }
+            }
+            return null; 
+        };
+
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i].trim();
+            if (!row) continue;
+
+            const columns = row.split(',');
+            if (columns.length < 12) continue;
+
+            const [
+                type_id, name, eq_id, size, alert_qty, unit, 
+                lot_id, supplier_id, imp_date, exp_date, curr_qty, price
+            ] = columns;
+
+            if (eq_id === "CUFF-I-XXS" && lot_id === "123456789") {
+                continue;
+            }
+
+            const formattedImpDate = formatForMySQL(imp_date);
+            const formattedExpDate = formatForMySQL(exp_date);
+
+            const sqlEqT = `
+                INSERT IGNORE INTO equipment_type (equipment_type_id, equipment_name, unit)
+                VALUES (?, ?, ?)
+            `;
+            await connection.query(sqlEqT, [ type_id, name , unit]);
+
+            const sqlEq = `
+                INSERT IGNORE INTO equipment (equipment_id, model_size, alert_quantity,equipment_type_id)
+                VALUES (?, ?, ?, ?)
+            `;
+            await connection.query(sqlEq, [eq_id, size, alert_qty,type_id]);
+
+            const sqlLot = `
+                INSERT INTO lot (lot_id, equipment_id, supplier_id, import_date, expiry_date, current_quantity, price)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            `;
+            await connection.query(sqlLot, [lot_id, eq_id, supplier_id,formattedImpDate, formattedExpDate , curr_qty, price]);
+        }
+
+        await connection.commit();
+        res.json({ message: "นำเข้าข้อมูลอุปกรณ์และล็อตสินค้าสำเร็จ" });
+    } catch (error) {
+        await connection.rollback();
+        res.status(500).json({ error: "การนำเข้าล้มเหลว: " + error.message });
+    } finally {
+        connection.release();
+    }
+});
+
 app.get('/api/equipment-types', async (req, res) => {
     try {
         const [rows] = await pool.query("SELECT equipment_type_id,equipment_name FROM equipment_type;");
