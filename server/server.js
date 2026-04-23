@@ -598,7 +598,7 @@ app.get('/api/departments', async (req, res) => {
     let connection;
     try {
         connection = await pool.getConnection();
-        const [rows] = await connection.query("SELECT * FROM department ORDER BY buildings ASC, department_name ASC");
+        const [rows] = await connection.query("SELECT * FROM department WHERE is_active = 1 ORDER BY buildings ASC, department_name ASC");
         res.json(rows);
     } catch (error) {
         console.error("Fetch Departments Error:", error);
@@ -1289,13 +1289,23 @@ app.get('/api/machine', async (req, res) => {
                 t.machine_type_name,
                 t.machine_type_id
             FROM machine m
-            LEFT JOIN machine_type t ON m.machine_type_id = t.machine_type_id
+            LEFT JOIN machine_type t ON m.machine_type_id = t.machine_type_id WHERE m.is_active = 1
         `;
         const [rows] = await db.query(sql);
         res.json(rows);
     } catch (err) {
         console.log(err);
         res.status(500).send("Error retrieving machines");
+    }
+});
+
+app.get('/api/machine-types', async (req, res) => {
+    try {
+        const [rows] = await db.query("SELECT machine_type_id, machine_type_name FROM machine_type ");
+        res.json(rows);
+    } catch (err) {
+        console.log(err);
+        res.status(500).send("Error retrieving machine types");
     }
 });
 
@@ -1556,7 +1566,7 @@ app.put('/api/machine/:sn', async (req, res) => {
 app.delete('/api/machine/:sn', async (req, res) => {
     try {
         const sn = req.params.sn;
-        await db.query("DELETE FROM machine WHERE machine_id = ?", [sn]);
+        await db.query("UPDATE machine SET is_active = 0 WHERE machine_id = ?", [sn]);
         res.send("Machine deleted successfully");
 
     } catch (err) {
@@ -1812,9 +1822,9 @@ app.post("/api/equipment/check-duplicate", async (req, res) => {
 
 app.get("/api/master-data", async (req, res) => {
     try {
-        const [suppliers] = await db.query("SELECT * FROM supplier");
-        const [equipmentTypes] = await db.query("SELECT * FROM equipment_type");
-        const [equipments] = await db.query("SELECT * FROM equipment");
+        const [suppliers] = await db.query("SELECT * FROM supplier WHERE is_active = 1");
+        const [equipmentTypes] = await db.query("SELECT * FROM equipment_typeSELECT * FROM supplier WHERE is_active = 1");
+        const [equipments] = await db.query("SELECT * FROM equipment WHERE is_active = 1");
         res.json({ suppliers, equipmentTypes, equipments });
     } catch (err) {
         res.status(500).send(err);
@@ -1933,7 +1943,7 @@ app.put("/api/inventory/update/:lot_id", async (req, res) => {
 
 app.delete("/api/inventory/:id", async (req, res) => {
     try {
-        await db.query("DELETE FROM lot WHERE lot_id = ?", [req.params.id]);
+        await db.query("UPDATE lot SET is_active = 0 WHERE lot_id = ?", [req.params.id]);
         res.json({ message: "Lot deleted successfully" });
     } catch (err) {
         res.status(500).send(err);
@@ -1942,7 +1952,7 @@ app.delete("/api/inventory/:id", async (req, res) => {
 
 app.get("/api/supplier", async (req, res) => {
     try {
-        const [results] = await db.query("SELECT * FROM supplier ORDER BY supplier_id ASC");
+        const [results] = await db.query("SELECT * FROM supplier WHERE is_active = 1 ORDER BY supplier_id ASC");
         res.json(results);
     } catch (err) {
         console.log(err);
@@ -1986,7 +1996,7 @@ app.put("/api/supplier/:id", async (req, res) => {
 app.delete("/api/supplier/:id", async (req, res) => {
     const { id } = req.params;
     try {
-        await db.query("DELETE FROM supplier WHERE supplier_id = ?", [id]);
+        await db.query("UPDATE supplier SET is_active = 0 WHERE supplier_id = ?", [id]);
         res.json({ message: "Supplier deleted successfully" });
     } catch (err) {
         // กรณีลบไม่ได้เพราะถูกใช้งานอยู่ในตาราง Lot
@@ -2527,16 +2537,17 @@ app.delete('/api/equipment/:id', async (req, res) => {
 
         const typeIdToDelete = rows[0].equipment_type_id;
 
-        await connection.query("DELETE FROM equipment WHERE equipment_id = ?", [equipment_id]);
+        await connection.query("UPDATE equipment SET is_active = 0 WHERE equipment_id = ?", [equipment_id]);
 
         const [remaining] = await connection.query(
-            "SELECT COUNT(*) as count FROM equipment WHERE equipment_type_id = ?", 
+            "SELECT COUNT(*) as count FROM equipment WHERE equipment_type_id = ? AND is_active = 1", 
             [typeIdToDelete]
         );
 
         if (remaining[0].count === 0) {
+            // 3. ถ้าไม่มีเหลือแล้ว ก็ Soft Delete ประเภทอะไหล่ไปด้วย
             await connection.query(
-                "DELETE FROM equipment_type WHERE equipment_type_id = ?", 
+                "UPDATE equipment_type SET is_active = 0 WHERE equipment_type_id = ?", 
                 [typeIdToDelete]
             );
         }
@@ -2813,7 +2824,7 @@ app.delete('/api/departments/:id', async (req, res) => {
     let connection;
     try {
         connection = await pool.getConnection();
-        const sql = "DELETE FROM department WHERE department_id = ?";
+        const sql = "UPDATE department SET is_active = 0 WHERE department_id = ?";
         await connection.query(sql, [id]);
         res.json({ message: "ลบหน่วยงานสำเร็จ" });
     } catch (error) {

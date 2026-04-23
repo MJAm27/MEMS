@@ -6,13 +6,14 @@ import SubNavbar from "./SubNavbar";
 
 function ManageMachine() {
   const [machines, setMachines] = useState([]); 
+  const [machineTypes, setMachineTypes] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   
-  // 1. อัปเดต formData ให้รองรับฟิลด์ใหม่ๆ
   const [formData, setFormData] = useState({
     machine_id: "",
+    machine_type_id: "",
     machine_type_name: "", 
     machine_supplier: "", 
     machine_model: ""      
@@ -20,6 +21,7 @@ function ManageMachine() {
   
   useEffect(() => {
     fetchMachines();
+    fetchMachineTypes();
   }, []);
 
   const fetchMachines = async () => {
@@ -31,7 +33,15 @@ function ManageMachine() {
     }
   };
 
-  // อัปเดต Filter ให้ค้นหาจาก machine_type_name แทน
+  const fetchMachineTypes = async () => {
+    try {
+      const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/machine-types`);
+      setMachineTypes(response.data);
+    } catch (error) {
+      console.error("Error fetching machine types:", error);
+    }
+  };
+
   const filteredMachines = machines.filter((item) => {
     const name = item?.machine_type_name || ""; 
     const id = item?.machine_id || "";
@@ -42,8 +52,7 @@ function ManageMachine() {
 
   const handleAddNew = () => {
     setIsEditMode(false);
-    // 2. เคลียร์ค่าฟิลด์ใหม่ทั้งหมดเมื่อกดเพิ่ม
-    setFormData({ machine_id: "", machine_type_name: "", machine_supplier: "", machine_model: "" });
+    setFormData({ machine_id: "", machine_type_id: "", machine_supplier: "", machine_model: "" });
     setShowModal(true);
   };
 
@@ -51,20 +60,18 @@ function ManageMachine() {
     setIsEditMode(true);
     setFormData({
       machine_id: machine.machine_id || "",
-      machine_type_name: machine.machine_type_name || "",
+      machine_type_id: machine.machine_type_id || "",
       machine_supplier: machine.machine_supplier || "",
       machine_model: machine.machine_model || ""
     });
     setShowModal(true);
   };
 
-  // 3. อัปเดตการส่งข้อมูลใน handleSubmit ให้ส่งฟิลด์ใหม่ไปด้วย
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // ข้อมูลที่จะส่งไปให้ Backend (ต้องตรงกับที่ Database รอรับ)
     const payload = {
-      machine_type_name: formData.machine_type_name,
+      machine_type_id: formData.machine_type_id,
       machine_supplier: formData.machine_supplier,
       machine_model: formData.machine_model
     };
@@ -200,17 +207,21 @@ function ManageMachine() {
                   {isEditMode && <small className="text-muted">รหัสครุภัณฑ์ไม่สามารถแก้ไขได้</small>}
                 </div>
 
-                {/* 4. เพิ่ม Input สำหรับฟิลด์ต่างๆ ให้ครบใน Modal */}
                 <div className="form-group">
-                  <label>ชื่อครุภัณฑ์ <span className="text-danger">*</span></label>
-                  <input
-                    type="text"
-                    name="machine_type_name"
-                    value={formData.machine_type_name}
+                  <label>ชื่อ/ประเภทครุภัณฑ์ <span className="text-danger">*</span></label>
+                  <select
+                    name="machine_type_id" 
+                    value={formData.machine_type_id}
                     onChange={handleChange}
-                    required
-                    placeholder="ระบุชื่อครุภัณฑ์"
-                  />
+                    required 
+                  >
+                    <option value="">-- กรุณาเลือกประเภทครุภัณฑ์ --</option>
+                    {machineTypes.map((type) => (
+                      <option key={type.machine_type_id} value={type.machine_type_id}>
+                        {type.machine_type_name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="form-group">
