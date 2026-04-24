@@ -9,10 +9,11 @@ import './ReturnPartPage.css';
 const API_BASE = process.env.REACT_APP_API_URL;
 const STORAGE_KEY = 'mems_return_session';
 
-
 function ReturnPartPage({ user, setIsLocked }) {
     const location = useLocation(); 
     const [currentStep, setCurrentStep] = useState(1); 
+    const [isSuccess, setIsSuccess] = useState(false);
+
     const [returnDate] = useState(() => { 
         const now = new Date();
         const tzOffset = now.getTimezoneOffset() * 60000;
@@ -42,7 +43,7 @@ function ReturnPartPage({ user, setIsLocked }) {
     }, [setIsLocked]);
 
     useEffect(() => {
-        if (currentStep > 1 && currentStep < 5) {
+        if (currentStep >= 3 && currentStep <= 4) {
             localStorage.setItem(STORAGE_KEY, JSON.stringify({ currentStep, returnItems }));
         }
     }, [currentStep, returnItems]);
@@ -87,8 +88,7 @@ function ReturnPartPage({ user, setIsLocked }) {
 
     useEffect(() => {
         const handleBeforeUnload = (e) => {
-            // ให้แจ้งเตือนเฉพาะเมื่ออยู่ในขั้นตอนที่เริ่มทำรายการไปแล้ว (เช่น Step 2-5)
-            if (currentStep > 1 && currentStep < 5) {
+            if (currentStep >= 3 && currentStep <= 4) {
                 const message = "คุณกำลังทำรายการค้างอยู่ หากออกตอนนี้รายการจะไม่ถูกบันทึก!";
                 e.returnValue = message; 
                 return message;
@@ -102,13 +102,14 @@ function ReturnPartPage({ user, setIsLocked }) {
     const handleReset = useCallback(() => {
         localStorage.removeItem(STORAGE_KEY);
         setCurrentStep(1);
+        setIsSuccess(false);
         setReturnItems([]);
         setManualPartId('');
         setError('');
         setIsScanning(false);
     }, []);
 
-    const handleOpenDoor = async () => {
+    const handleOpenDoor = async (nextStep) => {
         setIsProcessing(true);
         setError('');
         try {
@@ -121,7 +122,7 @@ function ReturnPartPage({ user, setIsLocked }) {
                 await axios.get(`${API_BASE}/api/open`, { 
                     headers: { Authorization: `Bearer ${token}` } 
                 });
-                setCurrentStep(4); 
+                setCurrentStep(nextStep); 
                 if (setIsLocked) setIsLocked(true);
             }
         } catch (err) {
@@ -131,7 +132,8 @@ function ReturnPartPage({ user, setIsLocked }) {
             setIsProcessing(false);
         }
     };
-    const handleCloseDoor = async () => {
+    
+    const handleCloseDoor = async (nextStep, reset = false) => {
         setIsProcessing(true);
         setError('');
         try {
@@ -139,8 +141,12 @@ function ReturnPartPage({ user, setIsLocked }) {
             await axios.post(`${API_BASE}/api/close-box`, {}, { 
                 headers: { Authorization: `Bearer ${token}` } 
             });
-            handleReset();
-            if (setIsLocked) setIsLocked(false);
+            if (reset) {
+                handleReset();
+                if (setIsLocked) setIsLocked(false);
+            } else {
+                setCurrentStep(nextStep);
+            }
         } catch (err) {
             setError('คำสั่งปิดประตูขัดข้อง');
         } finally {
@@ -191,7 +197,7 @@ function ReturnPartPage({ user, setIsLocked }) {
 
     useEffect(() => {
         let scanner = null;
-        if (isScanning) {
+        if (isScanning && currentStep === 3) {
             scanner = new Html5QrcodeScanner("reader", { 
                 fps: 10, 
                 qrbox: { width: 350, height: 150} 
@@ -206,7 +212,7 @@ function ReturnPartPage({ user, setIsLocked }) {
                 scanner.clear().catch(e => console.error("Scanner cleanup error", e)); 
             }
         };
-    }, [isScanning, handleAddItem]);
+    }, [isScanning, currentStep, handleAddItem]);
 
     const handleFinalConfirm = async () => {
         if (returnItems.length === 0) return;
@@ -225,6 +231,7 @@ function ReturnPartPage({ user, setIsLocked }) {
             await axios.post(`${API_BASE}/api/return-part`, payload, { 
                 headers: { Authorization: `Bearer ${token}` } 
             });
+            setIsSuccess(true);
             setCurrentStep(5); 
         } catch (err) {
             setError(err.response?.data?.error || 'เกิดข้อผิดพลาด');
@@ -258,12 +265,12 @@ function ReturnPartPage({ user, setIsLocked }) {
             <div className="return-header-section text-center">
                 <h2 className="text-2xl font-bold mb-4">คืนอะไหล่</h2>
                 <div className="step-progress-bar">
-                    {[1, 2, 3, 4, 5].map((step) => (
+                    {[1, 2, 3, 4, 5, 6].map((step) => (
                         <React.Fragment key={step}>
                             <div className={`step-item ${currentStep >= step ? 'active' : ''}`}>
                                 <div className="step-circle">{currentStep > step ? <FaCheckCircle /> : step}</div>
                             </div>
-                            {step < 5 && <div className={`step-line ${currentStep > step ? 'active' : ''}`}></div>}
+                            {step < 6 && <div className={`step-line ${currentStep > step ? 'active' : ''}`}></div>}
                         </React.Fragment>
                     ))}
                 </div>
@@ -271,12 +278,33 @@ function ReturnPartPage({ user, setIsLocked }) {
 
             <div className="return-card mt-2">
                 {currentStep === 1 && (
+                    <div className="step-content-unlock">
+                        <div className="unlock-icon-container"><FaLockOpen size={48} /></div>
+                        <h3 className="unlock-title">1. เปิดประตูกล่อง</h3>
+                        <p className="unlock-subtitle">กดยืนยันเพื่อปลดล็อก</p>
+                        <button onClick={() => handleOpenDoor(2)} disabled={isProcessing} className="btn-unlock-gate">
+                            {isProcessing ? <span className="loader"></span> : <><FaLockOpen /> เปิดประตูกล่อง</>}
+                        </button>
+                    </div>
+                )}
+
+                {currentStep === 2 && (
+                    <div className="step-content-unlock">
+                        <div className="unlock-icon-container"><FaLock size={48} /></div>
+                        <h3 className="unlock-title">2. ปิดประตูกล่อง</h3>
+                        <p className="unlock-subtitle">กรุณาปิดประตูตู้ก่อนเริ่มทำรายการในระบบ</p>
+                        <button onClick={() => handleCloseDoor(3, false)} disabled={isProcessing} className="btn-close-gate-final">
+                            {isProcessing ? <span className="loader"></span> : <><FaLock /> ปิดประตูกล่อง</>}
+                        </button>
+                    </div>
+                )}
+
+                {currentStep === 3 && (
                     <div className="step-content-identify animate-fadeIn">
                         <div className="identify-header">
-                            <h3 className="text-2xl font-bold text-gray-800">1. ระบุอะไหล่ที่คืน</h3>
+                            <h3 className="text-2xl font-bold text-gray-800">3. ระบุอะไหล่ที่คืน</h3>
                         </div>
 
-                        {/* ส่วนที่ 1: สแกนบาร์โค้ด */}
                         <div className="scanner-action-area">
                             {isScanning ? (
                                 <div className="scanner-container">
@@ -358,93 +386,13 @@ function ReturnPartPage({ user, setIsLocked }) {
                                         </div>
                                     ))}
                                 </div>
-                                <button onClick={() => setCurrentStep(2)} className="btn-action-primary mt-4">
+                                <button onClick={() => setCurrentStep(4)} className="btn-action-primary mt-4">
                                     ตรวจสอบรายการ
                                 </button>
                             </div>
                         )}
-                    </div>
-                )}
-
-                {currentStep === 2 && (
-                    <div className="step-content-review animate-fadeIn">
-                        <div className="review-header-group">
-                            <h3 className="text-2xl font-bold">2. ตรวจสอบข้อมูล</h3>
-                            <p className="text-gray-400 text-sm">กรุณาตรวจสอบรายละเอียดก่อนบันทึก</p>
-                        </div>
-
-                        <div className="asset-info-banner">
-                            <div className="label">วันที่ทำรายการคืน</div>
-                            <div className="value">
-                                {new Date(returnDate).toLocaleDateString('th-TH')}
-                            </div>
-                        </div>
-
-                        <div className="review-list-container">
-                            <h4 className="text-sm font-bold mb-3 text-gray-500 uppercase text-center">
-                                รายการอะไหล่ที่คืน
-                            </h4>
-                            {returnItems.map((item, idx) => (
-                                <div key={idx} className="review-item-card-modern">
-                                    <div className="item-img-box">
-                                        <img 
-                                            src={getImageUrl(item.imageUrl) || "https://placehold.co/60"} 
-                                            alt="part" 
-                                            onError={(e) => { e.target.src = "https://placehold.co/60?text=Error"; }}
-                                        />
-                                    </div>
-                                    <div className="item-main-info">
-                                        <div className="item-main-info-row">
-                                            <span className="name font-bold">{item.partName}</span>
-                                            <span className="qty-val-pink">x {item.quantity} {item.unit || 'ชิ้น'}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="flex gap-3 mt-8 w-full">
-                            <button onClick={() => setCurrentStep(1)} className="btn-review-edit flex-1">แก้ไขรายการ</button>
-                            <button onClick={() => setCurrentStep(3)} className="btn-modern-gradient flex-2">บันทึกข้อมูล</button>
-                        </div>
-                    </div>
-                )}
-        
-                {currentStep === 3 && (
-                    <div className="step-content-unlock animate-fadeIn">
-                        <div className="unlock-icon-container">
-                            <FaLockOpen size={48} />
-                        </div>
-                        
-                        <h3 className="unlock-title">3. เปิดประตูกล่อง</h3>
-                        <p className="unlock-subtitle">กรุณากดปุ่มเพื่อปลดล็อกและเตรียมการคืน</p>
-
-                        <div className="asset-info-banner mb-8">
-                            <div className="label">วันที่ทำรายการคืน</div>
-                            <div className="value">
-                                {new Date(returnDate).toLocaleDateString('th-TH')}
-                            </div>
-                        </div>
-
-                        <button 
-                            onClick={handleOpenDoor} 
-                            disabled={isProcessing} 
-                            className="btn-unlock-gate"
-                        >
-                            {isProcessing ? (
-                                <span className="loader"></span>
-                            ) : (
-                                <>
-                                    <FaLockOpen className="mr-2" />
-                                    เปิดประตูตู้
-                                </>
-                            )}
-                        </button>
-
-                        <div className="footer-actions">
-                            <button onClick={() => setCurrentStep(5)} className="btn-cancel-step2">
-                                ยกเลิกการทำรายการ
-                            </button>
+                        <div className="footer-actions mt-4">
+                            <button onClick={() => { if(window.confirm("ยกเลิกรายการข้ามไปหน้าปิดตู้?")) { setIsSuccess(false); setCurrentStep(5); } }} className="btn-cancel-step2">ยกเลิกการทำรายการ</button>
                         </div>
                     </div>
                 )}
@@ -452,7 +400,7 @@ function ReturnPartPage({ user, setIsLocked }) {
                 {currentStep === 4 && (
                     <div className="step-content-confirmation">
                         <FaClipboardCheck size={64} className="text-blue-500 mb-4" />
-                        <h3 className="text-2xl font-bold text-gray-800">4. ยืนยันการบันทึก</h3>
+                        <h3 className="text-2xl font-bold text-gray-800">4. ตรวจสอบและยืนยันการบันทึก</h3>
                         <p className="text-gray-400 text-sm">กรุณาตรวจสอบสรุปรายการครั้งสุดท้าย</p>
 
                         <div className="confirmation-summary-card">
@@ -463,13 +411,12 @@ function ReturnPartPage({ user, setIsLocked }) {
                                 <b>{new Date(returnDate).toLocaleDateString('th-TH')}</b>
                             </div>
                             
-                            {/* แสดง Asset ID ถ้ามีข้อมูล (จากรายการแรก) */}
                             <div className="summary-data-row-flex">
                                 <span>ประเภทรายการ:</span>
                                 <b>คืนอะไหล่</b>
                             </div>
 
-                            <div className="summary-items-list">
+                            <div className="summary-items-list border-t pt-2 mt-2">
                                 {returnItems.map((item, idx) => (
                                     <div key={idx} className="summary-item-line-right py-1">
                                         <span className="text-gray-600">{item.partName}</span>
@@ -478,7 +425,7 @@ function ReturnPartPage({ user, setIsLocked }) {
                                 ))}
                             </div>
 
-                            <div className="summary-total-footer">
+                            <div className="summary-total-footer mt-4">
                                 <span>รวมคืนทั้งสิ้น</span>
                                 <div className="total-count-badge">
                                     {returnItems.reduce((sum, item) => sum + item.quantity, 0)} ชิ้น
@@ -488,8 +435,9 @@ function ReturnPartPage({ user, setIsLocked }) {
 
                         {error && <p className="error-badge mt-4 text-center w-full">{error}</p>}  
 
-                        <div className="flex gap-4 w-full mt-2">
+                        <div className="flex gap-4 w-full mt-6">
                             <button onClick={() => setCurrentStep(3)} className="btn-review-edit flex-1">กลับไปแก้ไข</button>
+                            <button onClick={() => { if(window.confirm("ยกเลิกรายการทั้งหมด?")) { setIsSuccess(false); setCurrentStep(5); } }} className="btn-cancel-step2 flex-1">ยกเลิกรายการ</button>
                             <button 
                                 onClick={handleFinalConfirm} 
                                 disabled={isProcessing} 
@@ -502,32 +450,28 @@ function ReturnPartPage({ user, setIsLocked }) {
                 )}
 
                 {currentStep === 5 && (
-                    <div className="step-content-success">
-                        <div className="success-banner-modern">
-                            <div className="success-icon-circle">
-                                <FaCheckCircle />
+                    <div className="step-content-unlock">
+                        {isSuccess && (
+                            <div className="success-banner-modern mb-4">
+                                <div className="success-icon-circle"><FaCheckCircle /></div>
+                                <span className="success-text-main">บันทึกข้อมูลสำเร็จ!</span>
                             </div>
-                            <span className="success-text-main">บันทึกข้อมูลสำเร็จ!</span>
-                        </div>
+                        )}
+                        <div className="unlock-icon-container"><FaLockOpen size={48} /></div>
+                        <h3 className="unlock-title">5. เปิดประตูกล่อง</h3>
+                        <p className="unlock-subtitle">กรุณากดปุ่มเพื่อปลดล็อกตู้และทำการหยิบอะไหล่</p>
+                        <button onClick={() => handleOpenDoor(6)} disabled={isProcessing} className="btn-unlock-gate">
+                            {isProcessing ? <span className="loader"></span> : <><FaLockOpen /> เปิดประตูกล่อง</>}
+                        </button>
+                    </div>
+                )}
 
-                        <h3 className="text-2xl font-bold text-gray-800 mb-2">5. สั่งปิดประตู</h3>
-                        <p className="instruction-text">
-                            ตรวจสอบสิ่งกีดขวางบริเวณหน้ากล่องให้เรียบร้อย แล้วกดปุ่มเพื่อล็อกตู้
-                        </p>
-
-                        <button 
-                            onClick={handleCloseDoor} 
-                            disabled={isProcessing} 
-                            className="btn-close-gate-final"
-                        >
-                            {isProcessing ? (
-                                <span className="loader"></span>
-                            ) : (
-                                <>
-                                    <FaLock />
-                                    ปิดประตูกล่อง
-                                </>
-                            )}
+                {currentStep === 6 && (
+                    <div className="step-content-success">
+                        <h3 className="text-2xl font-bold mb-2">6. สั่งปิดประตู</h3>
+                        <p className="instruction-text">ตรวจสอบสิ่งกีดขวางให้เรียบร้อย แล้วกดปุ่มเพื่อล็อกตู้ จบการทำงาน</p>
+                        <button onClick={() => handleCloseDoor(1, true)} disabled={isProcessing} className="btn-close-gate-final">
+                            {isProcessing ? <span className="loader"></span> : <><FaLock /> ปิดประตูกล่อง</>}
                         </button>
                     </div>
                 )}
@@ -544,7 +488,6 @@ function ReturnPartPage({ user, setIsLocked }) {
                                 โปรดรอสักครู่ เมื่อทำรายการเสร็จสิ้นหน้าต่างนี้จะหายไปเอง
                             </p>
                             <div className="flex justify-center">
-                                {/* วงกลมหมุนโหลด */}
                                 <span className="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
                             </div>
                         </div>
