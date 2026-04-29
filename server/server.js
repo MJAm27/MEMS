@@ -931,18 +931,33 @@ app.post('/api/borrow/return-all', authenticateToken, async (req, res) => {
     }
 });
 
-// Login (ตรวจสอบ Email + Password)
+const crypto = require('crypto');
+
 app.post("/api/login", async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, deviceToken } = req.body;
     try {
         const [users] = await pool.execute("SELECT * FROM users WHERE email = ?", [email]);
         if (users.length === 0) return res.status(401).json({ message: "Email หรือ Password ไม่ถูกต้อง" });
-
         const user = users[0];
         const isPasswordMatch = await bcrypt.compare(password, user.password_hash);
-        
         if (!isPasswordMatch) return res.status(401).json({ message: "Email หรือ Password ไม่ถูกต้อง" });
-        
+        if (deviceToken && user.remember_token === deviceToken) {
+            // เช็คว่ามีค่าวันหมดอายุและยังไม่เลยกำหนดเวลา
+            const expiresAt = new Date(user.remember_token_expires);
+            if (user.remember_token_expires && expiresAt > new Date()) {
+                const loginToken = jwt.sign(
+                    { userId: user.user_id, email: user.email, role: user.role_id, fullname: user.fullname },
+                    JWT_SECRET,
+                    { expiresIn: '8h' }
+                );
+                return res.json({ 
+                    status: "success", 
+                    message: "ล็อกอินสำเร็จ (ข้าม 2FA)", 
+                    token: loginToken,
+                    role: user.role_id 
+                });
+            }
+        }
         if (user.totp_secret) {
             res.json({ status: "2fa_required", userId: user.user_id });
         } else {
@@ -1023,14 +1038,13 @@ app.post("/api/setup-2fa", async (req, res) => {
 
 // ตรวจสอบรหัส 6 หลัก 
 app.post("/api/verify-2fa", async (req, res) => {
-    const { userId, token } = req.body;
+    const { userId, token , rememberDevice } = req.body;
     try {
         const [users] = await pool.execute(
             "SELECT U.*, R.role_name FROM users U JOIN role R ON U.role_id = R.role_id WHERE U.user_id = ?", 
             [userId]
         );
         if (users.length === 0) return res.status(404).json({ message: "ไม่พบผู้ใช้งาน" });
-        
         const user = users[0];
         const verified = speakeasy.totp.verify({
             secret: user.totp_secret,
@@ -1038,14 +1052,23 @@ app.post("/api/verify-2fa", async (req, res) => {
             token: token,
             window: 1 
         });
-
         if (verified) {
+            let deviceToken = null;
+
+            if (rememberDevice) {
+                deviceToken = crypto.randomBytes(32).toString('hex');
+                await pool.execute(
+                    "UPDATE users SET remember_token = ?, remember_token_expires = DATE_ADD(NOW(), INTERVAL 30 DAY) WHERE user_id = ?",
+                    [deviceToken, user.user_id]
+                );
+            }
+
             const loginToken = jwt.sign(
                 { userId: user.user_id, email: user.email, role: user.role_id, fullname: user.fullname },
                 JWT_SECRET,
                 { expiresIn: '8h' }
             );
-            res.json({ message: "ล็อกอินสำเร็จ", token: loginToken, role: user.role_name });
+            res.json({ message: "ล็อกอินสำเร็จ", token: loginToken, role: user.role_name,deviceToken: deviceToken });
         } else {
             res.status(401).json({ message: "รหัส 6 หลักไม่ถูกต้อง" });
         }
@@ -1572,6 +1595,21 @@ app.delete('/api/machine/:sn', async (req, res) => {
     } catch (err) {
         console.log(err);
         res.status(500).send("Error deleting machine");
+    }
+});
+
+app.get('/api/machine/deleted', async (req, res) => {
+    try {
+        const sql = `
+            SELECT m.machine_id, m.machine_supplier, m.machine_model, t.machine_type_name
+            FROM machine m
+            LEFT JOIN machine_type t ON m.machine_type_id = t.machine_type_id
+            WHERE m.is_active = 0
+        `;
+        const [rows] = await db.query(sql);
+        res.json(rows);
+    } catch (err) {
+        res.status(500).send("Error retrieving deleted machines");
     }
 });
 

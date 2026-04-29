@@ -10,6 +10,7 @@ function ManageMachine() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [deletedMachines, setDeletedMachines] = useState([]);
   
   const [formData, setFormData] = useState({
     machine_id: "",
@@ -41,6 +42,15 @@ function ManageMachine() {
       console.error("Error fetching machine types:", error);
     }
   };
+
+  const fetchDeletedMachines = async () => {
+  try {
+    const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/machine/deleted`);
+    setDeletedMachines(res.data);
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   const filteredMachines = machines.filter((item) => {
     const name = item?.machine_type_name || ""; 
@@ -122,9 +132,9 @@ function ManageMachine() {
         <div>
           <h2 className="page-title-text">จัดการข้อมูลครุภัณฑ์</h2>
         </div>
-        <button className="btn-primary" onClick={handleAddNew}>
-          <FaPlus /> เพิ่มครุภัณฑ์ใหม่
-        </button>
+          <button className="btn-primary" onClick={handleAddNew}>
+            <FaPlus /> เพิ่มครุภัณฑ์ใหม่
+          </button>
       </div>
 
       <div className="search-bar-wrapper">

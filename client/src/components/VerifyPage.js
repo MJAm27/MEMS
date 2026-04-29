@@ -13,6 +13,8 @@ function VerifyPage() {
     const [loading, setLoading] = useState(false);
     const inputRefs = useRef([]); 
 
+    const [rememberDevice, setRememberDevice] = useState(false);
+
     useEffect(() => {
         // ตรวจสอบ userId ก่อนเริ่ม
         if (userId === undefined || userId === null){
@@ -52,7 +54,11 @@ function VerifyPage() {
         }
 
         try {
-            const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/verify-2fa`, { userId, token });
+            const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/verify-2fa`, { 
+                userId: userId, 
+                token: otpCode.join(''),
+                rememberDevice: rememberDevice
+            });
             
             const {token: loginToken} = response.data;
             if (loginToken) {
@@ -62,7 +68,14 @@ function VerifyPage() {
                 console.warn("Verify successful but no token received.");
             }
             
+            if (response.data.token) {
+                localStorage.setItem('token', response.data.token);
+                
+                if (response.data.deviceToken) {
+                    localStorage.setItem('deviceToken', response.data.deviceToken);
+                }
 
+            }
             navigate('/dashboard', { replace: true });
 
         } catch (err) {
@@ -100,6 +113,18 @@ function VerifyPage() {
                                 required
                             />
                         ))}
+                    </div>
+
+                    <div style={{ marginBottom: '15px', textAlign: 'left' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: '14px' }}>
+                            <input 
+                                type="checkbox" 
+                                checked={rememberDevice}
+                                onChange={(e) => setRememberDevice(e.target.checked)}
+                                style={{ marginRight: '8px' }}
+                            />
+                            จดจำอุปกรณ์นี้เป็นเวลา 30 วัน
+                        </label>
                     </div>
                     
                     <button 

@@ -104,14 +104,6 @@ function ManagerAlertPage() {
             <span className="badge-count">{highValueList.length} รายการ</span>
           </div>
         </button>
-        <button
-          className={`alert-tab-card ${activeTab === "high-value" ? "active" : ""}`}
-          onClick={() => setActiveTab("high-value")}
-        >
-          <div className="icon-circle value-icon">
-            <FaMoneyBillWave />
-          </div>
-        </button>
       </div>
 
       <div className="alert-content-header">
