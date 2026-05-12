@@ -62,7 +62,7 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
     // แก้ไขฟังก์ชัน goTo ให้ดักจับสถานะ isLocked
     const goTo = (path) => {
         if (isLocked) {
-            alert("กรุณาทำรายการให้สำเร็จและปิดประตูตู้ก่อนเปลี่ยนหน้า");
+            alert("กรุณาทำรายการให้สำเร็จก่อนเปลี่ยนหน้า");
             return;
         }
         navigate(path);
@@ -357,7 +357,6 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
 
     return (
         <div className={`layout-wrapper ${sidebarOpen ? "sidebar-open" : "sidebar-closed"}`}>
-            {/* ซ่อน Overlay เมื่อล็อคหน้าจอเพื่อไม่ให้กดปิด Sidebar ได้แบบไม่ตั้งใจ */}
             {!isLocked && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>}
 
             <aside className={`sidebar-container ${isLocked ? 'locked' : ''}`}>
@@ -380,7 +379,6 @@ function EngineerMainPage({ user, handleLogout, refreshUser }) {
 
             <main className="main-content-wrapper">
                 <header className="top-navbar">
-                    {/* ปิดปุ่ม Toggle เมื่อล็อคเพื่อป้องกันการปิดเมนูทิ้ง */}
                     <button className="sidebar-toggle-btn" disabled={isLocked} onClick={toggleSidebar}><FaBars /></button>
                     <div className="user-profile-nav">
                         <span className="user-name">{user?.fullname}</span>

@@ -263,49 +263,6 @@ td.sticky-col {
 .m-details-grid div { color: var(--text-dark); font-weight: 600; }
 .m-details-grid small { color: var(--text-muted); display: block; margin-bottom: 2px; }
 
-.access-log-summary {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-width: 140px;
-    padding: 4px 0;
-}
-
-.time-line {
-    display: flex;
-    justify-content: space-between; 
-    align-items: center;
-    width: 100%;
-}
-
-.badge-open {
-    background: #dcfce7;
-    color: #15803d;
-    font-size: 0.7rem;
-    font-weight: 800;
-    padding: 2px 8px;
-    border-radius: 6px;
-    text-transform: uppercase;
-}
-
-.badge-close {
-    background: #fee2e2;
-    color: #b91c1c;
-    font-size: 0.7rem;
-    font-weight: 800;
-    padding: 2px 8px;
-    border-radius: 6px;
-    text-transform: uppercase;
-}
-
-
-.time-value {
-    font-family: 'Monaco', 'Consolas', monospace; 
-    font-weight: 700;
-    color: #1e293b;
-    font-size: 0.9rem;
-}
-
 .duration-tag {
     margin-top: 4px;
     padding-top: 4px;

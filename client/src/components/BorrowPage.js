@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { 
-    FaCheckCircle, FaCamera, FaLockOpen, FaPlus, FaMinus, 
-    FaTrash, FaLock, FaClipboardCheck, FaTimes, FaSearch
+    FaCheckCircle, FaCamera, FaPlus, FaMinus, 
+    FaTrash, FaClipboardCheck, FaTimes, FaSearch
 } from "react-icons/fa"; 
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import axios from "axios";
-import io from 'socket.io-client';
 import './BorrowPage.css'; 
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001';
@@ -14,7 +13,6 @@ const STORAGE_KEY = 'mems_borrow_session';
 function BorrowPage({ user, setIsLocked }) {
     const activeUser = user || { fullname: 'ผู้ใช้งาน', user_id: null };
     const [currentStep, setCurrentStep] = useState(1); 
-    const [isSuccess, setIsSuccess] = useState(false);
 
     const [borrowDate] = useState(() => {
         const now = new Date();
@@ -27,26 +25,7 @@ function BorrowPage({ user, setIsLocked }) {
     const [error, setError] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [partSuggestions, setPartSuggestions] = useState([]);
-    const [cabinetBusy, setCabinetBusy] = useState(false);
-    const [busyBy, setBusyBy] = useState('');
     const [previewImage, setPreviewImage] = useState(null); 
-
-    useEffect(() => {
-        const socket = io(API_BASE);
-
-        socket.on('cabinet_status', (state) => {
-            const currentUserId = user?.user_id || user?.userId; 
-            if (state.isBusy && state.userId !== currentUserId) {
-                setCabinetBusy(true);
-                setBusyBy(state.userName);
-            } else {
-                setCabinetBusy(false);
-                setBusyBy('');
-            }
-        });
-
-        return () => socket.disconnect();
-    }, [user?.user_id, user?.userId]);
 
     useEffect(() => {
         const saved = localStorage.getItem(STORAGE_KEY);
@@ -63,76 +42,33 @@ function BorrowPage({ user, setIsLocked }) {
     }, [setIsLocked]);
 
     useEffect(() => {
-        if (currentStep >= 3 && currentStep <= 4) {
+        if ((currentStep === 1 && borrowItems.length > 0) || currentStep === 2) {
             localStorage.setItem(STORAGE_KEY, JSON.stringify({ currentStep, borrowItems }));
+        } else if (borrowItems.length === 0) {
+            localStorage.removeItem(STORAGE_KEY);
         }
     }, [currentStep, borrowItems]);
 
     useEffect(() => {
         const handleBeforeUnload = (e) => {
-            if (currentStep >= 3 && currentStep <= 4) {
+            if ((currentStep === 1 && borrowItems.length > 0) || currentStep === 2) {
                 e.preventDefault();
                 e.returnValue = '';
             }
         };
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-    }, [currentStep]);
+    },[currentStep, borrowItems]);
 
     const handleResetForm = useCallback(() => {
         localStorage.removeItem(STORAGE_KEY);
         setCurrentStep(1);
-        setIsSuccess(false);
         setBorrowItems([]);
         setManualPartId('');
         setError('');
         setIsScanning(false);
-    }, []);
-
-    const handleOpenDoor = async (nextStep) => {
-        setIsProcessing(true);
-        setError('');
-        try {
-            const token = localStorage.getItem('token');
-            const checkRes = await axios.get(`${API_BASE}/api/device-check`, { 
-                headers: { Authorization: `Bearer ${token}` } 
-            });
-
-            if (checkRes.data.status === "online") {
-                await axios.get(`${API_BASE}/api/open`, { 
-                    headers: { Authorization: `Bearer ${token}` } 
-                });
-                setCurrentStep(nextStep);
-                if (setIsLocked) setIsLocked(true);
-            }
-        } catch (err) {
-            const msg = err.response?.data?.message || 'ตู้ไม่มีไฟเลี้ยง กรุณาตรวจสอบการเชื่อมต่อ';
-            setError(msg);
-        } finally {
-            setIsProcessing(false);
-        }
-    };
-
-    const handleCloseDoor = async (nextStep, reset = false) => {
-        setIsProcessing(true);
-        setError('');
-        try {
-            const token = localStorage.getItem('token');
-            await axios.post(`${API_BASE}/api/close-box`, {}, { 
-                headers: { Authorization: `Bearer ${token}` } 
-            });
-            if (reset) {
-                handleResetForm();
-                if (setIsLocked) setIsLocked(false);
-            } else {
-                setCurrentStep(nextStep);
-            }
-        } catch (err) {
-            setError('คำสั่งปิดประตูขัดข้อง');
-        } finally {
-            setIsProcessing(false);
-        }
-    };
+        if (setIsLocked) setIsLocked(false);
+    }, [setIsLocked]);
 
     const handlePartSearch = async (val) => {
         setManualPartId(val);
@@ -207,7 +143,7 @@ function BorrowPage({ user, setIsLocked }) {
 
     useEffect(() => {
         let scanner = null;
-        if (isScanning && currentStep === 3) {
+        if (isScanning && currentStep === 1) {
             scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 350, height: 150 } });
             scanner.render((decodedText) => {
                 handleAddItem(decodedText);
@@ -231,8 +167,8 @@ function BorrowPage({ user, setIsLocked }) {
                     quantity: item.quantity
                 }))
             }, { headers: { Authorization: `Bearer ${token}` } });
-            setIsSuccess(true);
-            setCurrentStep(5);
+            alert("บันทึกข้อมูลการเบิกสำเร็จ!");
+            handleResetForm();
         } catch (err) {
             setError(err.response?.data?.error || 'เกิดข้อผิดพลาดในการบันทึกรายการ');
         } finally {
@@ -245,12 +181,12 @@ function BorrowPage({ user, setIsLocked }) {
             <div className="withdraw-title-section">
                 <h2 className="text-2xl font-bold text-center w-full">เบิกอะไหล่ล่วงหน้า</h2>
                 <div className="step-progress-bar">
-                    {[1, 2, 3, 4, 5, 6].map((step) => (
+                    {[1, 2].map((step) => (
                         <React.Fragment key={step}>
                             <div className={`step-item ${currentStep >= step ? 'active' : ''}`}>
                                 <div className="step-circle">{currentStep > step ? <FaCheckCircle /> : step}</div>
                             </div>
-                            {step < 6 && <div className={`step-line ${currentStep > step ? 'active' : ''}`}></div>}
+                            {step < 2 && <div className={`step-line ${currentStep > step ? 'active' : ''}`}></div>}
                         </React.Fragment>
                     ))}
                 </div>
@@ -258,31 +194,9 @@ function BorrowPage({ user, setIsLocked }) {
 
             <div className="withdraw-card">
                 {currentStep === 1 && (
-                    <div className="step-content-unlock">
-                        <div className="unlock-icon-container"><FaLockOpen size={48} /></div>
-                        <h3 className="unlock-title">1. เปิดประตูกล่อง</h3>
-                        <p className="unlock-subtitle">กดยืนยันเพื่อปลดล็อก</p>
-                        <button onClick={() => handleOpenDoor(2)} disabled={isProcessing} className="btn-unlock-gate">
-                            {isProcessing ? <span className="loader"></span> : <><FaLockOpen /> เปิดประตูกล่อง</>}
-                        </button>
-                    </div>
-                )}
-
-                {currentStep === 2 && (
-                    <div className="step-content-unlock">
-                        <div className="unlock-icon-container"><FaLock size={48} /></div>
-                        <h3 className="unlock-title">2. ปิดประตูกล่อง</h3>
-                        <p className="unlock-subtitle">กรุณาปิดประตูตู้ก่อนเริ่มทำรายการในระบบ</p>
-                        <button onClick={() => handleCloseDoor(3, false)} disabled={isProcessing} className="btn-close-gate-final">
-                            {isProcessing ? <span className="loader"></span> : <><FaLock /> ปิดประตูกล่อง</>}
-                        </button>
-                    </div>
-                )}
-
-                {currentStep === 3 && (
                     <div className="step-content-identify">
                         <div className="identify-header">
-                            <h3 className="text-xl font-bold text-gray-800 mb-4">3. ระบุอะไหล่</h3>
+                            <h3 className="text-xl font-bold text-gray-800 mb-4">1. ระบุอะไหล่</h3>
                         </div>
                         
                         <div className="scanner-action-area">
@@ -352,23 +266,23 @@ function BorrowPage({ user, setIsLocked }) {
                                     ))}
                                 </div>
                                 <div className="flex justify-center w-full mt-4">
-                                    <button onClick={() => setCurrentStep(4)} className="btn-review-confirm" style={{ maxWidth: '320px' }}>
+                                    <button onClick={() => setCurrentStep(2)} className="btn-review-confirm" style={{ maxWidth: '320px' }}>
                                         ตรวจสอบรายการ
                                     </button>
                                 </div>
                             </div>
                         )}
                         <div className="footer-actions">
-                            <button onClick={() => { if(window.confirm("ยกเลิกรายการข้ามไปหน้าปิดตู้?")) { setIsSuccess(false); setCurrentStep(5); } }} className="btn-cancel-step2">ยกเลิกการทำรายการ</button>
+                            <button onClick={() => { if(window.confirm("ต้องการยกเลิกรายการทั้งหมดใช่หรือไม่?")) { handleResetForm(); } }} className="btn-cancel-step2">ยกเลิกทำรายการ</button>
                         </div>
                         {error && <p className="error-badge mt-4">{error}</p>}
                     </div>
                 )}
 
-                {currentStep === 4 && (
+                {currentStep === 2 && (
                     <div className="step-content-confirmation">
                         <FaClipboardCheck size={64} className="text-blue-500 mb-4" />
-                        <h3 className="text-2xl font-bold text-gray-800">4. ตรวจสอบและยืนยันการบันทึก</h3>
+                        <h3 className="text-2xl font-bold text-gray-800">2. ตรวจสอบและยืนยันการบันทึก</h3>
                         <div className="confirmation-summary-card">
                             <span className="summary-header-label" style={{ color: '#3b82f6' }}>สรุปการเบิกล่วงหน้า</span>
                             <div className="info-row-summary">
@@ -390,40 +304,15 @@ function BorrowPage({ user, setIsLocked }) {
                                 </div>
                             </div>
                         </div>
+                        
                         <div className="flex gap-4 w-full mt-6">
-                            <button onClick={() => setCurrentStep(3)} className="btn-review-edit flex-1">กลับไปแก้ไข</button>
-                            <button onClick={() => { if(window.confirm("ยกเลิกรายการทั้งหมด?")) { setIsSuccess(false); setCurrentStep(5); } }} className="btn-cancel-step2 flex-1">ยกเลิกรายการ</button>
+                            <button onClick={() => setCurrentStep(1)} className="btn-review-edit flex-1">กลับไปแก้ไข</button>
+                            <button onClick={() => { if(window.confirm("ต้องการยกเลิกรายการทั้งหมดใช่หรือไม่?")) { handleResetForm(); } }} className="btn-cancel-step2 flex-1">ยกเลิกทำรายการ</button>
                             <button onClick={handleFinalConfirm} disabled={isProcessing} className="btn-action-primary flex-2">
                                 {isProcessing ? "กำลังบันทึก..." : "ยืนยันและบันทึก"}
                             </button>
                         </div>
-                    </div>
-                )}
-
-                {currentStep === 5 && (
-                    <div className="step-content-unlock">
-                        {isSuccess && (
-                            <div className="success-banner-modern mb-4">
-                                <div className="success-icon-circle"><FaCheckCircle /></div>
-                                <span className="success-text-main">บันทึกข้อมูลสำเร็จ!</span>
-                            </div>
-                        )}
-                        <div className="unlock-icon-container"><FaLockOpen size={48} /></div>
-                        <h3 className="unlock-title">5. เปิดประตูกล่อง</h3>
-                        <p className="unlock-subtitle">กรุณากดปุ่มเพื่อปลดล็อกตู้และทำการหยิบอะไหล่</p>
-                        <button onClick={() => handleOpenDoor(6)} disabled={isProcessing} className="btn-unlock-gate">
-                            {isProcessing ? <span className="loader"></span> : <><FaLockOpen /> เปิดประตูกล่อง</>}
-                        </button>
-                    </div>
-                )}
-
-                {currentStep === 6 && (
-                    <div className="step-content-success">
-                        <h3 className="text-2xl font-bold mb-2">6. สั่งปิดประตู</h3>
-                        <p className="instruction-text">ตรวจสอบสิ่งกีดขวางให้เรียบร้อย แล้วกดปุ่มเพื่อล็อกตู้ จบการทำงาน</p>
-                        <button onClick={() => handleCloseDoor(1, true)} disabled={isProcessing} className="btn-close-gate-final">
-                            {isProcessing ? <span className="loader"></span> : <><FaLock /> ปิดประตูกล่อง</>}
-                        </button>
+                        {error && <p className="error-badge mt-4">{error}</p>}
                     </div>
                 )}
             </div>
@@ -433,24 +322,6 @@ function BorrowPage({ user, setIsLocked }) {
                     <div className="image-viewer-content">
                         <img src={previewImage} alt="Preview" />
                         <button className="close-image-btn" onClick={() => setPreviewImage(null)}><FaTimes /></button>
-                    </div>
-                </div>
-            )}
-
-            {cabinetBusy && (
-                <div className="fixed inset-0 bg-black bg-opacity-60 z-[9999] flex items-center justify-center backdrop-blur-sm">
-                    <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-md w-full mx-4">
-                        <div className="text-yellow-500 mb-4 flex justify-center">
-                            <FaLock size={60} />
-                        </div>
-                        <h2 className="text-2xl font-bold text-gray-800 mb-2">ตู้กำลังถูกใช้งาน</h2>
-                        <p className="text-gray-600 mb-6">
-                            ขณะนี้ <b>{busyBy || 'พนักงานท่านอื่น'}</b> กำลังทำรายการอยู่ที่หน้าตู้<br/>
-                            โปรดรอสักครู่ เมื่อทำรายการเสร็จสิ้นหน้าต่างนี้จะหายไปเอง
-                        </p>
-                        <div className="flex justify-center">
-                            <span className="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
-                        </div>
                     </div>
                 </div>
             )}

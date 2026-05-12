@@ -22,24 +22,19 @@ function ReportPage() {
     return: { daily: 0, monthly: 0 }
   });
 
-  const [accessLogs, setAccessLogs] = useState([]);
-  const [accessLogFilter] = useState("all");
-
   useEffect(() => {
     fetchReport();
   }, []);
 
   const fetchReport = async () => {
     try {
-      const [summaryRes, usageRes , accessLogsRes] = await Promise.all([
+      const [summaryRes, usageRes ] = await Promise.all([
         axios.get(`${API_BASE_URL}/api/report/summary`),
-        axios.get(`${API_BASE_URL}/api/report/usage`),
-        axios.get(`${API_BASE_URL}/api/report/accesslogs`)
+        axios.get(`${API_BASE_URL}/api/report/usage`)
       ]);
 
       setSummary(summaryRes.data);
       setUsage(usageRes.data);
-      setAccessLogs(accessLogsRes.data);
     } catch (err) {
       console.error("โหลดรายงานไม่สำเร็จ", err);
     }
@@ -53,20 +48,6 @@ function ReportPage() {
       month: "short",
       day: "numeric"
     });
-  };
-
-  const filteredAccessLogs = accessLogs.filter((log) => {
-    if (accessLogFilter === "all") return true;
-    return log.action_type_name === accessLogFilter;
-  });
-
-const parseItems = (itemsJson) => {
-    if (!itemsJson) return [];
-    try {
-        return typeof itemsJson === 'string' ? JSON.parse(itemsJson) : itemsJson;
-    } catch (error) {
-        return [];
-    }
   };
 
   return (
@@ -149,78 +130,6 @@ const parseItems = (itemsJson) => {
             </div>
         </div>
 
-      </div>
-      <div className="accesslog-section">
-        <div className="accesslog-header">
-          <h3 className="section-title" style={{ margin: 0 }}>รายงานการใช้งานกล่อง</h3>
-        </div>
-        <div className="table-responsive">
-          <table className="report-table">
-            <thead>
-              <tr>
-                <th>วันที่/เวลา</th>
-                <th>ผู้ทำรายการ</th>
-                <th>ประเภทงาน</th>
-                <th>ตึก/แผนก</th>
-                <th>เครื่องที่นำใช้</th>
-                <th>เลขครุภัณฑ์ (รพ.)</th>
-                <th>SN (โรงงาน)</th>
-                <th>รายการอะไหล่</th>
-                <th>เวลาเปิด-ปิดตู้</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredAccessLogs.length > 0 ? (
-                filteredAccessLogs.map((row) => (
-                  <tr key={row.transaction_id || row.log_id}>
-                    <td>
-                      <div>{formatDate(row.date)}</div>
-                      <div style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '4px' }}>{row.time}</div>
-                    </td>
-                    <td>
-                      <div style={{ fontWeight: '500', color: '#1e293b' }}>{row.fullname || "-"}</div>
-                      <small className="tx-id-sub">Ref: {row.transaction_id || "-"}</small>
-                    </td>
-                    <td>{row.repair_type_name || "-"}</td>
-                    <td>
-                      <div>{row.buildings || "-"}</div>
-                      <div style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '4px' }}>{row.department_name || "-"}</div>
-                    </td>
-                    <td>{row.machine_type_name || "-"}</td>
-                    <td>{row.machine_number || "-"}</td>
-                    <td>{row.machine_SN || "-"}</td>
-                    <td>
-                      <div className="items-list-vertical">
-                        {parseItems(row.items_json).map((it, i) => (
-                          <div key={i} className="item-pill-vertical">
-                            <span className="item-name">{it.name}</span>
-                            <span className="item-qty">x{it.qty}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </td>
-                    <td style={{ minWidth: '130px' }}>
-                      <div className="time-row">
-                        <span className="time-label-open">เปิด</span> 
-                        <b>{row.open_time || '--:--'}</b>
-                      </div>
-                      <div className="time-row">
-                        <span className="time-label-close">ปิด</span> 
-                        <b>{row.close_time || '--:--'}</b>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="9" className="text-center py-4" style={{ color: '#94a3b8' }}>
-                    ไม่มีข้อมูลการใช้งาน
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
       </div>
     </div>
   );

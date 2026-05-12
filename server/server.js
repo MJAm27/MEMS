@@ -23,17 +23,6 @@ const io = new Server(server, {
     }
 }); 
 
-//กันเบิกชนกัน
-let cabinetState = {
-    isBusy: false,
-    userId: null,
-    userName: null
-};
-
-io.on('connection', (socket) => {
-    socket.emit('cabinet_status', cabinetState);
-});
-
 const PORT = 3001; // Port สำหรับ Backend
 
 
@@ -68,48 +57,6 @@ pool.query("SELECT 1")
 
 const JWT_SECRET = "MY_SUPER_SECRET_KEY_FOR_JWT_12345";
 
-//ค่าคงที่สำหรับ ESP8266 
-//step1 setup MQTT Broker ใน server kob 
-//step2 แก้ไข ESP8266 ให้เชื่อมต่อกับ MQTT Broker ของ Server แทนการรับคำสั่งผ่าน HTTP โดยตรง
-//step3 ใน server.js ให้ใช้ MQTT Client (เช่น mqtt.js) เพื่อส่งคำสั่งไปยัง ESP8266 ผ่าน MQTT แทนการใช้ HTTP
-//const ESP_IP = 'http://192.168.1.139'; 
-
-const mqtt = require('mqtt');
-const client = mqtt.connect('mqtt://kob.vps.athichal.com:62279'); 
-const SECRET_PASSKEY = "MEMS_AMKOB";
-
-let deviceStatus = "offline";
-let lastLoggedStatus = ""; 
-
-client.on('connect', () => {
-    console.log('✅ Connected to MQTT Broker');
-    client.subscribe("esp8266/status");
-});
-
-client.on('message', (topic, message) => {
-    if (topic === "esp8266/status") {
-        const newStatus = message.toString();
-        deviceStatus = newStatus;
-        if (newStatus !== lastLoggedStatus) {
-            console.log(`[Device] Status changed to: ${newStatus}`);
-            lastLoggedStatus = newStatus; 
-        }
-    }
-});
-client.on('error', (err) => {
-    console.error('❌ MQTT Connection Error:', err);
-});
-
-app.get('/api/device-check', authenticateToken, (req, res) => {
-    if (deviceStatus === "online") {
-        res.status(200).json({ status: "online" });
-    } else {
-        res.status(503).json({ 
-            status: "offline", 
-            message: "ตู้ไม่พร้อมใช้งาน กรุณาตรวจสอบการเสียบปลั๊กหรือการเชื่อมต่ออินเทอร์เน็ตของตู้" 
-        });
-    }
-});
 
 
 
@@ -127,91 +74,6 @@ function authenticateToken(req, res, next) {
     });
 }
 
-
-// --- Helper Functions สำหรับ ESP และ Log ---
-
-/**
- * ฟังก์ชัน Helper สำหรับบันทึก Log ลง Database
- */
-async function logActionToDB(userId, actionTypeId, transactionId = null) {
-    const logId = `LOG-${Date.now().toString().slice(-10)}`; 
-    const sql = `
-        INSERT INTO accesslogs (log_id, user_id, action_type_id, transaction_id, date, time) 
-        VALUES (?, ?, ?, ?, CURDATE(), CURTIME())
-    `;
-    try {   
-        await db.query(sql, [logId, userId, actionTypeId, transactionId]);
-        console.log(`[Log] บันทึกสำเร็จ: Action ${actionTypeId}, Tx: ${transactionId}`);
-    } catch (dbError) {
-        console.error('[Log Error]:', dbError.message);
-    }
-}
-
-/**
- * ฟังก์ชัน MQTT Helper สำหรับส่งคำสั่งไปยัง ESP8266 (OPEN/CLOSE) ผ่าน MQTT Broker
- */
-
-
-async function commandServo(action) { 
-    const topic = "esp8266/test"; 
-    const message = `${action.toUpperCase()}:${SECRET_PASSKEY}`; 
-    try {
-        client.publish(topic, message);
-        console.log(`[MQTT] Verified command '${action}' sent`);
-        return `Command sent`;
-    } catch (error) {
-        throw new Error('MQTT Publish failed');
-    }
-}
-
-
-// --- API สำหรับสั่งเปิดประตูตู้ ---
-app.get('/api/open', authenticateToken, async (req, res) => {
-
-    if (deviceStatus !== "online") {
-        return res.status(503).json({ 
-            status: "offline",
-            message: 'ตู้ไม่พร้อมใช้งาน (ไม่มีไฟเลี้ยง) กรุณาเสียบปลั๊กก่อนสั่งเปิดประตู' 
-        });
-    }
-
-    const userId = req.user.userId;
-    if (cabinetState.isBusy && cabinetState.userId !== userId) {
-        return res.status(409).json({ 
-            message: `ตู้กำลังถูกใช้งานโดย ${cabinetState.userName || 'ผู้ใช้อื่น'} โปรดรอจนกว่าจะปิดประตู` 
-        });
-    }
-
-    const transactionId = req.query.transactionId || null;
-    try {
-        await commandServo('OPEN'); 
-        await logActionToDB(userId, 'A-001', transactionId);
-
-        cabinetState = { isBusy: true, userId: userId, userName: req.user.fullname };
-        io.emit('cabinet_status', cabinetState);
-
-        res.status(200).send({ message: 'เปิดตู้สำเร็จ' });
-    } catch (error) {
-        res.status(500).send({ error: 'ไม่สามารถส่งคำสั่งได้' });
-    }
-});
-
-// --- API สำหรับสั่งปิดประตูตู้ ---
-app.post('/api/close-box', authenticateToken, async (req, res) => {
-    const userId = req.user.userId;
-    const { transactionId } = req.body;
-    try {
-        await commandServo('CLOSE'); 
-        await logActionToDB(userId, 'A-002', transactionId || null);
-
-        cabinetState = { isBusy: false, userId: null, userName: null };
-        io.emit('cabinet_status', cabinetState);
-
-        res.status(200).send({ message: 'ปิดตู้สำเร็จ (MQTT)' });
-    } catch (error) {
-        res.status(500).send({ error: 'ไม่สามารถส่งคำสั่ง MQTT ได้' });
-    }
-});
 
 //API สำหรับ Withdrawal (เชื่อมต่อ DB) 
 
@@ -420,15 +282,6 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
             transactionId, userId, finalMachineId, finalMachineNumber, finalMachineSN, finalDeptId, finalRepairTypeId
         ]);
 
-        // 4. ผูกเวลาเปิดประตู
-        await connection.query(
-            `UPDATE accesslogs 
-             SET transaction_id = ? 
-             WHERE user_id = ? AND transaction_id IS NULL AND action_type_id = 'A-001' 
-             ORDER BY date DESC, time DESC LIMIT 1`,
-            [transactionId, userId]
-        );
-
         // 5. บันทึกรายการอะไหล่ที่เบิก
         let counter = 0;
         for (const item of cartItems) {
@@ -448,13 +301,6 @@ app.post('/api/withdraw/confirm', authenticateToken, async (req, res) => {
                 [listId, transactionId, item.quantity, item.lotId]
             );
         }
-
-        // 6. บันทึกเวลาปิดตู้ใหม่
-        const closeLogId = `LG-CL-${Date.now().toString().slice(-8)}`;
-        await connection.query(
-            "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-002', ?, ?)",
-            [closeLogId, transactionId, userId]
-        );
 
         await connection.commit();
         res.json({ success: true, message: "เบิกอะไหล่เรียบร้อยแล้ว", transactionId });
@@ -523,14 +369,6 @@ app.post('/api/return-part', authenticateToken, async (req, res) => {
             [transactionId, parentId, returnDate, userId]
         );
 
-        // 3. ผูก Log เวลาเปิดตู้
-        await connection.query(
-            `UPDATE accesslogs SET transaction_id = ? 
-             WHERE user_id = ? AND transaction_id IS NULL AND action_type_id = 'A-001' 
-             ORDER BY date DESC, time DESC LIMIT 1`,
-            [transactionId, userId]
-        );
-
         // 4. วนลูปจัดการสต็อกและการหักลดยอด
         for (const item of items) {
             await connection.query(
@@ -575,13 +413,6 @@ app.post('/api/return-part', authenticateToken, async (req, res) => {
                 [listId, transactionId, item.quantity, item.lotId]
             );
         }
-
-        // 5. บันทึก Log เวลาปิดตู้
-        const closeLogId = `RTN-CL-${Date.now().toString().slice(-8)}`;
-        await connection.query(
-            "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-002', ?, ?)",
-            [closeLogId, transactionId, userId]
-        );
 
         await connection.commit();
         res.json({ success: true, message: "คืนอะไหล่และเชื่อมโยงประวัติเรียบร้อย" });
@@ -677,17 +508,7 @@ app.post('/api/borrow/pending', authenticateToken, async (req, res) => {
                 [listId, transactionId, item.quantity, item.lotId]
             );
         }
-        const logIdOpen = `LG-OP-${Date.now()}`;
-        const logIdClose = `LG-CL-${Date.now() + 100}`;
-        await connection.query(
-            "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-001', ?, ?)",
-            [logIdOpen, transactionId, userId]
-        );
 
-        await connection.query(
-            "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-002', ?, ?)",
-            [logIdClose, transactionId, userId]
-        );
         await connection.commit();
         res.json({ success: true, message: "บันทึกรายการเบิกล่วงหน้าและตัดสต็อกเรียบร้อย" });
     } catch (error) {
@@ -809,12 +630,6 @@ app.post('/api/borrow/finalize-partial', authenticateToken, async (req, res) => 
             [elId, realTxId, usedQty, lotId]
         );
 
-        // บันทึก Logs
-        await connection.query(
-            "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-001', ?, ?)",
-            [`LG-OP-${Date.now()}`, realTxId, req.user.userId]
-        );
-
         // อัปเดตยอดคงเหลือในมือ (Parent)
         const newRemainingQty = currentInHand - usedQty;
         if (newRemainingQty > 0) {
@@ -880,16 +695,6 @@ app.post('/api/borrow/return-all', authenticateToken, async (req, res) => {
         await connection.query(
             "INSERT INTO equipment_list (equipment_list_id, transaction_id, quantity, lot_id) VALUES (?, ?, ?, ?)",
             [`ELR-${Date.now().toString().slice(-5)}`, returnTxId, qtyToReturn, lotId]
-        );
-
-        // 4. บันทึก Log เวลาเปิด-ปิดตู้สำหรับการคืน
-        await connection.query(
-            "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-001', ?, ?)",
-            [`LG-OP-${Date.now()}`, returnTxId, req.user.userId]
-        );
-        await connection.query(
-            "INSERT INTO accesslogs (log_id, time, date, action_type_id, transaction_id, user_id) VALUES (?, CURTIME(), CURDATE(), 'A-002', ?, ?)",
-            [`LG-CL-${Date.now() + 500}`, returnTxId, req.user.userId]
         );
 
         // อัปเดตยอดคงเหลือในมือของรายการเดิม
@@ -1433,9 +1238,7 @@ app.get('/api/history/full', authenticateToken, async (req, res) => {
                  INNER JOIN lot l ON el.lot_id = l.lot_id
                  INNER JOIN equipment e ON l.equipment_id = e.equipment_id
                  INNER JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
-                 WHERE el.transaction_id = t.transaction_id) as items_json,
-                (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-001' LIMIT 1) as open_time,
-                (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-002' LIMIT 1) as close_time
+                 WHERE el.transaction_id = t.transaction_id) as items_json
             FROM transactions t
             LEFT JOIN transactions_type tt ON t.transaction_type_id = tt.transaction_type_id
             LEFT JOIN users u ON t.user_id = u.user_id
@@ -1466,15 +1269,21 @@ app.get('/api/history/full', authenticateToken, async (req, res) => {
 app.get('/api/history/manager/full', authenticateToken, async (req, res) => {
     try {
         let { startDate, endDate } = req.query;
+
         let sql = `
             SELECT 
                 t.*, 
                 tt.transaction_type_name as type_name, 
                 rt.repair_type_name,
                 
-                -- รวมชื่อเครื่องมือ (Type - Supplier - Model) ให้แสดงผลสวยงามบน Dashboard
                 IF(m.machine_id IS NOT NULL, 
-                    CONCAT(IFNULL(mt.machine_type_name, ''), ' - ', IFNULL(m.machine_supplier, ''), ' - ', IFNULL(m.machine_model, '')),
+                    CONCAT(
+                        IFNULL(mt.machine_type_name, ''), 
+                        ' - ', 
+                        IFNULL(m.machine_supplier, ''), 
+                        ' - ', 
+                        IFNULL(m.machine_model, '')
+                    ),
                     NULL
                 ) as machine_name,
 
@@ -1483,38 +1292,46 @@ app.get('/api/history/manager/full', authenticateToken, async (req, res) => {
                 u.fullname, 
                 u.profile_img,
                 
-                -- ดึงรายการอะไหล่เป็น JSON และจัดการกรณี NULL ให้เป็น Array ว่าง [] เสมอ
                 IFNULL((
                     SELECT JSON_ARRAYAGG(
-                        JSON_OBJECT('name', et.equipment_name, 'qty', el.quantity)
+                        JSON_OBJECT(
+                            'name', et.equipment_name, 
+                            'qty', el.quantity
+                        )
                     )
                     FROM equipment_list el
                     INNER JOIN lot l ON el.lot_id = l.lot_id
                     INNER JOIN equipment e ON l.equipment_id = e.equipment_id
                     INNER JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id
                     WHERE el.transaction_id = t.transaction_id
-                ), '[]') as items_json,
-                
-                -- ดึงเวลาเปิด-ปิดตู้จากตาราง accesslogs
-                (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-001' LIMIT 1) as open_time,
-                (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-002' LIMIT 1) as close_time
+                ), '[]') as items_json
                 
             FROM transactions t
-            LEFT JOIN transactions_type tt ON t.transaction_type_id = tt.transaction_type_id
-            LEFT JOIN users u ON t.user_id = u.user_id
-            LEFT JOIN repair_type rt ON t.repair_type_id = rt.repair_type_id
-            LEFT JOIN machine m ON t.machine_id = m.machine_id
-            LEFT JOIN machine_type mt ON m.machine_type_id = mt.machine_type_id 
-            LEFT JOIN department d ON t.department_id = d.department_id
-            WHERE 1=1 `; 
+            LEFT JOIN transactions_type tt 
+                ON t.transaction_type_id = tt.transaction_type_id
+            LEFT JOIN users u 
+                ON t.user_id = u.user_id
+            LEFT JOIN repair_type rt 
+                ON t.repair_type_id = rt.repair_type_id
+            LEFT JOIN machine m 
+                ON t.machine_id = m.machine_id
+            LEFT JOIN machine_type mt 
+                ON m.machine_type_id = mt.machine_type_id 
+            LEFT JOIN department d 
+                ON t.department_id = d.department_id
+            WHERE 1=1 `;
 
         const params = [];
         
-        if (startDate && endDate && 
-            startDate !== 'undefined' && endDate !== 'undefined' && 
-            startDate !== 'null' && endDate !== 'null' && startDate.trim() !== '') {
-            
-            sql += " AND DATE(t.date) BETWEEN ? AND ? "; 
+        if (
+            startDate && endDate &&
+            startDate !== 'undefined' &&
+            endDate !== 'undefined' &&
+            startDate !== 'null' &&
+            endDate !== 'null' &&
+            startDate.trim() !== ''
+        ) {
+            sql += " AND DATE(t.date) BETWEEN ? AND ? ";
             params.push(startDate, endDate);
         }
         
@@ -1523,10 +1340,12 @@ app.get('/api/history/manager/full', authenticateToken, async (req, res) => {
         const [rows] = await pool.query(sql, params);
         
         res.json(rows);
-        
-    } catch (error) { 
+
+    } catch (error) {
         console.error("Backend Error:", error.message);
-        res.status(500).json({ error: "เกิดข้อผิดพลาดในการดึงข้อมูลสำหรับผู้บริหาร" }); 
+        res.status(500).json({
+            error: "เกิดข้อผิดพลาดในการดึงข้อมูลสำหรับผู้บริหาร"
+        });
     }
 });
 
@@ -2779,51 +2598,6 @@ app.put('/api/inventory/update-lot/:id', async (req, res) => {
     }
 });
 
-app.get('/api/report/accesslogs', async (req, res) => {
-    let connection;
-    try {
-        connection = await pool.getConnection();
-        const sql = `
-            SELECT 
-                t.transaction_id, 
-                t.date, 
-                t.time, 
-                u.fullname, 
-                rt.repair_type_name, 
-                d.buildings, 
-                d.department_name, 
-                mt.machine_type_name,
-                t.machine_number, 
-                t.machine_SN,
-                (SELECT JSON_ARRAYAGG(
-                    JSON_OBJECT('name', et.equipment_name, 'qty', el.quantity)
-                 ) 
-                 FROM equipment_list el 
-                 INNER JOIN lot l ON el.lot_id = l.lot_id 
-                 INNER JOIN equipment e ON l.equipment_id = e.equipment_id 
-                 INNER JOIN equipment_type et ON e.equipment_type_id = et.equipment_type_id 
-                 WHERE el.transaction_id = t.transaction_id) as items_json,
-                (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-001' ORDER BY time DESC LIMIT 1) as open_time,
-                (SELECT time FROM accesslogs WHERE transaction_id = t.transaction_id AND action_type_id = 'A-002' ORDER BY time DESC LIMIT 1) as close_time
-            FROM transactions t
-            LEFT JOIN users u ON t.user_id = u.user_id
-            LEFT JOIN repair_type rt ON t.repair_type_id = rt.repair_type_id
-            LEFT JOIN department d ON t.department_id = d.department_id
-            LEFT JOIN machine m ON t.machine_id = m.machine_id
-            LEFT JOIN machine_type mt ON m.machine_type_id = mt.machine_type_id
-            ORDER BY t.date DESC, t.time DESC
-            LIMIT 200
-        `;
-        const [rows] = await connection.query(sql);
-        res.json(rows);
-    } catch (error) {
-        console.error("Report Access Logs Error:", error);
-        res.status(500).json({ error: error.message });
-    } finally {
-        if (connection) connection.release();
-    }
-});
-
 app.post('/api/departments', async (req, res) => {
     const { department_id, department_name, buildings } = req.body;
     let connection;
@@ -2881,5 +2655,4 @@ app.delete('/api/departments/:id', async (req, res) => {
 
 server.listen(PORT, () => {
     console.log(`🚀 Backend server is running on http://localhost:${PORT}`);
-    console.log(`    (Ready to command ESP via MQTT Broker)`);
 });

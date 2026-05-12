@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { 
     FaHistory, FaBoxOpen, FaReply,
-    FaHandHolding, FaClock
+    FaHandHolding
 } from 'react-icons/fa';
 import './HistoryPage.css';
 
@@ -185,7 +185,6 @@ function HistoryPage({ user }) {
                                     <th>SN (โรงงาน)</th>
                                     <th>รายการอะไหล่</th>
                                     <th>จำนวน</th>
-                                    <th>เวลาเปิด-ปิด</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -193,7 +192,7 @@ function HistoryPage({ user }) {
                                     <tr key={index} className={row.parent_transaction_id ? "row-sub-activity" : ""}>
                                         <td className="sticky-col">
                                             <div className="date-text">{new Date(row.date).toLocaleDateString('th-TH')}</div>
-                                            <div className="time-sub-text"><FaClock size={10} /> {row.time}</div>
+                                            <div className="time-sub-text">{row.time}</div>
                                         </td>
                                         <td>
                                             <div className="tx-id-badge">{row.transaction_id}</div>
@@ -221,19 +220,6 @@ function HistoryPage({ user }) {
                                             {parseItems(row.items_json).map((item, i) => (
                                                 <div key={i} className="font-bold text-pink-600">x{item.qty}</div>
                                             ))}
-                                        </td>
-                                        <td>
-                                            <div className="access-log-summary">
-                                                <div className="time-line">
-                                                    <span className="badge-open">เปิด</span>
-                                                    <span className="time-value">{row.open_time || '--:--'}</span>
-                                                </div>
-                                                <div className="time-line">
-                                                    <span className="badge-close">ปิด</span>
-                                                    <span className="time-value">{row.close_time || '--:--'}</span>
-                                                </div>
-                                                
-                                            </div>
                                         </td>
                                     </tr>
                                 ))}

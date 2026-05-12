@@ -188,7 +188,6 @@ function ManagerHistoryPage({ viewDate }) {
                                     <th>เครื่องที่นำไปใช้</th>
                                     <th>รายการอะไหล่</th>
                                     <th>จำนวน</th>
-                                    <th>เวลาเปิด-ปิดตู้</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -256,16 +255,9 @@ function ManagerHistoryPage({ viewDate }) {
                                                 ))}
                                                 {items.length === 0 && <span className="text-gray-400">-</span>}
                                             </td>
-
-                                            <td>
-                                                <div className="access-logs-badges">
-                                                    <div className="log-badge-item"><span className="badge-open">เปิด</span><span className="log-time">{row.open_time || '--:--'}</span></div>
-                                                    <div className="log-badge-item"><span className="badge-close">ปิด</span><span className="log-time">{row.close_time || '--:--'}</span></div>
-                                                </div>
-                                            </td>
                                         </tr>
                                     );
-                                }) : <tr><td colSpan="10" className="empty-row">ไม่พบข้อมูลประวัติในช่วงเวลาที่เลือก</td></tr>}
+                                }) : <tr><td colSpan="9" className="empty-row">ไม่พบข้อมูลประวัติในช่วงเวลาที่เลือก</td></tr>}
                             </tbody>
                         </table>
                     </div>
